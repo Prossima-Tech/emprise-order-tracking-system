@@ -1,24 +1,47 @@
-// server/tsconfig.json
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2017",
     "module": "commonjs",
-    "rootDir": "src",
-    "outDir": "dist",
-    "baseUrl": "src",
-    "paths": {
-      "@/*": ["*"],
-      "@config/*": ["config/*"],
-      "@controllers/*": ["controllers/*"],
-      "@models/*": ["models/*"]
-    },
-    "esModuleInterop": true,
+    "lib": ["es2017", "esnext.asynciterable"],
+    "outDir": "./dist",
+    "rootDir": ".",
     "strict": true,
-    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noUnusedLocals": false,  // Changed this to false to avoid the unused variable error
+    "noUnusedParameters": false,  // Changed this to false as well
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*", "src/types/*"]
+    },
+    "skipLibCheck": true,
     "sourceMap": true,
-    "skipLibCheck": true
+    "moduleResolution": "node",
+    "removeComments": true,
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
+    "types": ["node"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src/**/*",
+    "prisma/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  }
 }

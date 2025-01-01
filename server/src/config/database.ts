@@ -1,27 +1,21 @@
-// server/src/config/database.ts
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
 
-dotenv.config();
-
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is required');
-}
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' 
+    ? ['query', 'info', 'warn', 'error']
+    : ['error'],
 });
 
-// Test the connection
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-  } else {
-    console.log('Database connected successfully');
+// Function to test database connection
+export const testConnection = async () => {
+  try {
+    await prisma.$connect();
+    console.log('Database connection established successfully');
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return false;
   }
-});
+};
 
-export default pool;
+export default prisma;

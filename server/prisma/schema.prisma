@@ -1,0 +1,260 @@
+// prisma/schema.prisma
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users and Auth
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String
+  role         String // ADMIN, MANAGER, USER, VENDOR
+  passwordHash String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  budgetaryOffers BudgetaryOffer[] // Created offers
+
+  managedLOAs  LOA[] @relation("ManagedLOAs")
+  recordedLOAs LOA[] @relation("RecordedLOAs")
+
+  // Amendment relations
+  recordedAmendments LOAAmendment[] @relation("RecordedAmendments")
+  approvedAmendments LOAAmendment[] @relation("ApprovedAmendments")
+
+  poStatusUpdates PurchaseOrderStatusHistory[]
+}
+
+model Department {
+  id           String       @id @default(uuid())
+  deptCode     String       @unique
+  deptName     String
+  parentDeptId String?
+  parentDept   Department?  @relation("DepartmentHierarchy", fields: [parentDeptId], references: [id])
+  childDepts   Department[] @relation("DepartmentHierarchy")
+  users        User[]
+  isActive     Boolean      @default(true)
+}
+
+model ItemMaster {
+  id             String              @id @default(uuid())
+  itemCode       String              @unique
+  description    String
+  category       String
+  unit           String
+  specifications ItemSpecification[]
+  isActive       Boolean             @default(true)
+  purchaseItems  PurchaseOrderItem[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model ItemSpecification {
+  id        String     @id @default(uuid())
+  itemId    String
+  key       String
+  value     String
+  mandatory Boolean    @default(false)
+  item      ItemMaster @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, key])
+}
+
+model BudgetaryOffer {
+  id           String        @id @default(uuid())
+  tenderNo     String        @unique
+  amount       Decimal       @db.Decimal(15, 2)
+  emdAmount    Decimal       @db.Decimal(15, 2)
+  dueDate      DateTime
+  status       String
+  createdById  String
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  emdTrackings EMDTracking[]
+  loas         LOA[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+}
+
+model EMDTracking {
+  id           String         @id @default(uuid())
+  offerId      String
+  offer        BudgetaryOffer @relation(fields: [offerId], references: [id])
+  amount       Decimal        @db.Decimal(15, 2)
+  dueDate      DateTime
+  returnDate   DateTime?
+  status       String
+  documentPath String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status])
+}
+
+model LOA {
+  id               String         @id @default(uuid())
+  loaNo            String         @unique
+  offerId          String
+  offer            BudgetaryOffer @relation(fields: [offerId], references: [id])
+  value            Decimal        @db.Decimal(15, 2)
+  scope            String         @db.Text
+  status           String         @default("ACTIVE")
+  issuingAuthority String // Made required
+  referenceNumber  String? // Added for external reference
+  receivedDate     DateTime // Date when LOA was received
+  validityPeriod   DateTime // Made required
+  projectCode      String? // Added for project tracking
+  department       String? // Department handling the LOA
+  remarks          String?        @db.Text
+  managedById      String
+  managedBy        User           @relation("ManagedLOAs", fields: [managedById], references: [id])
+
+  recordedById String
+  recordedBy   User   @relation("RecordedLOAs", fields: [recordedById], references: [id])
+
+  amendments     LOAAmendment[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([offerId])
+  @@index([recordedById])
+  @@index([status])
+}
+
+model LOAAmendment {
+  id                String    @id @default(uuid())
+  loaId             String
+  loa               LOA       @relation(fields: [loaId], references: [id])
+  amendmentNo       Int
+  amendmentType     String // Added for amendment type
+  additionalValue   Decimal   @db.Decimal(15, 2)
+  reason            String    @db.Text
+  effectiveDate     DateTime
+  validityExtension DateTime? // Added for validity extensions
+  scopeChanges      String?   @db.Text
+  attachmentPath    String?
+  status            String    @default("PENDING")
+  recordedById      String // Changed from createdById
+  recordedBy        User      @relation("RecordedAmendments", fields: [recordedById], references: [id])
+  approvedById      String?
+  approvedBy        User?     @relation("ApprovedAmendments", fields: [approvedById], references: [id])
+  approvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@unique([loaId, amendmentNo])
+  @@index([loaId])
+  @@index([recordedById])
+  @@index([status])
+}
+
+model Vendor {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  phone         String
+  address       String
+  city          String
+  state         String
+  country       String
+  pinCode       String
+  gstin         String?
+  pan           String?
+  contactPerson String
+  contactEmail  String
+  contactPhone  String
+  category      String[] // Will store VendorCategory enum values as strings
+  status        String   @default("ACTIVE") // Will store VendorStatus enum values
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  purchaseOrders PurchaseOrder[]
+  invoices       Invoice[]
+
+  @@map("vendors")
+}
+
+model PurchaseOrder {
+  id            String                       @id @default(uuid())
+  poNumber      String                       @unique
+  loaId         String
+  loa           LOA                          @relation(fields: [loaId], references: [id])
+  vendorId      String
+  vendor        Vendor                       @relation(fields: [vendorId], references: [id])
+  value         Decimal                      @db.Decimal(15, 2)
+  deliveryDate  DateTime
+  status        String                       @default("DRAFT")
+  items         PurchaseOrderItem[]
+  invoices      Invoice[]
+  statusHistory PurchaseOrderStatusHistory[]
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+
+  @@index([status])
+  @@index([vendorId])
+  @@index([loaId])
+}
+
+model PurchaseOrderStatusHistory {
+  id          String        @id @default(uuid())
+  poId        String
+  po          PurchaseOrder @relation(fields: [poId], references: [id])
+  fromStatus  String
+  toStatus    String
+  remarks     String?
+  createdAt   DateTime      @default(now())
+  createdById String
+  createdBy   User          @relation(fields: [createdById], references: [id])
+
+  @@index([poId])
+}
+
+model PurchaseOrderItem {
+  id             String        @id @default(uuid())
+  poId           String
+  po             PurchaseOrder @relation(fields: [poId], references: [id])
+  itemId         String
+  item           ItemMaster    @relation(fields: [itemId], references: [id])
+  quantity       Int
+  unitPrice      Decimal       @db.Decimal(15, 2)
+  totalPrice     Decimal       @db.Decimal(15, 2)
+  specifications Json
+  status         String        @default("PENDING")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status])
+  @@index([poId])
+}
+
+model Invoice {
+  id        String        @id @default(uuid())
+  invoiceNo String        @unique
+  poId      String
+  po        PurchaseOrder @relation(fields: [poId], references: [id])
+  vendorId  String
+  vendor    Vendor        @relation(fields: [vendorId], references: [id])
+  amount    Decimal       @db.Decimal(15, 2)
+  status    String
+  dueDate   DateTime
+  paidDate  DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+}
