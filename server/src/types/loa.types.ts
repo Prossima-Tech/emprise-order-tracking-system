@@ -31,7 +31,7 @@ export interface LOA {
   id: string;
   loaNo: string;
   offerId: string;
-  value: Decimal;
+  value: number;
   scope: string;
   status: LOAStatus;
   issuingAuthority: string;
@@ -48,7 +48,7 @@ export interface LOA {
     email: string;
     department?: {
       deptCode: string;
-      deptName: true;
+      deptName: string;
     };
   };
   amendments?: LOAAmendment[];

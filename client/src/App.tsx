@@ -1,28 +1,20 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+// src/App.tsx
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { AccessibilityProvider } from './providers/AccessibilityProvider';
+import { RouterProvider } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import { router } from './routes';
 
-function App() {
-  const [message, setMessage] = useState('')
+import './styles/accessibility.css';
 
-  useEffect(() => {
-    fetch('http://localhost:3000/api/test')
-      .then(response => response.json())
-      .then(data => setMessage(data.message))
-      .catch(error => console.error('Error:', error));
-  }, [])
-
+const App = () => {
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          React + Vite + TS
-        </h1>
-        <p className="text-lg text-gray-600">
-          Message from server: <span className="font-medium">{message}</span>
-        </p>
-      </div>
-    </div>
-  )
-}
+    <ErrorBoundary>
+      {/* <AccessibilityProvider> */}
+          <RouterProvider router={router} />
+      {/* </AccessibilityProvider> */}
+    </ErrorBoundary>
+  );
+};
 
-export default App
+export default App; 

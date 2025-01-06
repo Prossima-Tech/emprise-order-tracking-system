@@ -1,0 +1,63 @@
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f0f2f5;
+  padding: 24px;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logoContainer {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logo {
+  height: 48px;
+  width: auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 8px !important;
+}
+
+.subtitle {
+  display: block;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.form {
+  margin-top: 24px;
+}
+
+.alert {
+  margin-bottom: 24px;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* Export all classes */
+:export {
+  container: container;
+  loginCard: loginCard;
+  logoContainer: logoContainer;
+  logo: logo;
+  title: title;
+  subtitle: subtitle;
+  form: form;
+  alert: alert;
+  links: links;
+}

@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for Ant Design integration */
+.ant-btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600;
+  }
+  
+  .ant-table-wrapper {
+    @apply bg-white rounded-lg;
+  }
+  
+  .ant-card {
+    @apply rounded-lg;
+  }
+  
+  .ant-modal-content {
+    @apply rounded-lg;
+  }
+  
+  .ant-drawer-content {
+    @apply rounded-l-lg;
+  }
+  

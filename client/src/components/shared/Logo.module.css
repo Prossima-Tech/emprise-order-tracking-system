@@ -1,0 +1,10 @@
+.logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  
+  .logo img {
+    transition: all 0.2s ease;
+  }

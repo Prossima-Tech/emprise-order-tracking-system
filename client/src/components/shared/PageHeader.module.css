@@ -1,0 +1,17 @@
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .title {
+    margin-bottom: 8px !important;
+  }
+  
+  .subtitle {
+    display: block;
+    color: rgba(0, 0, 0, 0.45);
+  }
