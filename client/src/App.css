@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for Ant Design integration */
+/* globals.css or similar */
+.ant-layout {
+  background: transparent !important;
+}
+
+.ant-layout-sider {
+  background: white !important;
+}
+
+.ant-layout-header {
+  background: white !important;
+  padding: 0 !important;
+}
+
+.ant-menu {
+  background: white !important;
+}

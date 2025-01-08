@@ -260,3 +260,5 @@ export const MasterDataDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default MasterDataDashboard;

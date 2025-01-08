@@ -4,6 +4,9 @@ import { body, param, query, validationResult, ValidationChain } from 'express-v
 import { LOAStatus } from '../types/loa.types';
 import prisma from '../config/database';
 import { VendorCategory, VendorStatus } from '../types/master.types';
+import { WorkItem } from 'index';
+
+
 
 export const validateRegister = [
   body('email')
@@ -214,47 +217,102 @@ export const validateAmendment: (ValidationChain | ValidationMiddleware)[] = [
   handleValidationResult
 ];
 
+export const validateWorkItems = [
+  body('workItems')
+    .isArray().withMessage('Work items must be an array')
+    .notEmpty().withMessage('At least one work item is required'),
 
-// Budgetary Offer validation rules
-export const validateBudgetaryOffer: (ValidationChain | ValidationMiddleware)[] = [
-  body('tenderNo')
+  body('workItems.*.description')
     .trim()
-    .notEmpty().withMessage('Tender number is required')
-    .matches(/^[A-Z0-9-]+$/).withMessage('Tender number must contain only uppercase letters, numbers, and hyphens')
-    .isLength({ min: 5, max: 20 }).withMessage('Tender number must be between 5 and 20 characters'),
-  
-  body('amount')
-    .isNumeric().withMessage('Amount must be a number')
-    .isFloat({ min: 0 }).withMessage('Amount must be greater than 0')
-    .custom((value: number) => {
-      if (value < 100000) {
-        throw new Error('Amount must be at least ₹1,00,000');
-      }
-      return true;
-    }),
+    .notEmpty().withMessage('Work item description is required')
+    .isLength({ min: 10, max: 500 }).withMessage('Description must be between 10 and 500 characters'),
 
-  body('emdAmount')
-    .optional()
+  body('workItems.*.basicRate')
+    .isNumeric().withMessage('Basic rate must be a number')
+    .isFloat({ min: 0 }).withMessage('Basic rate must be greater than 0'),
+
+  body('workItems.*.unit')
+    .trim()
+    .notEmpty().withMessage('Unit is required')
+    .isLength({ max: 20 }).withMessage('Unit cannot exceed 20 characters'),
+
+  body('workItems.*.taxRate')
+    .isFloat({ min: 0, max: 100 }).withMessage('Tax rate must be between 0 and 100'),
+
+  handleValidationResult
+];
+
+export const validateBudgetaryOffer: (ValidationChain | ValidationMiddleware)[] = [
+  body('fromAuthority')
+    .trim()
+    .notEmpty().withMessage('From Authority is required')
+    .isLength({ min: 3, max: 100 }).withMessage('From Authority must be between 3 and 100 characters'),
+  
+  body('toAuthority')
+    .trim()
+    .notEmpty().withMessage('To Authority is required')
+    .isLength({ min: 3, max: 100 }).withMessage('To Authority must be between 3 and 100 characters'),
+
+  body('subject')
+    .trim()
+    .notEmpty().withMessage('Subject is required')
+    .isLength({ min: 10, max: 200 }).withMessage('Subject must be between 10 and 200 characters'),
+
+  body('workItems')
+    .isArray().withMessage('Work items must be an array')
+    .notEmpty().withMessage('At least one work item is required'),
+
+  body('workItems.*.description')
+    .trim()
+    .notEmpty().withMessage('Work item description is required')
+    .isLength({ min: 10, max: 500 }).withMessage('Work item description must be between 10 and 500 characters'),
+
+  body('workItems.*.basicRate')
+    .isNumeric().withMessage('Basic rate must be a number')
+    .isFloat({ min: 0 }).withMessage('Basic rate must be greater than 0'),
+
+  body('workItems.*.unit')
+    .trim()
+    .notEmpty().withMessage('Unit is required')
+    .isLength({ max: 20 }).withMessage('Unit cannot exceed 20 characters'),
+
+  body('workItems.*.taxRate')
+    .isFloat({ min: 0, max: 100 }).withMessage('Tax rate must be between 0 and 100'),
+
+  body('termsAndConditions')
+    .trim()
+    .notEmpty().withMessage('Terms and conditions are required')
+    .isLength({ min: 50 }).withMessage('Terms and conditions must be at least 50 characters long'),
+
+  body('emdDetails.amount')
     .isNumeric().withMessage('EMD amount must be a number')
     .isFloat({ min: 0 }).withMessage('EMD amount must be greater than 0')
     .custom((value: number, { req }) => {
-      const tenderValue = req.body.amount;
-      if (value > tenderValue * 0.05) {
-        throw new Error('EMD amount cannot exceed 5% of tender value');
+      const totalValue = req.body.workItems.reduce((sum: number, item: WorkItem) => {
+        const itemTotal = item.basicRate * (1 + item.taxRate / 100);
+        return sum + itemTotal;
+      }, 0);
+      
+      if (value > totalValue * 0.05) {
+        throw new Error('EMD amount cannot exceed 5% of total project value');
       }
       return true;
     }),
 
-  body('dueDate')
-    .isISO8601().withMessage('Due date must be a valid date')
-    .custom((value: string) => {
-      const dueDate = new Date(value);
-      const today = new Date();
-      if (dueDate < today) {
-        throw new Error('Due date cannot be in the past');
-      }
-      return true;
-    }),
+  body('emdDetails.paymentMode')
+    .isIn(['DD', 'BG', 'ONLINE', 'CASH'])
+    .withMessage('Invalid EMD payment mode'),
+
+  body('emdDetails.validityPeriod')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Validity period must be a positive number of days'),
+
+  body('emdDetails.remarks')
+    .optional()
+    .isString()
+    .isLength({ max: 500 })
+    .withMessage('Remarks cannot exceed 500 characters'),
 
   handleValidationResult
 ];

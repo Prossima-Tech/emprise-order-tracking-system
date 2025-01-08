@@ -1,34 +1,29 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import { Header } from '../Header';
 import { Sidebar } from '../Sidebar';
+import { Header } from '../Header';
 import { Footer } from '../Footer';
 import { BreadcrumbNav } from '../BreadcrumbNav';
-import styles from './MainLayout.module.css';
 
 const { Content } = Layout;
 
-export const MainLayout = () => {
+export const MainLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Layout className={styles.layout}>
-      <Sidebar collapsed={collapsed} />
-      
-      <Layout className={`${styles.mainContent} ${collapsed ? styles.expanded : ''}`}>
+    <Layout className="min-h-screen width-full">
+      <Sidebar collapsed={collapsed}  />
+      <Layout>
         <Header 
           collapsed={collapsed} 
-          onToggle={() => setCollapsed(prev => !prev)} 
+          onToggle={() => setCollapsed(!collapsed)} 
         />
         
-        <Content className={styles.content}>
+        <Content className="m-6 p-6 bg-white rounded-lg min-h-[280px]">
           <BreadcrumbNav />
-          <div className={styles.pageContainer}>
-            <Outlet />
-          </div>
+          <Outlet />
         </Content>
-        
         <Footer />
       </Layout>
     </Layout>

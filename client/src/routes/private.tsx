@@ -16,6 +16,31 @@ const EMDTrackingPage = lazy(() =>
   }))
 );
 
+const BODashboard = lazy(() => 
+  import('../modules/budgetary-offer/pages/BODashboard').then(module => ({
+    default: module.default || module.BODashboard
+  }))
+);
+
+const CreateBO = lazy(() => 
+  import('../modules/budgetary-offer/pages/CreateBO').then(module => ({
+    default: module.default || module.CreateBO
+  }))
+);
+
+const EditBO = lazy(() => 
+  import('../modules/budgetary-offer/pages/EditBO').then(module => ({
+    default: module.default || module.EditBO
+  }))
+);
+
+const ViewBO = lazy(() => 
+  import('../modules/budgetary-offer/pages/ViewBO').then(module => ({
+    default: module.default || module.ViewBO
+  }))
+);
+
+
 const BudgetaryOffersPage = lazy(() => 
   import('../modules/budgetary-offer/pages/BudgetaryOffersPage').then(module => ({
     default: module.default || module.BudgetaryOffersPage
@@ -70,11 +95,45 @@ export const privateRoutes: RouteObject[] = [
   },
   {
     path: 'budgetary-offers',
-    element: (
-      <SuspenseWrapper>
-        <BudgetaryOffersPage />
-      </SuspenseWrapper>
-    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <SuspenseWrapper>
+            <BODashboard />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'create',
+        element: (
+          <SuspenseWrapper>
+            <CreateBO />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'edit/:id',
+        element: (
+          <SuspenseWrapper>
+            <EditBO />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: ':id',
+        element: (
+          <SuspenseWrapper>
+            <ViewBO />
+          </SuspenseWrapper>
+        ),
+      }
+    ],
+    // element: (
+    //   <SuspenseWrapper>
+    //     <BudgetaryOffersPage />
+    //   </SuspenseWrapper>
+    // ),
   },
   {
     path: 'purchase-orders',

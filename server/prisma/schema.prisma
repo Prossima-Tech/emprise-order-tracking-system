@@ -74,18 +74,19 @@ model ItemSpecification {
 }
 
 model BudgetaryOffer {
-  id           String        @id @default(uuid())
-  tenderNo     String        @unique
-  amount       Decimal       @db.Decimal(15, 2)
-  emdAmount    Decimal       @db.Decimal(15, 2)
-  dueDate      DateTime
-  status       String
-  createdById  String
-  createdBy    User          @relation(fields: [createdById], references: [id])
-  emdTrackings EMDTracking[]
-  loas         LOA[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  fromAuthority     String        @db.VarChar(100)
+  toAuthority       String        @db.VarChar(100)
+  subject           String        @db.VarChar(200)
+  workItems         Json          // Will store array of WorkItems
+  emdDetails        Json          // Will store EMD details
+  termsAndConditions String       @db.Text
+  status            String        // DRAFT, SUBMITTED, APPROVED, REJECTED
+  createdById       String
+  createdBy         User          @relation(fields: [createdById], references: [id])
+  emdTrackings      EMDTracking[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([status])
 }
@@ -95,10 +96,12 @@ model EMDTracking {
   offerId      String
   offer        BudgetaryOffer @relation(fields: [offerId], references: [id])
   amount       Decimal        @db.Decimal(15, 2)
+  paymentMode  String         @db.VarChar(20)
   dueDate      DateTime
   returnDate   DateTime?
   status       String
   documentPath String?
+  remarks      String?        @db.Text
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -107,31 +110,27 @@ model EMDTracking {
 
 model LOA {
   id               String         @id @default(uuid())
-  loaNo            String         @unique
-  offerId          String
-  offer            BudgetaryOffer @relation(fields: [offerId], references: [id])
-  value            Decimal        @db.Decimal(15, 2)
-  scope            String         @db.Text
-  status           String         @default("ACTIVE")
-  issuingAuthority String // Made required
-  referenceNumber  String? // Added for external reference
-  receivedDate     DateTime // Date when LOA was received
-  validityPeriod   DateTime // Made required
-  projectCode      String? // Added for project tracking
-  department       String? // Department handling the LOA
-  remarks          String?        @db.Text
+  loaNo            String        @unique
+  value            Decimal       @db.Decimal(15, 2)
+  scope            String        @db.Text
+  status           String        @default("ACTIVE")
+  issuingAuthority String
+  referenceNumber  String?
+  receivedDate     DateTime
+  validityPeriod   DateTime
+  projectCode      String?
+  department       String?
+  remarks          String?       @db.Text
   managedById      String
-  managedBy        User           @relation("ManagedLOAs", fields: [managedById], references: [id])
-
-  recordedById String
-  recordedBy   User   @relation("RecordedLOAs", fields: [recordedById], references: [id])
+  managedBy        User          @relation("ManagedLOAs", fields: [managedById], references: [id])
+  recordedById     String
+  recordedBy       User          @relation("RecordedLOAs", fields: [recordedById], references: [id])
 
   amendments     LOAAmendment[]
   purchaseOrders PurchaseOrder[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  @@index([offerId])
   @@index([recordedById])
   @@index([status])
 }

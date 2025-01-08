@@ -8,7 +8,7 @@ import {
   DatabaseOutlined,
   PercentageOutlined,
 } from '@ant-design/icons';
-import { Logo } from '../../shared/Logo';
+import  Logo from '../../shared/Logo';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {

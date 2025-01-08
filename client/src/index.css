@@ -3,23 +3,20 @@
 @tailwind utilities;
 
 /* Custom styles for Ant Design integration */
-.ant-btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600;
-  }
-  
-  .ant-table-wrapper {
-    @apply bg-white rounded-lg;
-  }
-  
-  .ant-card {
-    @apply rounded-lg;
-  }
-  
-  .ant-modal-content {
-    @apply rounded-lg;
-  }
-  
-  .ant-drawer-content {
-    @apply rounded-l-lg;
-  }
-  
+/* globals.css or similar */
+.ant-layout {
+  background: transparent !important;
+}
+
+.ant-layout-sider {
+  background: white !important;
+}
+
+.ant-layout-header {
+  background: white !important;
+  padding: 0 !important;
+}
+
+.ant-menu {
+  background: white !important;
+}
