@@ -1,8 +1,6 @@
-import { Layout, Button, Space, Avatar, Dropdown, Badge, Input } from 'antd';
+import { Layout, Space, Avatar, Dropdown, Badge, Input } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   SearchOutlined,
   BellOutlined,
   UserOutlined,
@@ -11,12 +9,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../../hooks/useAuth';
 
-interface HeaderProps {
-  collapsed: boolean;
-  onToggle: () => void;
-}
-
-export const Header = ({ collapsed, onToggle }: HeaderProps) => {
+export const Header = () => {
   const { user, logout } = useAuth();
 
   const userMenuItems: MenuProps['items'] = [
@@ -43,44 +36,44 @@ export const Header = ({ collapsed, onToggle }: HeaderProps) => {
   ];
 
   return (
-    <Layout.Header className="bg-white flex items-center justify-between border-b border-gray-200 h-[8vh] font-sans tracking-tight">
-      <div className="flex items-center gap-4">
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={onToggle}
-          className="hover:bg-gray-100"
+    <Layout.Header className="bg-white px-6 flex items-center justify-between border-b border-gray-200 h-18 font-sans tracking-tight shadow-sm">
+      {/* Search Section */}
+      <div className="flex-1 max-w-xl">
+        <Input
+          prefix={<SearchOutlined className="text-gray-400" />}
+          placeholder="Search..."
+          className="rounded-full bg-gray-50 hover:bg-gray-100 border-0 focus:bg-white transition-colors"
         />
-        
-        <div className="max-w-xl w-96">
-          <Input
-            prefix={<SearchOutlined className="text-gray-400" />}
-            placeholder="Search..."
-            className="rounded-lg"
-          />
-        </div>
       </div>
 
+      {/* Right Section */}
       <div className="flex items-center">
         <Space size="large" className="items-center">
-          <Badge count={5} className="cursor-pointer">
-            <Button
-              type="text"
-              icon={<BellOutlined />}
-              className="hover:bg-gray-100"
-            />
+          {/* Notifications */}
+          <Badge 
+            count={5} 
+            className="cursor-pointer"
+            offset={[-2, 4]}
+          >
+            <div className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <BellOutlined className="text-lg text-gray-600" />
+            </div>
           </Badge>
 
+          {/* User Profile */}
           <Dropdown
             menu={{ items: userMenuItems }}
             trigger={['click']}
             placement="bottomRight"
           >
-            <Space className="cursor-pointer items-center">
-              <Avatar className="bg-blue-500">
+            <Space className="cursor-pointer items-center hover:bg-gray-50 py-1 px-2 rounded-full transition-colors">
+              <Avatar 
+                className="bg-blue-600 border-2 border-white shadow-sm"
+                size="small"
+              >
                 {user?.name?.[0]}
               </Avatar>
-              <span className="hidden md:inline text-gray-700">
+              <span className="hidden md:inline text-gray-700 font-medium">
                 {user?.name}
               </span>
             </Space>

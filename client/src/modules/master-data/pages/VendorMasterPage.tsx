@@ -1,12 +1,41 @@
 // src/modules/master-data/pages/VendorMasterPage.tsx
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Modal, Form, Button, message } from 'antd';
+import { 
+  Card, 
+  Table, 
+  Modal, 
+  Form, 
+  Button, 
+  message,
+  Typography,
+  Space,
+  Row,
+  Col,
+  Statistic,
+  Tooltip,
+  Dropdown,
+  Tag
+} from 'antd';
+import { 
+  TeamOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  UserOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
+  EllipsisOutlined
+} from '@ant-design/icons';
 import { Vendor } from '@emprise/shared/src/types/master';
 import { masterDataApi } from '../services/masterDataApi';
 import { SearchHeader } from '../components/SearchHeader';
 import { VendorMasterForm } from '../components/VendorMasterForm';
 import { StatusBadge } from '../components/StatusBadge';
 import { useMasterData } from '../hooks/useMasterData';
+
+const { Title, Text } = Typography;
 
 export const VendorMasterPage: React.FC = () => {
   const [form] = Form.useForm();
@@ -46,30 +75,82 @@ export const VendorMasterPage: React.FC = () => {
     }
   };
 
+  const getStatistics = () => {
+    if (!vendors) return { total: 0, active: 0, categories: 0 };
+    const activeVendors = vendors.filter(v => v.isActive);
+    const uniqueCategories = new Set(vendors.flatMap(v => v.category));
+    return {
+      total: vendors.length,
+      active: activeVendors.length,
+      categories: uniqueCategories.size
+    };
+  };
+
+  const stats = getStatistics();
+
   const columns = [
     {
-      title: 'Name',
+      title: (
+        <Space>
+          <UserOutlined className="text-gray-400" />
+          Name
+        </Space>
+      ),
       dataIndex: 'name',
       key: 'name',
+      render: (text: string) => (
+        <Text className="font-medium">{text}</Text>
+      ),
     },
     {
-      title: 'Email',
+      title: (
+        <Space>
+          <MailOutlined className="text-gray-400" />
+          Email
+        </Space>
+      ),
       dataIndex: 'email',
       key: 'email',
+      render: (text: string) => (
+        <Text className="text-blue-600">{text}</Text>
+      ),
     },
     {
-      title: 'Phone',
+      title: (
+        <Space>
+          <PhoneOutlined className="text-gray-400" />
+          Phone
+        </Space>
+      ),
       dataIndex: 'phone',
       key: 'phone',
     },
     {
-      title: 'Category',
+      title: (
+        <Space>
+          <BankOutlined className="text-gray-400" />
+          Category
+        </Space>
+      ),
       dataIndex: 'category',
       key: 'category',
-      render: (categories: string[]) => categories.join(', '),
+      render: (categories: string[]) => (
+        <Space wrap>
+          {categories.map(cat => (
+            <Tag key={cat} className="m-0">
+              {cat}
+            </Tag>
+          ))}
+        </Space>
+      ),
     },
     {
-      title: 'Status',
+      title: (
+        <Space>
+          <CheckCircleOutlined className="text-gray-400" />
+          Status
+        </Space>
+      ),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => <StatusBadge status={status} type="status" />,
@@ -78,23 +159,86 @@ export const VendorMasterPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: Vendor) => (
-        <Button
-          type="link"
-          onClick={() => {
-            setEditingVendor(record);
-            form.setFieldsValue(record);
-            setModalVisible(true);
+        <Dropdown
+          menu={{
+            items: [
+              {
+                key: 'view',
+                icon: <EyeOutlined />,
+                label: 'View Details'
+              },
+              {
+                key: 'edit',
+                icon: <EditOutlined />,
+                label: 'Edit',
+                onClick: () => {
+                  setEditingVendor(record);
+                  form.setFieldsValue(record);
+                  setModalVisible(true);
+                }
+              }
+            ]
           }}
+          trigger={['click']}
         >
-          Edit
-        </Button>
+          <Button type="text" icon={<EllipsisOutlined />} />
+        </Dropdown>
       ),
     },
   ];
 
   return (
-    <div className="p-6">
-      <Card title="Vendor Master">
+    <div className="p-3">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <Title level={4} className="!mb-1">Vendor Master</Title>
+          <Text type="secondary">Manage and track vendor information</Text>
+        </div>
+      </div>
+
+      {/* Statistics Section */}
+      <Row gutter={[24, 24]} className="mb-6">
+        <Col xs={24} sm={8}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <TeamOutlined className="text-2xl mr-3 p-2 rounded-lg bg-blue-50 text-blue-500" />
+              <Statistic
+                title="Total Vendors"
+                value={stats.total}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <CheckCircleOutlined className="text-2xl mr-3 p-2 rounded-lg bg-green-50 text-green-500" />
+              <Statistic
+                title="Active Vendors"
+                value={stats.active}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <BankOutlined className="text-2xl mr-3 p-2 rounded-lg bg-orange-50 text-orange-500" />
+              <Statistic
+                title="Categories"
+                value={stats.categories}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Content */}
+      <Card className="shadow-sm">
         <SearchHeader
           onSearch={handleSearch}
           onAdd={() => {
@@ -103,7 +247,7 @@ export const VendorMasterPage: React.FC = () => {
             setModalVisible(true);
           }}
           addButtonText="Add Vendor"
-          searchPlaceholder="Search vendors..."
+          searchPlaceholder="Search by name, email or phone..."
         />
 
         <Table
@@ -115,24 +259,33 @@ export const VendorMasterPage: React.FC = () => {
             current,
             pageSize,
             showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Total ${total} vendors`
           }}
           onChange={handleTableChange}
           rowKey="id"
+          className="border border-gray-200 rounded-lg overflow-hidden"
         />
-
-        <Modal
-          title={editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
-          open={modalVisible}
-          onCancel={() => setModalVisible(false)}
-          onOk={handleSubmit}
-          width={800}
-        >
-          <VendorMasterForm
-            form={form}
-            initialValues={editingVendor || {}}
-          />
-        </Modal>
       </Card>
+
+      {/* Form Modal */}
+      <Modal
+        title={
+          <Space>
+            {editingVendor ? <EditOutlined /> : <PlusOutlined />}
+            {editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
+          </Space>
+        }
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onOk={handleSubmit}
+        width={800}
+      >
+        <VendorMasterForm
+          form={form}
+          initialValues={editingVendor || {}}
+        />
+      </Modal>
     </div>
   );
 };

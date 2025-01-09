@@ -4,6 +4,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { LoginInput } from '@emprise/shared/src/types/auth';
+import Logo from '../../../components/shared/Logo';
 
 const { Title, Text } = Typography;
 
@@ -24,8 +25,8 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen flex justify-center items-center bg-gray-100 p-6">
       <Card className="w-full max-w-md shadow-lg">
-        <div className="text-center mb-6">
-          <img src="/logo.svg" alt="Logo" className="h-12 mx-auto" />
+        <div className="p-6 flex items-center justify-center border-gray-200">
+          <Logo collapsed={true} />
         </div>
 
         <Title level={3} className="text-center mb-2">

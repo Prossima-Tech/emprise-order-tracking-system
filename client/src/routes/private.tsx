@@ -65,6 +65,18 @@ const PurchaseOrderDetails = lazy(() =>
   }))
 );
 
+const CreatePOPage = lazy(() => 
+  import('../modules/purchase-orders/pages/CreatePOPage').then(module => ({
+    default: module.default || module.CreatePOPage
+  }))
+);
+
+const EditPOPage = lazy(() => 
+  import('../modules/purchase-orders/pages/EditPOPage').then(module => ({
+    default: module.default || module.EditPOPage
+  }))
+);
+
 const LoaManagementPage = lazy(() => 
   import('../modules/loa-management/pages/LoaManagementPage').then(module => ({
     default: module.default || module.LOAManagementPage
@@ -157,6 +169,22 @@ export const privateRoutes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <PurchaseOrdersPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'create',
+        element: (
+          <SuspenseWrapper>
+            <CreatePOPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'edit/:id',
+        element: (
+          <SuspenseWrapper>
+            <EditPOPage />
           </SuspenseWrapper>
         ),
       },

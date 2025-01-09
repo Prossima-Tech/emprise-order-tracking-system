@@ -1,9 +1,25 @@
 // src/modules/loa-management/components/LOAList.tsx
-import { Table, Tag, Button, Input, Select, Space, Tooltip } from 'antd';
-import { SearchOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
+import { Table, Tag, Button, Input, Select, Space, Tooltip, Typography, MenuProps, Dropdown } from 'antd';
+import { 
+  SearchOutlined, 
+  EyeOutlined, 
+  EditOutlined, 
+  FilterOutlined,
+  FileTextOutlined,
+  ProjectOutlined,
+  TeamOutlined,
+  DollarOutlined,
+  ClockCircleOutlined,
+  EllipsisOutlined,
+  PrinterOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
+} from '@ant-design/icons';
 import { useState, useMemo } from 'react';
 import type { LOA, LOAStatus } from '@emprise/shared/src/types/loa';
 import { formatCurrency } from '../../../utils/format';
+
+const { Text } = Typography;
 
 interface LOAListProps {
   loas: LOA[];
@@ -12,7 +28,7 @@ interface LOAListProps {
   onViewDetails: (loa: LOA) => void;
 }
 
-export const LOAList = ({ loas, loading, onRefresh, onViewDetails }: LOAListProps) => {
+export const LOAList = ({ loas, loading, onViewDetails }: LOAListProps) => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<LOAStatus | ''>('');
 
@@ -30,96 +46,156 @@ export const LOAList = ({ loas, loading, onRefresh, onViewDetails }: LOAListProp
 
   const columns = [
     {
-      title: 'LOA No.',
+      title: (
+        <Space>
+          <FileTextOutlined className="text-gray-400" />
+          LOA No.
+        </Space>
+      ),
       dataIndex: 'loaNo',
       key: 'loaNo',
       width: 150,
+      render: (text: string) => (
+        <Text className="font-medium">{text}</Text>
+      ),
     },
     {
-      title: 'Project Code',
+      title: (
+        <Space>
+          <ProjectOutlined className="text-gray-400" />
+          Project Code
+        </Space>
+      ),
       dataIndex: 'projectCode',
       key: 'projectCode',
       width: 120,
     },
     {
-      title: 'Department',
+      title: (
+        <Space>
+          <TeamOutlined className="text-gray-400" />
+          Department
+        </Space>
+      ),
       dataIndex: 'department',
       key: 'department',
       width: 150,
+      render: (text: string) => (
+        <Tooltip title={`Department: ${text}`}>
+          <div className="truncate max-w-[200px]">{text}</div>
+        </Tooltip>
+      ),
     },
     {
-      title: 'Value',
+      title: (
+        <Space>
+          <DollarOutlined className="text-gray-400" />
+          Value
+        </Space>
+      ),
       dataIndex: 'value',
       key: 'value',
       width: 150,
-      render: (value: number) => formatCurrency(value),
+      render: (value: number) => (
+        <Text className="font-mono">{formatCurrency(value)}</Text>
+      ),
     },
     {
-      title: 'Status',
+      title: (
+        <Space>
+          <ClockCircleOutlined className="text-gray-400" />
+          Status
+        </Space>
+      ),
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: LOAStatus) => (
-        <Tag color={getStatusColor(status)} className="px-3 py-1">
-          {status}
-        </Tag>
-      ),
+      render: (status: LOAStatus) => {
+        const statusConfig: Record<LOAStatus, { color: string; icon: React.ReactNode }> = {
+          ACTIVE: { color: 'green', icon: <ClockCircleOutlined /> },
+          COMPLETED: { color: 'blue', icon: <CheckCircleOutlined /> },
+          CANCELLED: { color: 'red', icon: <CloseCircleOutlined /> }
+        };
+
+        return (
+          <Tag 
+            color={statusConfig[status].color} 
+            className="px-3 py-1 rounded-full"
+            icon={statusConfig[status].icon}
+          >
+            {status.replace(/_/g, ' ')}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Actions',
       key: 'actions',
       width: 100,
       render: (_: any, record: LOA) => (
-        <Space>
-          <Tooltip title="View Details">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => onViewDetails(record)}
-              className="text-blue-600 hover:text-blue-700"
-            />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              className="text-gray-600 hover:text-gray-700"
-            />
-          </Tooltip>
-        </Space>
+        <Dropdown menu={getActionMenu(record)} trigger={['click']}>
+          <Button type="text" icon={<EllipsisOutlined />} />
+        </Dropdown>
       ),
     },
   ];
 
-  const getStatusColor = (status: LOAStatus) => {
-    const colors: Record<LOAStatus, string> = {
-      ACTIVE: 'green',
-      COMPLETED: 'blue',
-      CANCELLED: 'red',
-    };
-    return colors[status];
-  };
+  const getActionMenu = (record: LOA): MenuProps => ({
+    items: [
+      {
+        key: 'view',
+        icon: <EyeOutlined />,
+        label: 'View Details',
+        onClick: () => onViewDetails(record)
+      },
+      {
+        key: 'edit',
+        icon: <EditOutlined />,
+        label: 'Edit',
+        disabled: record.status !== 'ACTIVE'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        key: 'print',
+        icon: <PrinterOutlined />,
+        label: 'Print',
+      }
+    ]
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4 items-center mb-6">
         <Input
           placeholder="Search by LOA No. or Project Code"
           prefix={<SearchOutlined className="text-gray-400" />}
           onChange={e => setSearchText(e.target.value)}
-          className="max-w-md"
+          className="w-64"
+          allowClear
         />
         <Select
           placeholder="Filter by Status"
           allowClear
-          className="w-48"
+          className="w-40"
           onChange={value => setStatusFilter(value)}
+          value={statusFilter}
           options={[
             { value: 'ACTIVE', label: 'Active' },
             { value: 'COMPLETED', label: 'Completed' },
             { value: 'CANCELLED', label: 'Cancelled' },
           ]}
         />
+        <Button 
+          icon={<FilterOutlined />}
+          onClick={() => {
+            setSearchText('');
+            setStatusFilter('');
+          }}
+        >
+          Reset Filters
+        </Button>
       </div>
 
       <Table
@@ -131,9 +207,10 @@ export const LOAList = ({ loas, loading, onRefresh, onViewDetails }: LOAListProp
           total: filteredLOAs.length,
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: total => `Total ${total} items`,
+          showQuickJumper: true,
+          showTotal: total => `Total ${total} LOAs`,
         }}
-        className="shadow-sm"
+        className="border border-gray-200 rounded-lg overflow-hidden"
       />
     </div>
   );

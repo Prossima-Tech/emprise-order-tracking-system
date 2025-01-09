@@ -34,4 +34,12 @@ export const budgetaryOfferService = {
     const response = await api.get<ApiResponse<any>>('/budgetary-offers/statistics');
     return response.data.data;
   },
+
+  deleteOffer: async (id: string) => {
+
+    const response = await api.delete(`/api/budgetary-offers/${id}`, {
+      method: 'DELETE',
+    });
+    return response.data.data;
+  },
 };

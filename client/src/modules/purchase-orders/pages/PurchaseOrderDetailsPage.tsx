@@ -1,55 +1,76 @@
 // src/modules/purchase-orders/pages/PurchaseOrderDetailsPage.tsx
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Result } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useQuery } from '../../../hooks/useQuery';
-import { mockPurchaseOrderApi as purchaseOrderApi } from '../services/mockApi';
-import { POStatus } from '@emprise/shared/src/types/purchase-order';
-import { PageHeader } from '../../../components/shared/PageHeader';
+import { Button, Result, Card, Typography, Space, message } from 'antd';
+import { 
+  ArrowLeftOutlined, 
+  ShoppingCartOutlined,
+  PrinterOutlined,
+  EditOutlined
+} from '@ant-design/icons';
+import { mockPurchaseOrderApi } from '../services/mockApi';
+import { POStatus, PurchaseOrder } from '@emprise/shared/src/types/purchase-order';
 import { PageLoading } from '../../../components/shared/PageLoading';
 import { PurchaseOrderDetails } from '../components/PurchaseOrderDetails';
 
-export const PurchaseOrderDetailsPage = () => {
+const { Title, Text } = Typography;
+
+export const PurchaseOrderDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [po, setPO] = useState<PurchaseOrder | null>(null);
 
-  const { 
-    data: po, 
-    loading,
-    error,
-    refetch 
-  } = useQuery({
-    queryFn: () => purchaseOrderApi.getPODetails(id!),
-    enabled: !!id,
-  });
+  const fetchPODetails = async () => {
+    if (!id) return;
 
-  const handleStatusUpdate = async (status: POStatus) => {
-    if (id) {
-      await purchaseOrderApi.updateStatus(id, status);
-      refetch();
+    try {
+      setLoading(true);
+      const response = await mockPurchaseOrderApi.getPODetails(id);
+      setPO(response);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load purchase order'));
+      message.error('Failed to load purchase order details');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    navigate('/purchase-orders');
+  useEffect(() => {
+    fetchPODetails();
+  }, [id]);
+
+  const handleStatusUpdate = async (status: POStatus) => {
+    try {
+      if (!id) return;
+      
+      await mockPurchaseOrderApi.updateStatus(id, status);
+      message.success('Status updated successfully');
+      fetchPODetails(); // Refresh the data
+    } catch (error) {
+      message.error('Failed to update status');
+    }
   };
 
-  // Show loading state
+  const handlePrint = () => {
+    message.info('Printing functionality will be implemented soon');
+  };
+
   if (loading) {
     return <PageLoading />;
   }
 
-  // Show error state
   if (error) {
     return (
       <Result
         status="error"
         title="Error Loading Purchase Order"
-        subTitle="There was a problem loading the purchase order details."
+        subTitle={error.message}
         extra={[
           <Button 
             key="back" 
-            onClick={handleBack}
+            onClick={() => navigate('/purchase-orders')}
             icon={<ArrowLeftOutlined />}
           >
             Back to List
@@ -59,7 +80,6 @@ export const PurchaseOrderDetailsPage = () => {
     );
   }
 
-  // Show not found state
   if (!po) {
     return (
       <Result
@@ -69,7 +89,7 @@ export const PurchaseOrderDetailsPage = () => {
         extra={[
           <Button 
             key="back" 
-            onClick={handleBack}
+            onClick={() => navigate('/purchase-orders')}
             icon={<ArrowLeftOutlined />}
           >
             Back to List
@@ -80,24 +100,47 @@ export const PurchaseOrderDetailsPage = () => {
   }
 
   return (
-    <div className="p-6">
-      <PageHeader
-        title="Purchase Order Details"
-        subtitle={po.poNumber}
-        extra={[
-          <Button
-            key="back"
-            icon={<ArrowLeftOutlined />}
-            onClick={handleBack}
-          >
-            Back to List
-          </Button>
-        ]}
-      />
+    <div className="p-3 mx-auto">
+      {/* Header Card */}
+      <Card className="mb-6">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <ShoppingCartOutlined className="text-2xl mr-3 p-2 rounded-lg bg-blue-50 text-blue-500" />
+            <div>
+              <Title level={4} className="!mb-1">Purchase Order Details</Title>
+              <Text type="secondary">{po.poNumber}</Text>
+            </div>
+          </div>
+          <Space>
+            <Button 
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate('/purchase-orders')}
+            >
+              Back to List
+            </Button>
+            <Button
+              icon={<PrinterOutlined />}
+              onClick={handlePrint}
+            >
+              Print
+            </Button>
+            {po.status === POStatus.DRAFT && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/purchase-orders/edit/${po.id}`)}
+              >
+                Edit
+              </Button>
+            )}
+          </Space>
+        </div>
+      </Card>
 
+      {/* Details Component */}
       <PurchaseOrderDetails
         po={po}
-        loading={false} // We handle the main loading state above
+        loading={false}
         onStatusUpdate={handleStatusUpdate}
       />
     </div>

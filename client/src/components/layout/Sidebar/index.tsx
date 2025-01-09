@@ -10,15 +10,23 @@ import {
   PlusOutlined,
   UnorderedListOutlined,
   FundOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import Logo from '../../shared/Logo';
+import { useState } from 'react';
 
-interface SidebarProps {
-  collapsed: boolean;
-}
+// interface SidebarProps {
+//   collapsed: boolean;
+// }
 
-export const Sidebar = ({ collapsed }: SidebarProps) => {
+export const Sidebar = () => {
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+
+  const toggleCollapsed = () => {
+    setCollapsed(!collapsed);
+  };
 
   // Function to get selected keys based on current path
   const getSelectedKeys = () => {
@@ -31,6 +39,13 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
       if (path.includes('/budgetary-offers/view/')) return ['bo-list'];
       return ['bo-list'];
     }
+    if (path.startsWith('/purchase-orders')) {
+      if (path === '/purchase-orders') return ['po-dashboard'];
+      if (path === '/purchase-orders/create') return ['po-create'];
+      if (path.includes('/purchase-orders/edit/')) return ['po-list'];
+      if (path.includes('/purchase-orders/view/')) return ['po-list'];
+      return ['po-list'];
+    }
     // Match other paths
     if (path.startsWith('/master-data/items')) return ['master-data-items'];
     if (path.startsWith('/master-data/vendors')) return ['master-data-vendors'];
@@ -42,6 +57,7 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
     const path = location.pathname;
     if (path.startsWith('/master-data')) return ['master-data'];
     if (path.startsWith('/budgetary-offers')) return ['budgetary-offers'];
+    if (path.startsWith('/purchase-orders')) return ['purchase-orders'];
     return [];
   };
 
@@ -76,7 +92,19 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
     {
       key: 'purchase-orders',
       icon: <ShoppingCartOutlined />,
-      label: <Link to="/purchase-orders">Purchase Orders</Link>,
+      label: 'Purhcase Orders',
+      children: [
+        {
+          key: 'po-dashboard',
+          icon: <FundOutlined />,
+          label: <Link to="/purchase-orders">PO Dashboard</Link>,
+        },
+        {
+          key: 'po-create',
+          icon: <PlusOutlined />,
+          label: <Link to="/purchase-orders/create">Create new PO</Link>,
+        }
+      ]
     },
     {
       key: 'loa-management',
@@ -115,20 +143,41 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
       className="min-h-screen bg-white border-r border-gray-200"
       width={280}
       collapsedWidth={80}
+      trigger={null}
     >
-      <div className="p-4 flex items-center justify-center border-b border-gray-200">
-        <Logo collapsed={collapsed} />
+      <div className="flex flex-col h-screen">
+        {/* Logo Section */}
+        <div className="p-6 flex items-center justify-center border-b border-gray-200">
+          <Logo collapsed={collapsed} />
+        </div>
+        
+        {/* Menu Section */}
+        <div className="flex-1 overflow-y-auto">
+          <Menu
+            mode="inline"
+            selectedKeys={getSelectedKeys()}
+            defaultOpenKeys={getOpenKeys()}
+            items={menuItems}
+            className="border-r-0"
+          />
+        </div>
+
+        {/* Collapse Toggle Button */}
+        <div 
+          onClick={toggleCollapsed}
+          className="h-14 flex items-center justify-center cursor-pointer bg-blue-600 hover:bg-blue-700"
+        >
+          {collapsed ? (
+            <MenuUnfoldOutlined className="text-white text-lg" />
+          ) : (
+            <MenuFoldOutlined className="text-white text-lg" />
+          )}
+        </div>
       </div>
-      
-      <Menu
-        mode="inline"
-        selectedKeys={getSelectedKeys()}
-        defaultOpenKeys={getOpenKeys()}
-        items={menuItems}
-        className="border-r-0 h-[calc(100vh-64px)] overflow-y-auto"
-      />
     </Layout.Sider>
   );
 };
+
+
 
 export default Sidebar;

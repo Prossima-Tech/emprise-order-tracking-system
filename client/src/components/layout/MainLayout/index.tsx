@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../Sidebar';
@@ -8,21 +7,17 @@ import { BreadcrumbNav } from '../BreadcrumbNav';
 
 
 export const MainLayout: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
     // The outer layout takes full viewport height and prevents body scrolling
     <Layout className="h-screen w-full overflow-hidden">
       {/* Sidebar is full height */}
-      <Sidebar collapsed={collapsed} />
+      <Sidebar />
       
       {/* Inner layout for the main content area */}
       <Layout className="h-full flex flex-col">
         {/* Header stays at top */}
-        <Header 
-          collapsed={collapsed} 
-          onToggle={() => setCollapsed(!collapsed)} 
-        />
+        <Header/>
         
         {/* Content area wrapper - enables scrolling */}
         <div className="flex-1 overflow-hidden p-6">

@@ -276,5 +276,12 @@ export const mockBOService = {
         totalValue: item.basicRate * (1 + item.taxRate / 100)
       }))
     };
-  }
+  },
+
+  deleteOffer: async (id: string) => {  
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const index = dummyBudgetaryOffers.findIndex(bo => bo.id === id);
+    if (index < 0) throw new Error('Offer not found');
+    dummyBudgetaryOffers.splice(index, 1);
+  } 
 };

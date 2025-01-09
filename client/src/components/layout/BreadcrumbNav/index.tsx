@@ -32,7 +32,7 @@ export const BreadcrumbNav = () => {
   ];
 
   return (
-    <div className="mb-6 ml-4">
+    <div className="mb-2 ml-4">
       <Breadcrumb items={breadcrumbItems} />
     </div>
   );

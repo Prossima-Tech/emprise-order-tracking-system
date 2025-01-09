@@ -1,13 +1,32 @@
-// src/modules/loa-management/pages/LOAManagementPage.tsx
 import { useState } from 'react';
-import { Button, Card, Statistic, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { 
+  Button, 
+  Card, 
+  Statistic, 
+  message,
+  Typography,
+  Space,
+  Row,
+  Col,
+} from 'antd';
+const { Text } = Typography;
+import { 
+  PlusOutlined,
+  FileTextOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  DollarCircleOutlined,
+  ExportOutlined
+} from '@ant-design/icons';
 import { useQuery } from '../../../hooks/useQuery';
 import { loaApi } from '../services/api';
 import { CreateLOAModal } from '../components/CreateLOAModal';
 import { LOAList } from '../components/LOAList';
 import { LOADetailsDrawer } from '../components/LOADetailsDrawer';
 import type { LOA, LOAStatus } from '@emprise/shared/src/types/loa';
+import { toNumber } from '../../../utils/decimal';
+import Title from 'antd/es/typography/Title';
+
 
 // Dummy LOA data with proper Decimal values
 const DUMMY_LOAS: LOA[] = [
@@ -105,7 +124,12 @@ export const LOAManagementPage = () => {
   const [selectedLOA, setSelectedLOA] = useState<LOA | null>(null);
 
   // Mock API call with dummy data
-  const { data: loas, loading, error, refetch } = useQuery<LOA[]>({
+  const { 
+    data: loas, 
+    loading, 
+    error, 
+    refetch 
+  } = useQuery<LOA[]>({
     queryFn: async () => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -114,60 +138,108 @@ export const LOAManagementPage = () => {
   });
 
   const getStatistics = () => {
-    if (!loas) return { total: 0, active: 0, completed: 0 };
+    if (!loas) return { 
+      total: 0, 
+      active: 0, 
+      completed: 0,
+      totalValue: 0
+    };
+    
     return {
       total: loas.length,
       active: loas.filter(loa => loa.status === 'ACTIVE').length,
       completed: loas.filter(loa => loa.status === 'COMPLETED').length,
+      totalValue: loas.reduce((sum, loa) => sum + toNumber(loa.value), 0)
     };
   };
 
   const stats = getStatistics();
 
+  const handleExport = () => {
+    message.success('Exporting LOA data...');
+    // Implement export logic here
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="p-3">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">LOA Management</h1>
-          <p className="text-gray-600">Manage Letters of Acceptance</p>
+          <Title level={4} className="!mb-1">LOA Management</Title>
+          <Text type="secondary">Manage and track Letters of Acceptance</Text>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          Record New LOA
-        </Button>
+        <Space>
+          <Button
+            icon={<ExportOutlined />}
+            onClick={handleExport}
+          >
+            Export
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            Record New LOA
+          </Button>
+        </Space>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="shadow-sm">
-          <Statistic
-            title="Total LOAs"
-            value={stats.total}
-            className="text-center"
-          />
-        </Card>
-        <Card className="shadow-sm">
-          <Statistic
-            title="Active LOAs"
-            value={stats.active}
-            className="text-center text-green-600"
-          />
-        </Card>
-        <Card className="shadow-sm">
-          <Statistic
-            title="Completed LOAs"
-            value={stats.completed}
-            className="text-center text-blue-600"
-          />
-        </Card>
-      </div>
+      {/* Statistics Section */}
+      <Row gutter={[24, 24]} className="mb-6">
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <FileTextOutlined className="text-2xl mr-3 p-2 rounded-lg bg-blue-50 text-blue-500" />
+              <Statistic
+                title="Total LOAs"
+                value={stats.total}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <DollarCircleOutlined className="text-2xl mr-3 p-2 rounded-lg bg-green-50 text-green-500" />
+              <Statistic
+                title="Total Value"
+                value={toNumber(stats.totalValue)}
+                precision={2}
+                prefix="₹"
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <ClockCircleOutlined className="text-2xl mr-3 p-2 rounded-lg bg-orange-50 text-orange-500" />
+              <Statistic
+                title="Active LOAs"
+                value={stats.active}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="hover:shadow-md transition-shadow">
+            <div className="flex items-start">
+              <CheckCircleOutlined className="text-2xl mr-3 p-2 rounded-lg bg-green-50 text-green-500" />
+              <Statistic
+                title="Completed"
+                value={stats.completed}
+                className="flex-1"
+              />
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
-      {/* LOA List */}
+      {/* LOA List Section */}
       <Card className="shadow-sm">
         <LOAList
           loas={loas || []}
@@ -183,6 +255,7 @@ export const LOAManagementPage = () => {
         onCancel={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
           setIsCreateModalOpen(false);
+          message.success('LOA recorded successfully');
           refetch();
         }}
       />
@@ -195,5 +268,6 @@ export const LOAManagementPage = () => {
     </div>
   );
 };
+
 
 export default LOAManagementPage;

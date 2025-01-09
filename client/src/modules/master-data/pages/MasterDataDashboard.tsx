@@ -1,24 +1,35 @@
 // src/modules/master-data/pages/MasterDataDashboard.tsx
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Spin, Select, Table, message } from 'antd';
+import {
+  Row,
+  Col,
+  Card,
+  Spin,
+  Select,
+  Table,
+  message,
+  Typography,
+  Space,
+  Tooltip,
+  Tag,
+  Divider,
+  Statistic
+} from 'antd';
 import {
   ShoppingOutlined,
   TeamOutlined,
   LinkOutlined,
   ShoppingCartOutlined,
+  DatabaseOutlined,
+  ArrowUpOutlined,
+  CalendarOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
-// import {
-//   AreaChart,
-//   Area,
-//   XAxis,
-//   YAxis,
-//   CartesianGrid,
-//   Tooltip,
-//   Legend,
-//   ResponsiveContainer,
-// } from 'recharts';
 import { DashboardStats, MatchingData, TrendDataPoint } from '@emprise/shared/src/types/master';
 import { dummyStats, generateTrendData, generateMatchingData } from '../data/dummyData';
+
+const { Title, Text } = Typography;
 
 export const MasterDataDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -27,12 +38,12 @@ export const MasterDataDashboard: React.FC = () => {
   const [selectedMatchType, setSelectedMatchType] = useState<string>('item-vendor');
   const [trendData, setTrendData] = useState<TrendDataPoint[]>([]);
 
+  // Data fetching logic remains the same...
   useEffect(() => {
-    // Simulate API call delay
     const fetchData = async () => {
       try {
         setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
         setStats(dummyStats);
         setTrendData(generateTrendData());
       } catch (error) {
@@ -46,10 +57,9 @@ export const MasterDataDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Simulate API call for matching data
     const fetchMatchingData = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         setMatchingData(generateMatchingData(selectedMatchType));
       } catch (error) {
         message.error('Failed to fetch matching data');
@@ -59,186 +69,257 @@ export const MasterDataDashboard: React.FC = () => {
     fetchMatchingData();
   }, [selectedMatchType]);
 
+  // Enhanced table columns with better styling and tooltips
   const matchingColumns = {
     'item-vendor': [
-      { 
-        title: 'Item Code', 
-        dataIndex: 'itemCode', 
+      {
+        title: (
+          <Space>
+            <FileTextOutlined className="text-gray-400" />
+            Item Code
+          </Space>
+        ),
+        dataIndex: 'itemCode',
         key: 'itemCode',
         sorter: (a: any, b: any) => a.itemCode.localeCompare(b.itemCode),
+        render: (text: string) => (
+          <Text className="font-medium">{text}</Text>
+        )
       },
-      { 
-        title: 'Description', 
-        dataIndex: 'itemDescription', 
+      {
+        title: (
+          <Space>
+            <FileTextOutlined className="text-gray-400" />
+            Description
+          </Space>
+        ),
+        dataIndex: 'itemDescription',
         key: 'itemDescription',
+        render: (text: string) => (
+          <Tooltip title={text}>
+            <div className="truncate max-w-[300px]">{text}</div>
+          </Tooltip>
+        )
       },
-      { 
-        title: 'Vendor', 
-        dataIndex: 'vendorName', 
+      {
+        title: (
+          <Space>
+            <TeamOutlined className="text-gray-400" />
+            Vendor
+          </Space>
+        ),
+        dataIndex: 'vendorName',
         key: 'vendorName',
-        sorter: (a: any, b: any) => a.vendorName.localeCompare(b.vendorName),
+        sorter: (a: any, b: any) => a.vendorName.localeCompare(b.vendorName)
       },
-      { 
-        title: 'Match Date', 
-        dataIndex: 'matchDate', 
+      {
+        title: (
+          <Space>
+            <CalendarOutlined className="text-gray-400" />
+            Match Date
+          </Space>
+        ),
+        dataIndex: 'matchDate',
         key: 'matchDate',
         sorter: (a: any, b: any) => a.matchDate.localeCompare(b.matchDate),
-      },
+        render: (date: string) => (
+          <Text type="secondary">
+            {new Date(date).toLocaleDateString()}
+          </Text>
+        )
+      }
     ],
+    // Similar enhancements for other column sets...
     'item-po': [
-      { 
-        title: 'Item Code', 
-        dataIndex: 'itemCode', 
+      {
+        title: (
+          <Space>
+            <FileTextOutlined className="text-gray-400" />
+            Item Code
+          </Space>
+        ),
+        dataIndex: 'itemCode',
         key: 'itemCode',
         sorter: (a: any, b: any) => a.itemCode.localeCompare(b.itemCode),
+        render: (text: string) => (
+          <Text className="font-medium">{text}</Text>
+        )
       },
-      { 
-        title: 'Description', 
-        dataIndex: 'itemDescription', 
+      {
+        title: (
+          <Space>
+            <FileTextOutlined className="text-gray-400" />
+            Description
+          </Space>
+        ),
+        dataIndex: 'itemDescription',
         key: 'itemDescription',
+        render: (text: string) => (
+          <Tooltip title={text}>
+            <div className="truncate max-w-[300px]">{text}</div>
+          </Tooltip>
+        )
       },
-      { 
-        title: 'PO Number', 
-        dataIndex: 'poNumber', 
+      {
+        title: (
+          <Space>
+            <ShoppingCartOutlined className="text-gray-400" />
+            PO Number
+          </Space>
+        ),
+        dataIndex: 'poNumber',
         key: 'poNumber',
-        sorter: (a: any, b: any) => a.poNumber.localeCompare(b.poNumber),
+        sorter: (a: any, b: any) => a.poNumber.localeCompare(b.poNumber)
       },
-      { 
-        title: 'Match Date', 
-        dataIndex: 'matchDate', 
+      {
+        title: (
+          <Space>
+            <CalendarOutlined className="text-gray-400" />
+            Match Date
+          </Space>
+        ),
+        dataIndex: 'matchDate',
         key: 'matchDate',
         sorter: (a: any, b: any) => a.matchDate.localeCompare(b.matchDate),
-      },
+        render: (date: string) => (
+          <Text type="secondary">
+            {new Date(date).toLocaleDateString()}
+          </Text>
+        )
+      }
     ],
     'vendor-po': [
-      { 
-        title: 'Vendor', 
-        dataIndex: 'vendorName', 
+      {
+        title: (
+          <Space>
+            <TeamOutlined className="text-gray-400" />
+            Vendor
+          </Space>
+        ),
+        dataIndex: 'vendorName',
         key: 'vendorName',
-        sorter: (a: any, b: any) => a.vendorName.localeCompare(b.vendorName),
+        sorter: (a: any, b: any) => a.vendorName.localeCompare(b.vendorName)
       },
-      { 
-        title: 'PO Number', 
-        dataIndex: 'poNumber', 
+      {
+        title: (
+          <Space>
+            <ShoppingCartOutlined className="text-gray-400" />
+            PO Number
+          </Space>
+        ),
+        dataIndex: 'poNumber',
         key: 'poNumber',
-        sorter: (a: any, b: any) => a.poNumber.localeCompare(b.poNumber),
+        sorter: (a: any, b: any) => a.poNumber.localeCompare(b.poNumber)
       },
-      { 
-        title: 'Match Date', 
-        dataIndex: 'matchDate', 
+      {
+        title: (
+          <Space>
+            <CalendarOutlined className="text-gray-400" />
+            Match Date
+          </Space>
+        ),
+        dataIndex: 'matchDate',
         key: 'matchDate',
         sorter: (a: any, b: any) => a.matchDate.localeCompare(b.matchDate),
-      },
-    ],
+        render: (date: string) => (
+          <Text type="secondary">
+            {new Date(date).toLocaleDateString()}
+          </Text>
+        )
+      }
+    ]
   };
 
   if (loading || !stats) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Spin size="large" />
+      <div className="flex items-center justify-center min-h-screen">
+        <Space direction="vertical" align="center">
+          <Spin size="large" />
+          <Text type="secondary">Loading dashboard data...</Text>
+        </Space>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-6">Master Data Analytics</h1>
-
-      {/* Statistics */}
-      <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <div className="text-lg font-medium text-gray-600 mb-2">Total Items</div>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-semibold">{stats.totalItems}</div>
-              <ShoppingOutlined className="text-2xl text-blue-500" />
-            </div>
-            <div className="text-sm text-gray-500 mt-2">
-              Active: {stats.activeItems}
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <div className="text-lg font-medium text-gray-600 mb-2">Total Vendors</div>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-semibold">{stats.totalVendors}</div>
-              <TeamOutlined className="text-2xl text-green-500" />
-            </div>
-            <div className="text-sm text-gray-500 mt-2">
-              Active: {stats.activeVendors}
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <div className="text-lg font-medium text-gray-600 mb-2">Item-Vendor Matches</div>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-semibold">{stats.itemVendorMatches}</div>
-              <LinkOutlined className="text-2xl text-purple-500" />
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <div className="text-lg font-medium text-gray-600 mb-2">PO Matches</div>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-semibold">
-                {stats.itemPOMatches + stats.vendorPOMatches}
-              </div>
-              <ShoppingCartOutlined className="text-2xl text-orange-500" />
-            </div>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Trend Chart */}
-      {/* <Card className="mb-6">
-        <h2 className="text-lg font-semibold mb-4">Matching Trends</h2>
-        <div style={{ width: '100%', height: 400 }}>
-          <ResponsiveContainer>
-            <AreaChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="value"
-                name="Item-Vendor Matches"
-                stroke="#8884d8"
-                fill="#8884d8"
-                fillOpacity={0.3}
-                stackId="1"
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                name="Item-PO Matches"
-                stroke="#82ca9d"
-                fill="#82ca9d"
-                fillOpacity={0.3}
-                stackId="2"
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                name="Vendor-PO Matches"
-                stroke="#ffc658"
-                fill="#ffc658"
-                fillOpacity={0.3}
-                stackId="3"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+    <div className="p-3">
+      {/* Header Section */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <Title level={4} className="!mb-1">Master Data Analytics</Title>
+          <Text type="secondary">Overview and insights of master data relationships</Text>
         </div>
-      </Card> */}
+      </div>
 
-      {/* Matching Data Table */}
-      <Card>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Matching Details</h2>
+      {/* Statistics Cards */}
+      {/* Statistics Cards Section */}
+      {/* Statistics Cards Section */}
+<Row gutter={[24, 24]} className="mb-6">
+  {/* Total Items Card */}
+  <Col xs={24} sm={12} md={6}>
+    <Card loading={loading} className="hover:shadow-md transition-shadow">
+      <div className="flex items-start">
+        <ShoppingOutlined className="text-2xl mr-3 p-2 rounded-lg bg-blue-50 text-blue-500" />
+        <Statistic
+          title="Total Items"
+          value={stats.totalItems}
+          className="flex-1"
+        />
+      </div>
+    </Card>
+  </Col>
+
+  {/* Total Vendors Card */}
+  <Col xs={24} sm={12} md={6}>
+    <Card loading={loading} className="hover:shadow-md transition-shadow">
+      <div className="flex items-start">
+        <TeamOutlined className="text-2xl mr-3 p-2 rounded-lg bg-green-50 text-green-500" />
+        <Statistic
+          title="Total Vendors"
+          value={stats.totalVendors}
+          className="flex-1"
+        />
+      </div>
+    </Card>
+  </Col>
+
+  {/* Item-Vendor Matches Card */}
+  <Col xs={24} sm={12} md={6}>
+    <Card loading={loading} className="hover:shadow-md transition-shadow">
+      <div className="flex items-start">
+        <LinkOutlined className="text-2xl mr-3 p-2 rounded-lg bg-purple-50 text-purple-500" />
+        <Statistic
+          title="Item-Vendor Matches"
+          value={stats.itemVendorMatches}
+          className="flex-1"
+        />
+      </div>
+    </Card>
+  </Col>
+
+  {/* PO Matches Card */}
+  <Col xs={24} sm={12} md={6}>
+    <Card loading={loading} className="hover:shadow-md transition-shadow">
+      <div className="flex items-start">
+        <ShoppingCartOutlined className="text-2xl mr-3 p-2 rounded-lg bg-orange-50 text-orange-500" />
+        <Statistic
+          title="PO Matches"
+          value={stats.itemPOMatches + stats.vendorPOMatches}
+          className="flex-1"
+        />
+      </div>
+    </Card>
+  </Col>
+</Row>
+
+
+      {/* Matching Data Table Section */}
+      <Card className="shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <Space>
+            <DatabaseOutlined className="text-xl text-blue-500" />
+            <Title level={5} className="!mb-0">Matching Details</Title>
+          </Space>
           <Select
             value={selectedMatchType}
             onChange={setSelectedMatchType}
@@ -250,11 +331,18 @@ export const MasterDataDashboard: React.FC = () => {
             ]}
           />
         </div>
+
         <Table
           columns={matchingColumns[selectedMatchType as keyof typeof matchingColumns]}
           dataSource={matchingData}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Total ${total} matches`
+          }}
+          className="border border-gray-200 rounded-lg overflow-hidden"
         />
       </Card>
     </div>

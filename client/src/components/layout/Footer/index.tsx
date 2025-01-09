@@ -2,7 +2,7 @@ import { Layout } from 'antd';
 
 export const Footer = () => {
   return (
-    <Layout.Footer className="bg-white border-t border-gray-200 p-4">
+    <Layout.Footer className="h-14 g-white border-t border-gray-200 p-4">
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
         <div className="text-gray-600 mb-2 md:mb-0">
           ©{new Date().getFullYear()} Your Company. All rights reserved.

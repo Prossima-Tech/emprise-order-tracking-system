@@ -6,29 +6,39 @@ export enum EMDStatus {
   SUBMITTED = 'SUBMITTED', // EMD has been submitted
   VERIFIED = 'VERIFIED',  // EMD has been verified
   RETURNED = 'RETURNED',  // EMD has been returned
+  OVERDUE = 'OVERDUE',    // EMD is overdue
   FORFEITED = 'FORFEITED' // EMD has been forfeited
 }
 
 export interface EMDTracking {
   id: string;
-  offerId: string;
-  amount: Decimal;
-  dueDate: Date;
-  submissionDate?: Date;
-  returnDate?: Date;
+  tenderNo: string;
+  amount: number;  // Changed from Decimal to number
+  submissionDate: Date;
+  validityPeriod: Date;
+  returnDueDate: Date;
   status: EMDStatus;
-  documentPath?: string;
+  bankName: string;
+  instrumentNo: string;
+  instrumentType: EMDInstrumentType;
+  customerName: string;
+  department: string;
+  projectCode: string;
   remarks?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  offer?: {
-    tenderNo: string;
-    amount: Decimal;
-    createdBy: {
-      name: string;
-      email: string;
-    };
-  };
+  returnedDate?: Date | null;
+  returnedBy?: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export type EMDInstrumentType = 'BANK_GUARANTEE' | 'DEMAND_DRAFT';
+
+export interface EMDStatistics {
+  total: number;
+  totalAmount: number;
+  overdueCount: number;
+  returnedAmount: number;
 }
 
 export interface EMDSubmissionInput {
@@ -46,11 +56,11 @@ export interface EMDStatusUpdateInput {
 
 export interface EMDStatistics {
   total: number;
-  totalAmount: Decimal;
+  totalAmount: number;
   byStatus: Record<EMDStatus, number>;
   overdueCount: number;
-  returnedAmount: Decimal;
-  forfeitedAmount: Decimal;
+  returnedAmount: number;
+  forfeitedAmount: number;
 }
 
 export interface EMDFilter {
@@ -64,12 +74,16 @@ export interface EMDFilter {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  dateRange: [Date | null, Date | null];
 }
 
 export interface EMDListProps {
   emds: EMDTracking[];
   loading: boolean;
   onRefresh: () => void;
+  onView?: (emd: EMDTracking) => void;
+  onFilterChange?: (filters: EMDFilter) => void;
+  onStatusUpdate?: (emd: EMDTracking) => void;
   pagination: {
     current: number;
     pageSize: number;

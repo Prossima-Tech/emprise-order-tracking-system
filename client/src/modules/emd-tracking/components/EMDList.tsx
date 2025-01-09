@@ -9,19 +9,10 @@ import {
   UndoOutlined
 } from '@ant-design/icons';
 import { useState } from 'react';
-import { EMDTracking, EMDStatus } from '@emprise/shared/src/types/emd';
+import { EMDTracking, EMDStatus, EMDListProps } from '@emprise/shared/src/types/emd';
 import { formatCurrency } from '../../../utils/format';
 
 const { RangePicker } = DatePicker;
-
-interface EMDListProps {
-  emds?: EMDTracking[];
-  loading: boolean;
-  onRefresh: () => void;
-  onStatusUpdate?: (emd: EMDTracking) => void;
-  onView?: (emd: EMDTracking) => void;
-  onFilterChange?: (filters: any) => void;
-}
 
 export const EMDList = ({
   emds = [],
@@ -40,7 +31,7 @@ export const EMDList = ({
     if (onFilterChange) {
       onFilterChange({
         search: value,
-        status: statusFilter,
+        status: statusFilter as EMDStatus,
         dateRange: dateRange,
       });
     }
@@ -51,7 +42,7 @@ export const EMDList = ({
     if (onFilterChange) {
       onFilterChange({
         search: searchText,
-        status: value,
+        status: value as EMDStatus,
         dateRange: dateRange,
       });
     }
@@ -62,7 +53,7 @@ export const EMDList = ({
     if (onFilterChange) {
       onFilterChange({
         search: searchText,
-        status: statusFilter,
+        status: statusFilter as EMDStatus,
         dateRange: dates,
       });
     }
@@ -75,6 +66,7 @@ export const EMDList = ({
       [EMDStatus.VERIFIED]: 'success',
       [EMDStatus.RETURNED]: 'blue',
       [EMDStatus.FORFEITED]: 'error',
+      [EMDStatus.OVERDUE]: ''
     };
     return colors[status];
   };
@@ -97,8 +89,7 @@ export const EMDList = ({
       title: 'Tender No.',
       dataIndex: ['offer', 'tenderNo'],
       key: 'tenderNo',
-      width: 150,
-      sorter: (a, b) => (a.offer?.tenderNo || '').localeCompare(b.offer?.tenderNo || ''),
+      width: 150
     },
     {
       title: 'Amount',
@@ -114,7 +105,6 @@ export const EMDList = ({
       key: 'dueDate',
       width: 150,
       render: (date: Date) => new Date(date).toLocaleDateString(),
-      sorter: (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
     },
     {
       title: 'Status',
