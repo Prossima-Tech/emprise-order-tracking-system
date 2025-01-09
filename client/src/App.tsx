@@ -7,6 +7,8 @@ import { router } from './routes';
 
 import './styles/accessibility.css';
 
+import './App.css'
+
 const App = () => {
   return (
     <ErrorBoundary>

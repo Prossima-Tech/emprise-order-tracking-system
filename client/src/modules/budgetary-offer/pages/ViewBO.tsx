@@ -37,7 +37,7 @@ export const ViewBO: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3">
       <Card
         title={
           <div className="flex justify-between items-center">

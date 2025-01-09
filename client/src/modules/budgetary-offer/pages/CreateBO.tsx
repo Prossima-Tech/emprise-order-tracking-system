@@ -1,8 +1,10 @@
 import React from 'react';
-import { Card, message } from 'antd';
+import { message, Typography } from 'antd';
 import { BOForm } from '../components/BOForm';
 import { boService } from '../services/boServices';
 import { useNavigate } from 'react-router-dom';
+
+const { Title, Text } = Typography;
 
 export const CreateBO: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
@@ -22,14 +24,15 @@ export const CreateBO: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <Card title="Create Budgetary Offer">
-        <BOForm onSubmit={handleSubmit} loading={loading} />
-      </Card>
+    <div className="p-3">
+      <div className="mb-6">
+        <Title level={4} className="!mb-1">Create Budgetary Offer</Title>
+        <Text type="secondary">Create a new budgetary offer by filling in the required information</Text>
+      </div>
+      
+      <BOForm onSubmit={handleSubmit} loading={loading} />
     </div>
   );
 };
-
-
 
 export default CreateBO;

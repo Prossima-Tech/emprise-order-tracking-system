@@ -16,11 +16,11 @@ export const ProtectedRoute = () => {
 
   if (checkingAuth) {
     return (
-      <div style={{ 
+      <div className="font-sans antialiased text-gray-900 bg-gray-50" style={{ 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '100vh' 
+        height: '100vh',
       }}>
         <Spin size="large" />
       </div>

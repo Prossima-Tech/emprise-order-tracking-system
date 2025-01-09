@@ -2,14 +2,16 @@ import { Layout, Menu } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
-  FileTextOutlined,
   ShoppingCartOutlined,
   BankOutlined,
   DatabaseOutlined,
   PercentageOutlined,
+  FormOutlined,
+  PlusOutlined,
+  UnorderedListOutlined,
+  FundOutlined,
 } from '@ant-design/icons';
-import  Logo from '../../shared/Logo';
-import styles from './Sidebar.module.css';
+import Logo from '../../shared/Logo';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -21,6 +23,15 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
   // Function to get selected keys based on current path
   const getSelectedKeys = () => {
     const path = location.pathname;
+    // Match budgetary offers paths
+    if (path.startsWith('/budgetary-offers')) {
+      if (path === '/budgetary-offers') return ['bo-dashboard'];
+      if (path === '/budgetary-offers/create') return ['bo-create'];
+      if (path.includes('/budgetary-offers/edit/')) return ['bo-list'];
+      if (path.includes('/budgetary-offers/view/')) return ['bo-list'];
+      return ['bo-list'];
+    }
+    // Match other paths
     if (path.startsWith('/master-data/items')) return ['master-data-items'];
     if (path.startsWith('/master-data/vendors')) return ['master-data-vendors'];
     return [path.split('/')[1] || 'dashboard'];
@@ -30,6 +41,7 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
   const getOpenKeys = () => {
     const path = location.pathname;
     if (path.startsWith('/master-data')) return ['master-data'];
+    if (path.startsWith('/budgetary-offers')) return ['budgetary-offers'];
     return [];
   };
 
@@ -41,8 +53,25 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
     },
     {
       key: 'budgetary-offers',
-      icon: <FileTextOutlined />,
-      label: <Link to="/budgetary-offers">Budgetary Offers</Link>,
+      icon: <FormOutlined />,
+      label: 'Budgetary Offers',
+      children: [
+        {
+          key: 'bo-dashboard',
+          icon: <FundOutlined />,
+          label: <Link to="/budgetary-offers">BO Dashboard</Link>,
+        },
+        {
+          key: 'bo-list',
+          icon: <UnorderedListOutlined />,
+          label: <Link to="/budgetary-offers/list">List All</Link>,
+        },
+        {
+          key: 'bo-create',
+          icon: <PlusOutlined />,
+          label: <Link to="/budgetary-offers/create">Create New</Link>,
+        },
+      ],
     },
     {
       key: 'purchase-orders',
@@ -83,11 +112,11 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
   return (
     <Layout.Sider
       collapsed={collapsed}
-      className={styles.sidebar}
+      className="min-h-screen bg-white border-r border-gray-200"
       width={280}
-      collapsedWidth={100}
+      collapsedWidth={80}
     >
-      <div className={styles.logoContainer}>
+      <div className="p-4 flex items-center justify-center border-b border-gray-200">
         <Logo collapsed={collapsed} />
       </div>
       
@@ -96,8 +125,10 @@ export const Sidebar = ({ collapsed }: SidebarProps) => {
         selectedKeys={getSelectedKeys()}
         defaultOpenKeys={getOpenKeys()}
         items={menuItems}
-        className={styles.menu}
+        className="border-r-0 h-[calc(100vh-64px)] overflow-y-auto"
       />
     </Layout.Sider>
   );
 };
+
+export default Sidebar;

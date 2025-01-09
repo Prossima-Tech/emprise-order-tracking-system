@@ -52,10 +52,12 @@ CREATE TABLE "ItemSpecification" (
 -- CreateTable
 CREATE TABLE "BudgetaryOffer" (
     "id" TEXT NOT NULL,
-    "tenderNo" TEXT NOT NULL,
-    "amount" DECIMAL(65,30) NOT NULL,
-    "emdAmount" DECIMAL(65,30) NOT NULL,
-    "dueDate" TIMESTAMP(3) NOT NULL,
+    "fromAuthority" VARCHAR(100) NOT NULL,
+    "toAuthority" VARCHAR(100) NOT NULL,
+    "subject" VARCHAR(200) NOT NULL,
+    "workItems" JSONB NOT NULL,
+    "emdDetails" JSONB NOT NULL,
+    "termsAndConditions" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "createdById" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,11 +70,13 @@ CREATE TABLE "BudgetaryOffer" (
 CREATE TABLE "EMDTracking" (
     "id" TEXT NOT NULL,
     "offerId" TEXT NOT NULL,
-    "amount" DECIMAL(65,30) NOT NULL,
+    "amount" DECIMAL(15,2) NOT NULL,
+    "paymentMode" VARCHAR(20) NOT NULL,
     "dueDate" TIMESTAMP(3) NOT NULL,
     "returnDate" TIMESTAMP(3),
     "status" TEXT NOT NULL,
     "documentPath" TEXT,
+    "remarks" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -83,11 +87,18 @@ CREATE TABLE "EMDTracking" (
 CREATE TABLE "LOA" (
     "id" TEXT NOT NULL,
     "loaNo" TEXT NOT NULL,
-    "offerId" TEXT NOT NULL,
-    "value" DECIMAL(65,30) NOT NULL,
+    "value" DECIMAL(15,2) NOT NULL,
     "scope" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "issuingAuthority" TEXT NOT NULL,
+    "referenceNumber" TEXT,
+    "receivedDate" TIMESTAMP(3) NOT NULL,
+    "validityPeriod" TIMESTAMP(3) NOT NULL,
+    "projectCode" TEXT,
+    "department" TEXT,
+    "remarks" TEXT,
     "managedById" TEXT NOT NULL,
+    "recordedById" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -99,25 +110,44 @@ CREATE TABLE "LOAAmendment" (
     "id" TEXT NOT NULL,
     "loaId" TEXT NOT NULL,
     "amendmentNo" INTEGER NOT NULL,
-    "additionalValue" DECIMAL(65,30) NOT NULL,
+    "amendmentType" TEXT NOT NULL,
+    "additionalValue" DECIMAL(15,2) NOT NULL,
     "reason" TEXT NOT NULL,
     "effectiveDate" TIMESTAMP(3) NOT NULL,
+    "validityExtension" TIMESTAMP(3),
+    "scopeChanges" TEXT,
+    "attachmentPath" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "recordedById" TEXT NOT NULL,
+    "approvedById" TEXT,
+    "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "LOAAmendment_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Vendor" (
+CREATE TABLE "vendors" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "country" TEXT NOT NULL,
+    "pinCode" TEXT NOT NULL,
+    "gstin" TEXT,
+    "pan" TEXT,
+    "contactPerson" TEXT NOT NULL,
+    "contactEmail" TEXT NOT NULL,
+    "contactPhone" TEXT NOT NULL,
+    "category" TEXT[],
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Vendor_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "vendors_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -126,13 +156,26 @@ CREATE TABLE "PurchaseOrder" (
     "poNumber" TEXT NOT NULL,
     "loaId" TEXT NOT NULL,
     "vendorId" TEXT NOT NULL,
-    "value" DECIMAL(65,30) NOT NULL,
+    "value" DECIMAL(15,2) NOT NULL,
     "deliveryDate" TIMESTAMP(3) NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "PurchaseOrder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PurchaseOrderStatusHistory" (
+    "id" TEXT NOT NULL,
+    "poId" TEXT NOT NULL,
+    "fromStatus" TEXT NOT NULL,
+    "toStatus" TEXT NOT NULL,
+    "remarks" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdById" TEXT NOT NULL,
+
+    CONSTRAINT "PurchaseOrderStatusHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -141,8 +184,8 @@ CREATE TABLE "PurchaseOrderItem" (
     "poId" TEXT NOT NULL,
     "itemId" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL,
-    "unitPrice" DECIMAL(65,30) NOT NULL,
-    "totalPrice" DECIMAL(65,30) NOT NULL,
+    "unitPrice" DECIMAL(15,2) NOT NULL,
+    "totalPrice" DECIMAL(15,2) NOT NULL,
     "specifications" JSONB NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -157,7 +200,7 @@ CREATE TABLE "Invoice" (
     "invoiceNo" TEXT NOT NULL,
     "poId" TEXT NOT NULL,
     "vendorId" TEXT NOT NULL,
-    "amount" DECIMAL(65,30) NOT NULL,
+    "amount" DECIMAL(15,2) NOT NULL,
     "status" TEXT NOT NULL,
     "dueDate" TIMESTAMP(3) NOT NULL,
     "paidDate" TIMESTAMP(3),
@@ -186,9 +229,6 @@ CREATE INDEX "ItemMaster_isActive_idx" ON "ItemMaster"("isActive");
 CREATE UNIQUE INDEX "ItemSpecification_itemId_key_key" ON "ItemSpecification"("itemId", "key");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "BudgetaryOffer_tenderNo_key" ON "BudgetaryOffer"("tenderNo");
-
--- CreateIndex
 CREATE INDEX "BudgetaryOffer_status_idx" ON "BudgetaryOffer"("status");
 
 -- CreateIndex
@@ -198,16 +238,25 @@ CREATE INDEX "EMDTracking_status_idx" ON "EMDTracking"("status");
 CREATE UNIQUE INDEX "LOA_loaNo_key" ON "LOA"("loaNo");
 
 -- CreateIndex
+CREATE INDEX "LOA_recordedById_idx" ON "LOA"("recordedById");
+
+-- CreateIndex
 CREATE INDEX "LOA_status_idx" ON "LOA"("status");
+
+-- CreateIndex
+CREATE INDEX "LOAAmendment_loaId_idx" ON "LOAAmendment"("loaId");
+
+-- CreateIndex
+CREATE INDEX "LOAAmendment_recordedById_idx" ON "LOAAmendment"("recordedById");
+
+-- CreateIndex
+CREATE INDEX "LOAAmendment_status_idx" ON "LOAAmendment"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LOAAmendment_loaId_amendmentNo_key" ON "LOAAmendment"("loaId", "amendmentNo");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Vendor_email_key" ON "Vendor"("email");
-
--- CreateIndex
-CREATE INDEX "Vendor_status_idx" ON "Vendor"("status");
+CREATE UNIQUE INDEX "vendors_email_key" ON "vendors"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PurchaseOrder_poNumber_key" ON "PurchaseOrder"("poNumber");
@@ -216,7 +265,19 @@ CREATE UNIQUE INDEX "PurchaseOrder_poNumber_key" ON "PurchaseOrder"("poNumber");
 CREATE INDEX "PurchaseOrder_status_idx" ON "PurchaseOrder"("status");
 
 -- CreateIndex
+CREATE INDEX "PurchaseOrder_vendorId_idx" ON "PurchaseOrder"("vendorId");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrder_loaId_idx" ON "PurchaseOrder"("loaId");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrderStatusHistory_poId_idx" ON "PurchaseOrderStatusHistory"("poId");
+
+-- CreateIndex
 CREATE INDEX "PurchaseOrderItem_status_idx" ON "PurchaseOrderItem"("status");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrderItem_poId_idx" ON "PurchaseOrderItem"("poId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Invoice_invoiceNo_key" ON "Invoice"("invoiceNo");
@@ -240,19 +301,31 @@ ALTER TABLE "BudgetaryOffer" ADD CONSTRAINT "BudgetaryOffer_createdById_fkey" FO
 ALTER TABLE "EMDTracking" ADD CONSTRAINT "EMDTracking_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "BudgetaryOffer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LOA" ADD CONSTRAINT "LOA_offerId_fkey" FOREIGN KEY ("offerId") REFERENCES "BudgetaryOffer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LOA" ADD CONSTRAINT "LOA_managedById_fkey" FOREIGN KEY ("managedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "LOA" ADD CONSTRAINT "LOA_managedById_fkey" FOREIGN KEY ("managedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LOA" ADD CONSTRAINT "LOA_recordedById_fkey" FOREIGN KEY ("recordedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "LOAAmendment" ADD CONSTRAINT "LOAAmendment_loaId_fkey" FOREIGN KEY ("loaId") REFERENCES "LOA"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "LOAAmendment" ADD CONSTRAINT "LOAAmendment_recordedById_fkey" FOREIGN KEY ("recordedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LOAAmendment" ADD CONSTRAINT "LOAAmendment_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_loaId_fkey" FOREIGN KEY ("loaId") REFERENCES "LOA"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "vendors"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderStatusHistory" ADD CONSTRAINT "PurchaseOrderStatusHistory_poId_fkey" FOREIGN KEY ("poId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderStatusHistory" ADD CONSTRAINT "PurchaseOrderStatusHistory_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_poId_fkey" FOREIGN KEY ("poId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -264,4 +337,4 @@ ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_itemId_fkey" F
 ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_poId_fkey" FOREIGN KEY ("poId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "vendors"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

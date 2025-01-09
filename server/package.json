@@ -11,8 +11,8 @@
     "seed:master": "ts-node prisma/seeds/masterData.ts"
   },
   "prisma": {
-  "seed": "ts-node prisma/seed.ts"
-},
+    "seed": "ts-node prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

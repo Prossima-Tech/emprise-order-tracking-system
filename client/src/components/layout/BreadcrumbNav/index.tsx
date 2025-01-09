@@ -1,7 +1,6 @@
 import { Breadcrumb } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import { HomeOutlined } from '@ant-design/icons';
-import styles from './BreadcrumbNav.module.css';
 
 export const BreadcrumbNav = () => {
   const location = useLocation();
@@ -14,20 +13,26 @@ export const BreadcrumbNav = () => {
     
     return {
       key: url,
-      title: <Link to={url}>{title}</Link>,
+      title: <Link to={url} className="text-gray-600 hover:text-blue-500">
+        {title}
+      </Link>,
     };
   });
 
   const breadcrumbItems = [
     {
-      title: <Link to="/"><HomeOutlined /></Link>,
+      title: (
+        <Link to="/" className="text-gray-600 hover:text-blue-500">
+          <HomeOutlined />
+        </Link>
+      ),
       key: 'home',
     },
     ...extraBreadcrumbItems,
   ];
 
   return (
-    <div className={styles.breadcrumb}>
+    <div className="mb-6 ml-4">
       <Breadcrumb items={breadcrumbItems} />
     </div>
   );

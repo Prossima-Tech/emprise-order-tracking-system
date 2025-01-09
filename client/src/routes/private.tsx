@@ -40,6 +40,12 @@ const ViewBO = lazy(() =>
   }))
 );
 
+const BOList = lazy(() => 
+  import('../modules/budgetary-offer/pages/BOList').then(module => ({
+    default: module.default || module.BOList
+  }))
+);
+
 
 const BudgetaryOffersPage = lazy(() => 
   import('../modules/budgetary-offer/pages/BudgetaryOffersPage').then(module => ({
@@ -125,6 +131,14 @@ export const privateRoutes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <ViewBO />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'list',
+        element: (
+          <SuspenseWrapper>
+            <BOList />
           </SuspenseWrapper>
         ),
       }

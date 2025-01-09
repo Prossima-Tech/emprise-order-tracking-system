@@ -1,4 +1,3 @@
-// src/components/layout/MainLayout/Header.tsx
 import { Layout, Button, Space, Avatar, Dropdown, Badge, Input } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -11,7 +10,6 @@ import {
   LogoutOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../../hooks/useAuth';
-import styles from './Header.module.css';
 
 interface HeaderProps {
   collapsed: boolean;
@@ -45,31 +43,31 @@ export const Header = ({ collapsed, onToggle }: HeaderProps) => {
   ];
 
   return (
-    <Layout.Header className={styles.header}>
-      <div className={styles.leftSection}>
+    <Layout.Header className="bg-white flex items-center justify-between border-b border-gray-200 h-[8vh] font-sans tracking-tight">
+      <div className="flex items-center gap-4">
         <Button
           type="text"
           icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           onClick={onToggle}
-          className={styles.trigger}
+          className="hover:bg-gray-100"
         />
         
-        <div className={styles.search}>
+        <div className="max-w-xl w-96">
           <Input
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined className="text-gray-400" />}
             placeholder="Search..."
-            className={styles.searchInput}
+            className="rounded-lg"
           />
         </div>
       </div>
 
-      <div className={styles.rightSection}>
-        <Space size="large">
-          <Badge count={5} className={styles.badge}>
+      <div className="flex items-center">
+        <Space size="large" className="items-center">
+          <Badge count={5} className="cursor-pointer">
             <Button
               type="text"
               icon={<BellOutlined />}
-              className={styles.iconButton}
+              className="hover:bg-gray-100"
             />
           </Badge>
 
@@ -78,11 +76,13 @@ export const Header = ({ collapsed, onToggle }: HeaderProps) => {
             trigger={['click']}
             placement="bottomRight"
           >
-            <Space className={styles.userInfo} align="center">
-              <Avatar src={user?.name} className={styles.avatar}>
+            <Space className="cursor-pointer items-center">
+              <Avatar className="bg-blue-500">
                 {user?.name?.[0]}
               </Avatar>
-              <span className={styles.userName}>{user?.name}</span>
+              <span className="hidden md:inline text-gray-700">
+                {user?.name}
+              </span>
             </Space>
           </Dropdown>
         </Space>

@@ -49,7 +49,7 @@ export const EditBO: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3">
       <Card title="Edit Budgetary Offer">
         <BOForm
           initialValues={offer}
