@@ -1,8 +1,7 @@
 // src/controllers/boController.ts
 import { Request, Response, NextFunction } from 'express';
 import { BudgetaryOfferModel } from '../models/BudgetaryOffer';
-import { BudgetaryOfferStatus, BudgetaryOffer } from '../types';
-import { Decimal } from '@prisma/client/runtime/library';
+import { BudgetaryOfferStatus, WorkItem, EMDDetails } from '../types';
 
 interface FilterQuery {
   status?: BudgetaryOfferStatus;
@@ -19,17 +18,39 @@ export class BudgetaryOfferController {
    */
   static async createOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { tenderNo, amount, emdAmount, dueDate } = req.body;
-      const calculatedEmdAmount = emdAmount || new Decimal(amount).mul(0.02);
-  
+      const { 
+        fromAuthority, 
+        toAuthority, 
+        subject, 
+        workItems, 
+        emdDetails, 
+        termsAndConditions 
+      } = req.body;
+
+      // Calculate total value of work items
+      const totalValue = workItems.reduce((sum: number, item: WorkItem) => {
+        return sum + (item.basicRate * (1 + item.taxRate / 100));
+      }, 0);
+
+      // Validate EMD amount
+      if (emdDetails.amount > totalValue * 0.05) {
+        res.status(400).json({
+          success: false,
+          error: 'EMD amount cannot exceed 5% of total project value'
+        });
+        return;
+      }
+
       const offer = await BudgetaryOfferModel.create({
-        tenderNo,
-        amount: new Decimal(amount),
-        emdAmount: calculatedEmdAmount,
-        dueDate,
+        fromAuthority,
+        toAuthority,
+        subject,
+        workItems,
+        emdDetails,
+        termsAndConditions,
         createdById: req.user!.id
       });
-  
+
       res.status(201).json({
         success: true,
         data: offer,
@@ -49,7 +70,6 @@ export class BudgetaryOfferController {
       const { id } = req.params;
       const { status } = req.body as { status: BudgetaryOfferStatus };
 
-      // First check if the offer exists
       const currentOffer = await BudgetaryOfferModel.findById(id);
       if (!currentOffer) {
         res.status(404).json({
@@ -80,7 +100,6 @@ export class BudgetaryOfferController {
         return;
       }
 
-      // Update the status
       const updatedOffer = await BudgetaryOfferModel.updateStatus(id, status);
 
       res.json({
@@ -107,7 +126,6 @@ export class BudgetaryOfferController {
         limit = '10'
       } = req.query;
 
-      // Build filters object
       const filters: FilterQuery = {};
       
       if (status) {
@@ -121,12 +139,10 @@ export class BudgetaryOfferController {
         };
       }
 
-      // Calculate pagination
       const pageNum = parseInt(page as string, 10);
       const limitNum = parseInt(limit as string, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      // Get data and count
       const [offers, total] = await Promise.all([
         BudgetaryOfferModel.findAll(filters, skip, limitNum),
         BudgetaryOfferModel.count(filters)
@@ -155,38 +171,12 @@ export class BudgetaryOfferController {
     try {
       const { startDate, endDate } = req.query;
       
-      const filters: FilterQuery = {};
-      if (startDate && endDate) {
-        filters.createdAt = {
-          gte: new Date(startDate as string),
-          lte: new Date(endDate as string)
-        };
-      }
+      const dateRange = startDate && endDate ? {
+        startDate: new Date(startDate as string),
+        endDate: new Date(endDate as string)
+      } : undefined;
 
-      const allOffers = await BudgetaryOfferModel.findAll(filters);
-
-      const statistics = {
-        total: allOffers.length,
-        totalValue: allOffers.reduce((sum, offer) => 
-          sum.plus(offer.amount), new Decimal(0)
-        ),
-        byStatus: {
-          [BudgetaryOfferStatus.DRAFT]: 0,
-          [BudgetaryOfferStatus.SUBMITTED]: 0,
-          [BudgetaryOfferStatus.APPROVED]: 0,
-          [BudgetaryOfferStatus.REJECTED]: 0
-        },
-        averageEMDPercentage: allOffers.length > 0 
-          ? allOffers.reduce((sum, offer) => 
-              sum + (offer.emdAmount.div(offer.amount).mul(100).toNumber()), 0
-            ) / allOffers.length
-          : 0
-      };
-
-      // Count offers by status
-      allOffers.forEach(offer => {
-        statistics.byStatus[offer.status as BudgetaryOfferStatus]++;
-      });
+      const statistics = await BudgetaryOfferModel.getStatistics(dateRange);
 
       res.json({
         success: true,
@@ -204,7 +194,14 @@ export class BudgetaryOfferController {
   static async updateOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { 
+        fromAuthority, 
+        toAuthority, 
+        subject, 
+        workItems, 
+        emdDetails, 
+        termsAndConditions 
+      } = req.body;
 
       const currentOffer = await BudgetaryOfferModel.findById(id);
       if (!currentOffer) {
@@ -223,15 +220,29 @@ export class BudgetaryOfferController {
         return;
       }
 
-      // Convert numeric values to Decimal
-      if (updateData.amount) {
-        updateData.amount = new Decimal(updateData.amount);
-      }
-      if (updateData.emdAmount) {
-        updateData.emdAmount = new Decimal(updateData.emdAmount);
+      // If updating work items, validate EMD amount
+      if (workItems && emdDetails) {
+        const totalValue = workItems.reduce((sum: number, item: WorkItem) => {
+          return sum + (item.basicRate * (1 + item.taxRate / 100));
+        }, 0);
+
+        if (emdDetails.amount > totalValue * 0.05) {
+          res.status(400).json({
+            success: false,
+            error: 'EMD amount cannot exceed 5% of total project value'
+          });
+          return;
+        }
       }
 
-      const updatedOffer = await BudgetaryOfferModel.update(id, updateData);
+      const updatedOffer = await BudgetaryOfferModel.update(id, {
+        fromAuthority,
+        toAuthority,
+        subject,
+        workItems,
+        emdDetails,
+        termsAndConditions
+      });
 
       res.json({
         success: true,
@@ -263,6 +274,40 @@ export class BudgetaryOfferController {
       res.json({
         success: true,
         data: offer
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Calculate total value of work items
+   * @route POST /api/v1/budgetary-offers/calculate-value
+   */
+  static async calculateValue(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { workItems } = req.body;
+
+      const totalValue = workItems.reduce((sum: number, item: WorkItem) => {
+        const itemValue = item.basicRate * (1 + item.taxRate / 100);
+        return sum + itemValue;
+      }, 0);
+
+      const suggestedEMD = totalValue * 0.02; // 2% of total value
+
+      res.json({
+        success: true,
+        data: {
+          totalValue,
+          suggestedEMD,
+          maxEMD: totalValue * 0.05, // 5% of total value
+          breakdown: workItems.map((item: { description: any; basicRate: number; taxRate: number; }) => ({
+            description: item.description,
+            basicValue: item.basicRate,
+            taxValue: item.basicRate * (item.taxRate / 100),
+            totalValue: item.basicRate * (1 + item.taxRate / 100)
+          }))
+        }
       });
     } catch (error) {
       next(error);

@@ -58,4 +58,10 @@ router.get('/',
   BudgetaryOfferController.listOffers
 );
 
+// router.post('/calculate-value',
+//   authenticate,
+//   Validators.workItems,
+//   BudgetaryOfferController.calculateValue
+// );
+
 export default router;

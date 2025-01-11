@@ -1,0 +1,89 @@
+.previewModal {
+    :global(.ant-modal-body) {
+      padding: 0;
+      height: calc(80vh - 110px);
+      overflow: hidden;
+    }
+  }
+  
+  .modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .previewContainer {
+    width: 100%;
+    height: 100%;
+    background: #f0f2f5;
+    overflow: auto;
+  }
+  
+  .loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+  
+  .imagePreview {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  .pdfPreview,
+  .officePreview {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  
+  .unsupportedFormat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    gap: 16px;
+  }
+  
+  .fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    background: white;
+  }
+  
+  /* Add zoom controls for images */
+  .zoomControls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Add document info panel */
+  .documentInfo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: white;
+    padding: 16px;
+    width: 300px;
+    height: 100%;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .documentInfo.visible {
+    transform: translateX(0);
+  }

@@ -31,35 +31,72 @@ export interface Department {
   // Add other department properties
 }
 
-// Budgetary Offer types
 export interface BudgetaryOffer {
   id: string;
-  tenderNo: string;
-  amount: Decimal;
-  emdAmount: Decimal;
-  dueDate: Date;
+  fromAuthority: string;
+  toAuthority: string;
+  subject: string;
+  workItems: WorkItem[];
+  emdDetails: EMDDetails;
+  termsAndConditions: string;
   status: BudgetaryOfferStatus;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
 }
+// src/types.ts
+
 
 export enum BudgetaryOfferStatus {
   DRAFT = 'DRAFT',
   SUBMITTED = 'SUBMITTED',
   APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+  REJECTED = 'REJECTED'
+}
+
+export interface WorkItem {
+  description: string;
+  basicRate: number;
+  unit: string;
+  taxRate: number;
+}
+
+export interface EMDDetails {
+  amount: number;
+  paymentMode: 'DD' | 'BG' | 'ONLINE' | 'CASH';
+  validityPeriod?: number;
+  remarks?: string;
+}
+
+export interface BudgetaryOfferCreateInput {
+  fromAuthority: string;
+  toAuthority: string;
+  subject: string;
+  workItems: WorkItem[];
+  emdDetails: EMDDetails;
+  termsAndConditions: string;
+}
+
+export interface BudgetaryOfferUpdateInput {
+  fromAuthority?: string;
+  toAuthority?: string;
+  subject?: string;
+  workItems?: WorkItem[];
+  emdDetails?: EMDDetails;
+  termsAndConditions?: string;
 }
 
 // EMD Tracking types
 export interface EMDTracking {
   id: string;
   offerId: string;
-  amount: Decimal;
+  amount: number;
+  paymentMode: string;
   dueDate: Date;
   returnDate?: Date;
   status: EMDStatus;
   documentPath?: string;
+  remarks?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,113 +107,6 @@ export enum EMDStatus {
   RETURNED = 'RETURNED',
   FORFEITED = 'FORFEITED',
 }
-
-
-import { PurchaseOrder } from './po.types';
-
-export enum LOAStatus {
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
-}
-
-export interface LOA {
-  id: string;
-  loaNo: string;
-  offerId: string;
-  value: Decimal;
-  scope: string;
-  status: LOAStatus;
-  managedById: string;
-  createdAt: Date;
-  updatedAt: Date;
-  offer?: {
-    id: string;
-    tenderNo: string;
-    amount: Decimal;
-    emdAmount: Decimal;
-    dueDate: Date;
-    status: string;
-    createdById: string;
-  };
-  managedBy?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  amendments?: LOAAmendment[];
-  purchaseOrders?: PurchaseOrder[];
-}
-
-export interface LOAAmendment {
-  id: string;
-  loaId: string;
-  amendmentNo: number;
-  additionalValue: Decimal;
-  reason: string;
-  effectiveDate: Date;
-  userId: string;
-  createdAt: Date;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
-export interface LOACreateInput {
-  offerId: string;
-  value: Decimal | number;
-  scope: string;
-  managedById: string;
-}
-
-export interface LOAAmendmentInput {
-  additionalValue: Decimal | number;
-  reason: string;
-  effectiveDate: Date | string;
-  userId: string;
-}
-
-export interface LOAUtilization {
-  totalValue: Decimal;
-  amendmentsValue: Decimal;
-  utilizedValue: Decimal;
-  remainingValue: Decimal;
-  utilizationPercentage: number;
-  poCount: number;
-}
-
-// Add a type for Prisma query result
-export interface LOAPrismaResult {
-  id: string;
-  loaNo: string;
-  offerId: string;
-  value: Decimal;
-  scope: string;
-  status: string;
-  managedById: string;
-  createdAt: Date;
-  updatedAt: Date;
-  offer?: {
-    id: string;
-    tenderNo: string;
-    amount: Decimal;
-    emdAmount: Decimal;
-    dueDate: Date;
-    status: string;
-    createdById: string;
-  };
-  managedBy?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  amendments?: LOAAmendment[];
-  purchaseOrders?: PurchaseOrder[];
-}
-
-
 
 // Invoice types
 export interface Invoice {
@@ -213,22 +143,6 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   totalPages: number;
-}
-
-export interface BudgetaryOfferCreateInput {
-  tenderNo: string;
-  amount: Decimal | number;
-  emdAmount: Decimal | number;
-  dueDate: Date | string;
-  createdById: string;
-}
-
-// Add a type for update input
-export interface BudgetaryOfferUpdateInput {
-  tenderNo?: string;
-  amount?: Decimal | number;
-  emdAmount?: Decimal | number;
-  dueDate?: Date | string;
 }
 
 type StatusRecord = Record<EMDStatus, number>;
