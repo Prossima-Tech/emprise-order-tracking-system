@@ -47,11 +47,11 @@ const BOList = lazy(() =>
 );
 
 
-const BudgetaryOffersPage = lazy(() => 
-  import('../modules/budgetary-offer/pages/BudgetaryOffersPage').then(module => ({
-    default: module.default || module.BudgetaryOffersPage
-  }))
-);
+// const BudgetaryOffersPage = lazy(() => 
+//   import('../modules/budgetary-offer/pages/BudgetaryOffersPage').then(module => ({
+//     default: module.default || module.BudgetaryOffersPage
+//   }))
+// );
 
 const PurchaseOrdersPage = lazy(() => 
   import('../modules/purchase-orders/pages/PurchaseOrdersPage').then(module => ({
