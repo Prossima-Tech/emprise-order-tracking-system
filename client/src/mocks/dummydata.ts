@@ -6,7 +6,7 @@ import {
     POStatistics, 
     POItem,
     PurchaseOrderStatusHistory 
-  } from '@emprise/shared/src/types/purchase-order';
+  } from '../types/purchase-order';
   
   // Dummy Vendors
   export const dummyVendors = [

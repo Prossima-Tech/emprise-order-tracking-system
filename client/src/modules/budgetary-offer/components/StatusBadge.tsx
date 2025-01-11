@@ -6,7 +6,7 @@ import {
   CloseCircleOutlined, 
   FileDoneOutlined
 } from '@ant-design/icons';
-import { BudgetaryOfferStatus } from '@emprise/shared/src/types/budgetary-offer';
+import { BudgetaryOfferStatus } from '../../../types/budgetary-offer';
 
 // Enhanced status configuration with more metadata
 const statusConfig = {

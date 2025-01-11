@@ -1,8 +1,8 @@
 // src/store/slices/authSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authService } from '../../modules/auth/services';
-import { User } from '@emprise/shared/src/types/user';
-import { LoginInput } from '@emprise/shared/src/types/auth';
+import { User } from '../../types/user';
+import { LoginInput } from '../../types/auth';
 import { config } from '../../config';
 
 interface AuthState {

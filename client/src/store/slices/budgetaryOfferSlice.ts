@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { BudgetaryOffer, BudgetaryOfferCreateInput } from '@emprise/shared/src/types/budgetary-offer';
+import { BudgetaryOffer, BudgetaryOfferCreateInput } from '../../types/budgetary-offer';
 import { budgetaryOfferService } from '../../modules/budgetary-offer/services';
 
 interface BudgetaryOfferState {

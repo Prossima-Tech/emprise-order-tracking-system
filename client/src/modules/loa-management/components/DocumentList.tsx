@@ -5,7 +5,7 @@ import {
   EyeOutlined, 
   DeleteOutlined 
 } from '@ant-design/icons';
-import { LOADocument, LOADocumentType } from '@emprise/shared/src/types/loa';
+import { LOADocument, LOADocumentType } from '../../../types/loa';
 import { formatFileSize } from '../../../utils/format';
 import styles from './DocumentList.module.css';
 

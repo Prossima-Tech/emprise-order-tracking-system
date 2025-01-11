@@ -1,6 +1,6 @@
 // src/modules/budgetary-offer/utils/dummyData.ts
 
-import { BudgetaryOfferStatus } from '@emprise/shared/src/types/budgetary-offer';
+import { BudgetaryOfferStatus } from '../../../types/budgetary-offer';
 
 export const dummyBudgetaryOffers = [
   {

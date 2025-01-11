@@ -5,17 +5,17 @@ import type {
   POCreateInput, 
   POFilter,
   POStatistics // Make sure to create this interface
-} from '@emprise/shared/src/types/purchase-order';
+} from '../../../types/purchase-order';
 import type { 
   PaginatedResponse,
   ApiResponse,
 
-} from '@emprise/shared/src/types/common';
+} from '../../../types/common';
 
 import type {
   Vendor,
   ItemMaster as Item
-} from '@emprise/shared/src/types/master';
+} from '../../../types/master';
 
 
 export const purchaseOrderApi = {

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { EMDTracking, EMDSubmissionInput, EMDStatistics } from '@emprise/shared/src/types/emd';
+import { EMDTracking, EMDSubmissionInput, EMDStatistics } from '../../types/emd';
 import { emdApi } from '../../modules/emd-tracking/services';
 
 interface EMDState {

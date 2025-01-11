@@ -11,7 +11,7 @@ import {
   GlobalOutlined,
   TeamOutlined
 } from '@ant-design/icons';
-import { Vendor } from '@emprise/shared/src/types/master';
+import { Vendor } from '../../../types/master';
 import { VENDOR_CATEGORIES, VENDOR_STATUSES } from '../constants';
 
 interface VendorMasterFormProps {

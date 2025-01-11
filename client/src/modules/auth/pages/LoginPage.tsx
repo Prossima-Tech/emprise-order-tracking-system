@@ -3,7 +3,7 @@ import { Card, Form, Input, Button, Typography, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
-import { LoginInput } from '@emprise/shared/src/types/auth';
+import { LoginInput } from '../../../types/auth';
 import Logo from '../../../components/shared/Logo';
 
 const { Title, Text } = Typography;

@@ -9,7 +9,7 @@ import {
   EditOutlined
 } from '@ant-design/icons';
 import { mockPurchaseOrderApi } from '../services/mockApi';
-import { POStatus, PurchaseOrder } from '@emprise/shared/src/types/purchase-order';
+import { POStatus, PurchaseOrder } from '../../../types/purchase-order';
 import { PageLoading } from '../../../components/shared/PageLoading';
 import { PurchaseOrderDetails } from '../components/PurchaseOrderDetails';
 

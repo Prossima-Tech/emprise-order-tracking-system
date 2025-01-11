@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from 'antd';
-import { POStatus } from '@emprise/shared/src/types/purchase-order';    
+import { POStatus } from '../../../types/purchase-order';    
 
 interface StatusBadgeProps {
   status: POStatus | string;

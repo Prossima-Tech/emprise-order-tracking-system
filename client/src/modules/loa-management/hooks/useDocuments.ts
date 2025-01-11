@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { message } from 'antd';
 import { loaApi } from '../services/api';
-import type { LOADocument, DocumentUploadInput } from '@emprise/shared/src/types/loa';
+import type { LOADocument, DocumentUploadInput } from '../../../types/loa';
 
 interface DocumentOperations {
   documents: LOADocument[];

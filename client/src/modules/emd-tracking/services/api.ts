@@ -1,6 +1,6 @@
 // services/emdApi.ts
-import { EMDTracking, EMDFilter, EMDStatistics, EMDSubmissionInput, EMDStatusUpdateInput } from '@emprise/shared/src/types/emd';
-import { PaginatedResponse } from '@emprise/shared/src/types/common';
+import { EMDTracking, EMDFilter, EMDStatistics, EMDSubmissionInput, EMDStatusUpdateInput } from '../../../types/emd';
+import { PaginatedResponse } from '../../../types/common';
 
 export const emdApi = {
   

@@ -23,7 +23,7 @@ import { loaApi } from '../services/api';
 import { CreateLOAModal } from '../components/CreateLOAModal';
 import { LOAList } from '../components/LOAList';
 import { LOADetailsDrawer } from '../components/LOADetailsDrawer';
-import type { LOA, LOAStatus } from '@emprise/shared/src/types/loa';
+import type { LOA, LOAStatus } from '../../../types/loa';
 import { toNumber } from '../../../utils/decimal';
 import Title from 'antd/es/typography/Title';
 

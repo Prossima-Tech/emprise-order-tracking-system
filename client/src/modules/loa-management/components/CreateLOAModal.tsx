@@ -22,7 +22,7 @@ import {
   LOARecordInput, 
   LOADocumentType, 
   DocumentAccessLevel 
-} from '@emprise/shared/src/types/loa';
+} from '../../../types/loa';
 import { loaApi } from '../services/api';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { RcFile } from 'antd/es/upload';

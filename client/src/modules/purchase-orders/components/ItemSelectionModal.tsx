@@ -1,8 +1,8 @@
 // src/modules/purchase-orders/components/ItemSelectionModal.tsx
 import { Modal, Form, Select, InputNumber, Table } from 'antd';
 import { useState } from 'react';
-import { POItem } from '@emprise/shared/src/types/purchase-order';
-import { ItemMaster } from '@emprise/shared/src/types/master';
+import { POItem } from '../../../types/purchase-order';
+import { ItemMaster } from '../../../types/master';
 import { useQuery } from '../../../hooks/useQuery';
 import styles from './ItemSelectionModal.module.css';
 

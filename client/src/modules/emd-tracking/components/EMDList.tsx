@@ -9,7 +9,7 @@ import {
   UndoOutlined
 } from '@ant-design/icons';
 import { useState } from 'react';
-import { EMDTracking, EMDStatus, EMDListProps } from '@emprise/shared/src/types/emd';
+import { EMDTracking, EMDStatus, EMDListProps } from '../../../types/emd';
 import { formatCurrency } from '../../../utils/format';
 
 const { RangePicker } = DatePicker;

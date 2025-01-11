@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons';
 // import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PurchaseOrder, POStatus, POFilter } from '@emprise/shared/src/types/purchase-order';
+import { PurchaseOrder, POStatus, POFilter } from '../../../types/purchase-order';
 import { formatCurrency } from '../../../utils/format';
 
 // Update the props interface to match what's being passed

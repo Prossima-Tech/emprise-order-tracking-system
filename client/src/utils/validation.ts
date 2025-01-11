@@ -1,5 +1,5 @@
 // src/modules/purchase-orders/utils/validation.ts
-import { POCreateInput, POItem } from '@emprise/shared/src/types/purchase-order';
+import { POCreateInput, POItem } from '../types/purchase-order';
 
 export const validatePOInput = (input: POCreateInput) => {
   const errors: Record<string, string> = {};

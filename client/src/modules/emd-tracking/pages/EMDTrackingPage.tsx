@@ -22,8 +22,8 @@ import { EMDList } from '../components/EMDList';
 import { EMDSubmissionModal } from '../components/EMDSubmissionModal';
 import { useQuery } from '../../../hooks/useQuery';
 import { emdApi } from '../services';
-import { EMDTracking, EMDStatistics, EMDFilter, EMDStatus } from '@emprise/shared/src/types/emd';
-import type { PaginatedResponse } from '@emprise/shared/src/types/common';
+import { EMDTracking, EMDStatistics, EMDFilter, EMDStatus } from '../../..//types/emd';
+import type { PaginatedResponse } from '../../../types/common';
 import { toNumber } from '../../../utils/decimal';
 
 const { Title, Text } = Typography;

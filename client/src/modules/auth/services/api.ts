@@ -4,7 +4,7 @@ import type {
   LoginInput, 
   RegisterInput, 
   AuthResponse 
-} from '@emprise/shared/src/types/auth';
+} from '../../../types/auth';
 
 export const authService = {
   login: (data: LoginInput) => 

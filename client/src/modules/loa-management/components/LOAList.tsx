@@ -16,7 +16,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { useState, useMemo } from 'react';
-import type { LOA, LOAStatus } from '@emprise/shared/src/types/loa';
+import type { LOA, LOAStatus } from '../../../types/loa';
 import { formatCurrency } from '../../../utils/format';
 
 const { Text } = Typography;

@@ -14,7 +14,7 @@ import {
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { loaApi } from '../services/api';
-import type { LOAAmendment, LOAAmendmentInput } from '@emprise/shared/src/types/loa';
+import type { LOAAmendment, LOAAmendmentInput } from '../../../types/loa';
 import { formatCurrency } from '../../../utils/format';
 import { useQuery } from '../../../hooks/useQuery';
 

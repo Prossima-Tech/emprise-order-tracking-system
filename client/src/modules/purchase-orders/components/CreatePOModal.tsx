@@ -2,7 +2,7 @@
 import { Modal, Form, Select, DatePicker, InputNumber, Button, Space } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { POCreateInput } from '@emprise/shared/src/types/purchase-order';
+import { POCreateInput } from '../../../types/purchase-order';
 import { purchaseOrderApi } from '../services/api';
 
 interface CreatePOModalProps {

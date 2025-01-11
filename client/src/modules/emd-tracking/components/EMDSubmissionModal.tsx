@@ -1,6 +1,6 @@
 // src/modules/emd-tracking/components/EMDSubmissionModal.tsx
 import { useState } from 'react';
-import { EMDSubmissionInput } from '@emprise/shared/src/types/emd';
+import { EMDSubmissionInput } from '../../../types/emd';
 import { parseDecimal } from '../../../utils/transform';
 import { emdApi } from '../services';
 

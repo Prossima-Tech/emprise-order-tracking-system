@@ -1,7 +1,7 @@
 // src/modules/master-data/components/ItemMasterForm.tsx
 import React from 'react';
 import { Form, Input, Switch, Select, Space, Divider } from 'antd';
-import { ItemMaster } from '@emprise/shared/src/types/master';
+import { ItemMaster } from '../../../types/master';
 import { 
   FileTextOutlined, 
   DatabaseOutlined,

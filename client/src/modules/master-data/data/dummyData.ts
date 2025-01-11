@@ -1,5 +1,5 @@
 // src/modules/master-data/data/dummyData.ts
-import { DashboardStats, MatchingData, TrendDataPoint } from '@emprise/shared/src/types/master';
+import { DashboardStats, MatchingData, TrendDataPoint } from '../../../types/master';
 import dayjs from 'dayjs';
 
 export const dummyStats: DashboardStats = {

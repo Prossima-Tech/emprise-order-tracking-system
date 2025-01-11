@@ -18,7 +18,7 @@ import {
   MinusCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import type { POCreateInput, POItem } from '@emprise/shared/src/types/purchase-order';
+import type { POCreateInput, POItem } from '../../../types/purchase-order';
 import { purchaseOrderApi } from '../services/api';
 
 interface POFormProps {

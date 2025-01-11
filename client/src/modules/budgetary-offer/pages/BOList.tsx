@@ -29,7 +29,7 @@ import { useNavigate } from 'react-router-dom';
 import { StatusBadge } from '../components/StatusBadge';
 import { boService } from '../services/boServices';
 import type { MenuProps } from 'antd';
-import { BudgetaryOfferStatus } from '@emprise/shared/src/types/budgetary-offer';
+import { BudgetaryOfferStatus } from '../types/BudgetaryOffer';
 
 
 const { RangePicker } = DatePicker;

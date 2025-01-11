@@ -26,7 +26,7 @@ import {
   FileTextOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons';
-import { DashboardStats, MatchingData, TrendDataPoint } from '@emprise/shared/src/types/master';
+import { DashboardStats, MatchingData, TrendDataPoint } from '../../../types/master';
 import { dummyStats, generateTrendData, generateMatchingData } from '../data/dummyData';
 
 const { Title, Text } = Typography;
