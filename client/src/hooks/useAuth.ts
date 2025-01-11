@@ -1,7 +1,7 @@
 // src/hooks/useAuth.ts
 import { useAppSelector, useAppDispatch } from './redux';
 import { login, logout, checkAuthStatus } from '../store/slices/authSlice';
-import type { LoginInput } from '@emprise/shared/src/types/auth';
+import type { LoginInput } from '../types/auth';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();

@@ -7,7 +7,7 @@ import type {
   LOAAmendmentInput,
   LOAUtilization,
   LOADocument
-} from '@emprise/shared/src/types/loa';
+} from '../../../types/loa';
 
 interface ApiResponse<T> {
   data: T;

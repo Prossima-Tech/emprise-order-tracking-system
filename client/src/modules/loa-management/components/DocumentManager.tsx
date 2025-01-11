@@ -11,7 +11,7 @@ import {
   FileImageOutlined,
 } from '@ant-design/icons';
 import { useDocuments } from '../hooks/useDocuments';
-import { LOADocument, DocumentUploadInput, LOADocumentType, DocumentAccessLevel } from '@emprise/shared/src/types/loa';
+import { LOADocument, DocumentUploadInput, LOADocumentType, DocumentAccessLevel } from '../../../types/loa';
 
 interface DocumentManagerProps {
   loaId: string;

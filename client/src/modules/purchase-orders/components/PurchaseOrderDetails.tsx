@@ -11,7 +11,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons';
-import { PurchaseOrder, POStatus } from '@emprise/shared/src/types/purchase-order';
+import { PurchaseOrder, POStatus } from '../../../types/purchase-order';
 import { formatCurrency } from '../../../utils/format';
 
 const { Text } = Typography;

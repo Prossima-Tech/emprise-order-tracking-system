@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EMDStatus, EMDStatusUpdateInput } from '@emprise/shared/src/types/emd';
+import { EMDStatus, EMDStatusUpdateInput } from '../../../types/emd';
 import { DocumentUpload } from '../../../components/shared/DocumentUpload';
 
 interface EMDStatusUpdateModalProps {

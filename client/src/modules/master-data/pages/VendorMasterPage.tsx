@@ -28,7 +28,7 @@ import {
   CheckCircleOutlined,
   EllipsisOutlined
 } from '@ant-design/icons';
-import { Vendor } from '@emprise/shared/src/types/master';
+import { Vendor } from '../../../types/master';
 import { masterDataApi } from '../services/masterDataApi';
 import { SearchHeader } from '../components/SearchHeader';
 import { VendorMasterForm } from '../components/VendorMasterForm';

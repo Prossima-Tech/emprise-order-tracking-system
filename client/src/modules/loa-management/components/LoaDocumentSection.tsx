@@ -7,7 +7,7 @@
 // import { DocumentPreviewModal } from './DocumentPreviewModal';
 // import { useQuery } from '../../../hooks/useQuery';
 // import { loaApi } from '../services';
-// import { LOADocument } from '@emprise/shared/src/types/loa';
+// import { LOADocument } from '../src/types/loa';
 // import styles from './LOADocumentsSection.module.css';
 
 // interface LOADocumentsSectionProps {

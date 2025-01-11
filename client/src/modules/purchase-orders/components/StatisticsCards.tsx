@@ -1,6 +1,6 @@
 // src/modules/purchase-orders/components/StatisticsCards.tsx
 import { Row, Col, Card, Statistic } from 'antd';
-import { POStatistics } from '@emprise/shared/src/types/purchase-order';
+import { POStatistics } from '../../../types/purchase-order';
 // import { formatCurrency } from '../../../utils/format';
 
 interface StatisticsCardsProps {

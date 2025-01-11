@@ -1,6 +1,6 @@
 // services/masterDataApi.ts
-import { ItemMaster, Vendor, VendorStatus, DashboardStats, MatchingData, TrendDataPoint } from '@emprise/shared/src/types/master';
-import { PaginatedResponse } from '@emprise/shared/src/types/common';
+import { ItemMaster, Vendor, VendorStatus, DashboardStats, MatchingData, TrendDataPoint } from '../../../types/master';
+import { PaginatedResponse } from '../../../types/common';
 
 interface ItemFilter {
   page?: number;

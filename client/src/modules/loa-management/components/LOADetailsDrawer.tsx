@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import { DocumentManager } from './DocumentManager';
 import { AmendmentList } from './AmendmentList';
-import type { LOA, LOAStatus } from '@emprise/shared/src/types/loa';
+import type { LOA, LOAStatus } from '../../../types/loa';
 import { formatCurrency } from '../../../utils/format';
 import { toNumber } from '../../../utils/decimal';
 

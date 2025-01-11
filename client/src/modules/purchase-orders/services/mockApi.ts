@@ -15,7 +15,7 @@ import {
     POFilter,
     POStatus,
     POItem
-  } from '@emprise/shared/src/types/purchase-order';
+  } from '../../../types/purchase-order';
   
   // Simulate API delay
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

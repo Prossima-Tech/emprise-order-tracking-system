@@ -3,11 +3,11 @@ import api from '../../../config/axios';
 import type { 
   BudgetaryOffer, 
   BudgetaryOfferCreateInput,
-} from '@emprise/shared/src/types/budgetary-offer';
+} from '../../../types/budgetary-offer';
 import type { 
   PaginatedResponse,
   ApiResponse 
-} from '@emprise/shared/src/types/common';
+} from '../../../types/common';
 
 export const budgetaryOfferService = {
   getAll: async (params?: any): Promise<PaginatedResponse<BudgetaryOffer>> => {

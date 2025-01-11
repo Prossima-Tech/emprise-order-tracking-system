@@ -24,7 +24,7 @@ import {
   FileTextOutlined,
   EllipsisOutlined
 } from '@ant-design/icons';
-import { ItemMaster } from '@emprise/shared/src/types/master';
+import { ItemMaster } from '../../../types/master';
 import { masterDataApi } from '../services/masterDataApi';
 import { SearchHeader } from '../components/SearchHeader';
 import { ItemMasterForm } from '../components/ItemMasterForm';

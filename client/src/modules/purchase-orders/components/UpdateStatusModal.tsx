@@ -1,6 +1,6 @@
 // src/modules/purchase-orders/components/UpdateStatusModal.tsx
 import { Modal, Form, Select, Input } from 'antd';
-import { PurchaseOrder, POStatus } from '@emprise/shared/src/types/purchase-order';
+import { PurchaseOrder, POStatus } from '../../../types/purchase-order';
 import { purchaseOrderApi } from '../services/api';
 
 interface UpdateStatusModalProps {

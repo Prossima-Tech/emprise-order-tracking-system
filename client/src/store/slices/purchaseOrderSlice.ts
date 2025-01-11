@@ -3,7 +3,7 @@ import {
   PurchaseOrder, 
   POCreateInput, 
   POFilter 
-} from '@emprise/shared/src/types/purchase-order';
+} from '../../types/purchase-order';
 import { purchaseOrderApi } from '../../modules/purchase-orders/services';
 
 interface PurchaseOrderState {

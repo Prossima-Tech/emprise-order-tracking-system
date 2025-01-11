@@ -1,5 +1,5 @@
 import api from '../../../config/axios';
-import { PODocument } from '@emprise/shared/src/types/purchase-order';
+import { PODocument } from '../../../types/purchase-order';
 
 export const poDocumentApi = {
   getDocuments: (poId: string) =>

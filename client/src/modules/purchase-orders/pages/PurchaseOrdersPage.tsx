@@ -40,7 +40,7 @@ import {
   POStatus, 
   PurchaseOrder,
   POStatistics 
-} from '@emprise/shared/src/types/purchase-order';  
+} from '../../../types/purchase-order';  
 import { toNumber } from '../../../utils/decimal';
 
 const { RangePicker } = DatePicker;

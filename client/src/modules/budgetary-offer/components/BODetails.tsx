@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Descriptions, Table } from 'antd';
-import { WorkItem } from '@emprise/shared/src/types/budgetary-offer';
+import { WorkItem } from '../../../types/budgetary-offer';
 
 interface BODetailsProps {
   offer: any;

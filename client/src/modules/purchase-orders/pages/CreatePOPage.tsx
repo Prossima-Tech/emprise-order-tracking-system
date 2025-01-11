@@ -20,7 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { POForm } from '../components/POForm';
 import { purchaseOrderApi } from '../services/api';
-import type { POCreateInput } from '@emprise/shared/src/types/purchase-order';
+import type { POCreateInput } from '../../../types/purchase-order';
 
 const { Title, Text } = Typography;
 

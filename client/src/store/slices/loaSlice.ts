@@ -4,7 +4,7 @@ import {
   LOARecordInput, 
   LOAAmendment, 
   LOAAmendmentInput 
-} from '@emprise/shared/src/types/loa';
+} from '../../types/loa';
 import { loaApi } from '../../modules/loa-management/services';
 
 interface LOAState {
