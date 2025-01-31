@@ -72,23 +72,29 @@ model ItemSpecification {
 
   @@unique([itemId, key])
 }
-
 model BudgetaryOffer {
   id                String        @id @default(uuid())
+  offerId           String
+  offerDate         DateTime
   fromAuthority     String        @db.VarChar(100)
   toAuthority       String        @db.VarChar(100)
   subject           String        @db.VarChar(200)
   workItems         Json          // Will store array of WorkItems
-  emdDetails        Json          // Will store EMD details
-  termsAndConditions String       @db.Text
-  status            String        // DRAFT, SUBMITTED, APPROVED, REJECTED
+  emdDetails        Json          // Will store EMD details including document info
+  termsAndConditions Json       // Will store both HTML and plain text versions
+  status            String        // DRAFT, PENDING_APPROVAL, APPROVED
+  approvalLevels    Json          // Will store array of ApprovalLevel objects
+  currentApprovalLevel Int?       // Current approval level number
+  rejectionHistory  Json?         // Will store array of RejectionRecord objects
   createdById       String
   createdBy         User          @relation(fields: [createdById], references: [id])
-  emdTrackings      EMDTracking[]
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+  emdTracking       EMDTracking[] // Add this line for the opposite relation
 
   @@index([status])
+  @@index([createdById])
+  @@index([offerDate])
 }
 
 model EMDTracking {
@@ -96,18 +102,19 @@ model EMDTracking {
   offerId      String
   offer        BudgetaryOffer @relation(fields: [offerId], references: [id])
   amount       Decimal        @db.Decimal(15, 2)
-  paymentMode  String         @db.VarChar(20)
-  dueDate      DateTime
-  returnDate   DateTime?
-  status       String
-  documentPath String?
+  paymentMode  String         @db.VarChar(20) // Always "FDR"
+  bankName     String         @db.VarChar(100) // Default "IDBI"
+  documentKey  String?        // S3 key
+  fileName     String?        // Original file name
+  uploadedAt   DateTime?
+  status       String         // ACTIVE, RETURNED, etc.
   remarks      String?        @db.Text
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
+  @@index([offerId])
   @@index([status])
 }
-
 model LOA {
   id               String         @id @default(uuid())
   loaNo            String        @unique

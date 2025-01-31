@@ -1,0 +1,89 @@
+import { ApprovalAction, POStatus } from "./constants";
+import { LOA } from "./LOA";
+import { PurchaseOrderItem } from "./PurchaseOrderItem";
+import { User } from "./User";
+import { Vendor } from "./Vendor";
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string;
+  loa: LOA;
+  loaId: string;
+  vendor: Vendor;
+  vendorId: string;
+  items: PurchaseOrderItem[];
+  requirementDesc: string;
+  termsConditions: string;
+  shipToAddress: string;
+  notes?: string;
+  documentUrl?: string;
+  status: POStatus;
+  createdBy: User;
+  createdById: string;
+  approver?: User;
+  approverId?: string;
+  approvalComments?: string;     // Added for approval comments
+  rejectionReason?: string;   // Added for rejection reason
+  approvalHistory: ApprovalAction[]; // Added for tracking approval flow
+  documentHash?: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PDFItemData {
+  item: {
+    name: string;
+    description?: string;
+  };
+  quantity: number;
+  unitPrice: number;
+  taxRates: {
+    igst: number;
+    sgst: number;
+    ugst: number;
+  };
+  taxAmounts: {
+    igst: number;
+    sgst: number;
+    ugst: number;
+  };
+  baseAmount: number;
+  totalAmount: number;
+}
+
+export interface PDFGenerationData {
+  id: string;
+  poNumber: string;
+  createdAt: Date;
+  loa: {
+    loaNumber: string;
+    loaValue: number;
+  };
+  vendor: {
+    name: string;
+    email: string;
+  };
+  items: PDFItemData[];
+  requirementDesc: string;
+  termsConditions: string;
+  shipToAddress: string;
+  notes?: string;
+  status: string;
+  createdBy: {
+    name: string;
+    department: string;
+    role: string;
+  };
+  tags: string[];
+  approvalStatus?: {
+    status: POStatus;
+    approvalNotes?: string;
+    rejectionReason?: string;
+    approvedBy?: {
+      name: string;
+      department: string;
+      role: string;
+    };
+  };
+}

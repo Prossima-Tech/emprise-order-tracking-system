@@ -5,6 +5,7 @@ import emdRoutes from './emdRoutes';
 import loaRoutes from './loaRoutes';
 import purchaseOrderRoutes from './poRoutes';
 import authRoutes from './authRoutes';
+import userRoutes from './userRoutes'
 // import invoiceRoutes from './invoiceRoutes';
 // import masterDataRoutes from './masterDataRoutes';
 // import purchaseOrderItemRoutes from './purchaseOrderItemRoutes';
@@ -19,6 +20,7 @@ router.use('/v1/emd', emdRoutes);
 router.use('/v1/loa', loaRoutes);
 router.use('/v1/purchase-orders', purchaseOrderRoutes);
 router.use('/v1/auth', authRoutes);
+router.use('/v1/users', userRoutes);
 // router.use('/v1/invoices', invoiceRoutes);
 // router.use('/api/master', masterDataRoutes);
 // router.use('/api/items', purchaseOrderItemßRoutes);

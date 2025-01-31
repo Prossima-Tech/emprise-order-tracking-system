@@ -1,22 +1,29 @@
-// src/routes/boRoutes.ts
 import { Router } from 'express';
+import multer from 'multer';
 import { BudgetaryOfferController } from '../controllers/boController';
+import { BudgetaryOfferValidators } from '../validators/boValidators';
 import { authenticate, authorize } from '../middlewares/auth';
-import { UserRole } from '../types';
-import { Validators } from '../middlewares/validation';
+import { UserRole } from '../types/index';
 
 const router = Router();
 
+// Configure multer for memory storage (needed for S3 uploads)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
 /**
- * Budgetary Offer Routes
  * Base path: /api/v1/budgetary-offers
  */
 
-// Get statistics (placed before /:id to avoid conflict)
+// Dashboard statistics
 router.get('/statistics',
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  Validators.listQuery,
+  BudgetaryOfferValidators.validateListQuery,
   BudgetaryOfferController.getStatistics
 );
 
@@ -24,44 +31,71 @@ router.get('/statistics',
 router.post('/',
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  Validators.budgetaryOffer,
+  upload.single('emdDocument'),
+  BudgetaryOfferValidators.validateBudgetaryOffer,
+  BudgetaryOfferValidators.handleValidationErrors,
   BudgetaryOfferController.createOffer
 );
 
-// Update offer status
-router.patch('/:id/status',
+// Submit for approval
+router.post('/:id/submit',
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  Validators.statusUpdate,
-  BudgetaryOfferController.updateStatus
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.handleValidationErrors,
+  BudgetaryOfferController.submitForApproval
 );
 
-// Update offer details
+// Process approval/rejection
+router.post('/:id/approve',
+  authenticate,
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.validateApprovalAction,
+  BudgetaryOfferValidators.handleValidationErrors,
+  BudgetaryOfferController.processApproval
+);
+
+// Update offer
 router.put('/:id',
   authenticate,
   authorize([UserRole.ADMIN, UserRole.MANAGER]),
-  Validators.budgetaryOffer,
+  upload.single('emdDocument'),
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.validateBudgetaryOffer,
+  BudgetaryOfferValidators.handleValidationErrors,
   BudgetaryOfferController.updateOffer
 );
 
-// Get specific offer details
+// Get specific offer
 router.get('/:id',
   authenticate,
-  Validators.idParam,
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.handleValidationErrors,
   BudgetaryOfferController.getOffer
 );
 
-// List all offers with optional filters
+// List all offers with filters
 router.get('/',
   authenticate,
-  Validators.listQuery,
+  BudgetaryOfferValidators.validateListQuery,
+  BudgetaryOfferValidators.handleValidationErrors,
   BudgetaryOfferController.listOffers
 );
 
-// router.post('/calculate-value',
-//   authenticate,
-//   Validators.workItems,
-//   BudgetaryOfferController.calculateValue
-// );
+// Download offer as PDF
+router.get('/:id/pdf',
+  authenticate,
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.handleValidationErrors,
+  BudgetaryOfferController.downloadPDF
+);
+
+// Download EMD document
+router.get('/:id/emd-document',
+  authenticate,
+  BudgetaryOfferValidators.validateIdParam,
+  BudgetaryOfferValidators.handleValidationErrors,
+  BudgetaryOfferController.downloadEMDDocument
+);
 
 export default router;

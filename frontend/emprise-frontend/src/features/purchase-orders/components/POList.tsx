@@ -1,0 +1,289 @@
+// src/features/purchase-orders/components/POList.tsx
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  FileText,
+  Send,
+  CheckCircle,
+  Plus,
+  // Download,
+} from "lucide-react";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../../../components/ui/dropdown-menu";
+import {
+  Card
+} from "../../../components/ui/card";
+
+import { Column, DataTable } from "../../../components/data-display/DataTable";
+import { LoadingSpinner } from "../../../components/feedback/LoadingSpinner";
+import { usePurchaseOrders } from "../hooks/use-purchase-orders";
+import type { PurchaseOrder } from "../types/purchase-order";
+// import apiClient from "../../../lib/utils/api-client";
+import { StatusBadge } from "../../../components/data-display/StatusBadge";
+
+export function POList() {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { submitForApproval, markAsCompleted, getPurchaseOrders } = usePurchaseOrders();
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const ordersData = await getPurchaseOrders();
+        setOrders(Array.isArray(ordersData) ? ordersData : []);
+      } catch (error) {
+        console.error("Failed to fetch purchase orders:", error);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  // Handle order actions
+  const handleSubmitForApproval = async (id: string) => {
+    try {
+      await submitForApproval(id);
+      // Refresh the order list after submission
+      const response = await getPurchaseOrders();
+      setOrders(response);
+    } catch (error) {
+      console.error("Failed to submit order for approval:", error);
+    }
+  };
+
+  const handleMarkAsCompleted = async (id: string) => {
+    try {
+      await markAsCompleted(id);
+      // Refresh the order list after completion
+      const response = await getPurchaseOrders();
+      setOrders(response);
+    } catch (error) {
+      console.error("Failed to mark order as completed:", error);
+    }
+  };
+
+  // Generate Excel export of filtered orders
+  // const handleExportExcel = async () => {
+  //   try {
+  //     const response = await apiClient.get("/purchase-orders/export", {
+  //       params: {
+  //         search: searchTerm,
+  //         status: statusFilter,
+  //       },
+  //       responseType: 'blob',
+  //     });
+
+  //     const url = window.URL.createObjectURL(new Blob([response.data]));
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.setAttribute('download', `purchase-orders-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.parentNode?.removeChild(link);
+  //   } catch (error) {
+  //     console.error("Failed to export orders:", error);
+  //   }
+  // };
+
+  // Helper function to calculate total amount for an order
+  const calculateOrderTotal = (order: PurchaseOrder) => {
+    if (!order.items || !Array.isArray(order.items)) return 0;
+
+    return order.items.reduce((acc, item) => {
+      if (!item || !item.quantity || !item.unitPrice) return acc;
+
+      const subtotal = item.quantity * item.unitPrice;
+      const taxRates = item.item?.taxRates || { igst: 0, sgst: 0, ugst: 0 };
+      const totalTaxRate = (taxRates.igst || 0) + (taxRates.sgst || 0) + (taxRates.ugst || 0);
+      const taxes = subtotal * (totalTaxRate / 100);
+
+      return acc + subtotal + taxes;
+    }, 0);
+  };
+
+  const columns = [
+    {
+      header: "PO Number",
+      accessor: (row: PurchaseOrder) => `PO-${row.id.slice(0, 8).toUpperCase()}`,
+    },
+    {
+      header: "Vendor",
+      accessor: (row: PurchaseOrder) => row.vendor.name,
+    },
+    {
+      header: "LOA Number",
+      accessor: (row: PurchaseOrder) => row.loa.loaNumber,
+    },
+    {
+      header: ({ sortable }: { sortable: boolean }) => (
+        <div className="flex items-center">
+          Amount
+          {sortable && (
+            <Button variant="ghost" className="ml-2 h-8 w-8 p-0">
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      ),
+      accessor: (row: PurchaseOrder) => {
+        const total = calculateOrderTotal(row);
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(total);
+      },
+    },
+    {
+      header: "Status",
+      accessor: (row: PurchaseOrder) => (
+        <StatusBadge status={row.status} />
+      ),
+    },
+    {
+      header: "Created",
+      accessor: (row: PurchaseOrder) => format(new Date(row.createdAt), "PP"),
+    },
+    {
+      header: "Actions",
+      accessor: (row: PurchaseOrder) => (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => navigate(`/purchase-orders/${row.id}`)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              {row.status === "DRAFT" && (
+                <DropdownMenuItem
+                  onClick={() => handleSubmitForApproval(row.id)}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Submit for Approval
+                </DropdownMenuItem>
+              )}
+              {row.status === "APPROVED" && (
+                <DropdownMenuItem
+                  onClick={() => handleMarkAsCompleted(row.id)}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Mark as Completed
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
+
+  // Filter orders with type checking
+  const filteredOrders = useMemo(() => {
+    if (!Array.isArray(orders)) return [];
+
+    return orders.filter((order) => {
+      if (!order) return false;
+
+      const matchesSearch =
+        searchTerm === "" ||
+        order.vendor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.loa?.loaNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, searchTerm, statusFilter]);
+
+  return (
+    <div className="space-y-6">
+      {/* Filters Section */}
+      <Card>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-4 p-4">
+            <div className="col-span-2">
+              <Input
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="col-span-1">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 flex justify-end">
+              <Button onClick={() => navigate('/purchase-orders/new')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Order
+              </Button>
+              {/* <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={handleExportExcel}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export to Excel
+              </Button> */}
+            </div>
+          </div>
+      </Card>
+
+      {/* Purchase Orders Table */}
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <DataTable
+          columns={columns as Column<PurchaseOrder>[]}
+          data={filteredOrders}
+          onRowClick={(row) => navigate(`/purchase-orders/${row.id}`)}
+        />
+      )}
+    </div>
+  );
+}

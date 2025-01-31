@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 /* Custom styles for Ant Design integration */
 /* globals.css or similar */
 .ant-layout {
