@@ -5,7 +5,7 @@
 //   FullscreenExitOutlined 
 // } from '@ant-design/icons';
 // import { useState } from 'react';
-// import { LOADocument } from '@emprise/shared/src/types/loa';
+// import { LOADocument } from '../src/types/loa';
 // import { loaApi } from '../services';
 // import styles from './DocumentPreviewModal.module.css';
 // import React from 'react';

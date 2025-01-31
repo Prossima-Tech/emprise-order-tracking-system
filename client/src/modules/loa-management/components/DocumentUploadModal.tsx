@@ -1,7 +1,7 @@
 // src/modules/loa-management/components/DocumentUploadModal.tsx
 import { Modal, Form, Input, Select, Upload, message } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
-import { LOADocumentType } from '@emprise/shared/src/types/loa';
+import { LOADocumentType } from '../src/types/loa';
 import { loaApi } from '../services';
 import styles from './DocumentUploadModal.module.css';
 

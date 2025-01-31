@@ -6,7 +6,7 @@ import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
 
 const axiosInstance = axios.create({
-  baseURL: `${config.API_URL}/api/v1`,
+  baseURL: `${config.API_URL}/api`,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
