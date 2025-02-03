@@ -35,6 +35,7 @@ import { usePurchaseOrders } from "../hooks/use-purchase-orders";
 import { Badge } from "../../../components/ui/badge";
 import { useLOAs } from "../../loas/hooks/use-loas";
 import { useVendors } from "../../vendors/hooks/use-vendors";
+import { VendorSelector } from "./VendorSelector";
 
 interface POFormProps {
   mode: 'create' | 'edit';
@@ -314,24 +315,14 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Vendor</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
-                value={field.value}
-                disabled={submitting}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <VendorSelector
+                  vendors={vendors}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={submitting}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

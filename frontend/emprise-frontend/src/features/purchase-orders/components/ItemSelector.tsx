@@ -68,6 +68,7 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
   const [vendorItems, setVendorItems] = useState<VendorItem[]>([]);
   const [priceHistory, setPriceHistory] = useState<Map<string, PriceHistoryData>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [loadingPriceHistory, setLoadingPriceHistory] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -102,15 +103,16 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
 
   const fetchPriceHistory = async (itemId: string) => {
     try {
-      console.log('Fetching price history for item:', itemId);
+      setLoadingPriceHistory(true);
       const response = await apiClient.get<PriceHistoryResponse>(`/items/${itemId}/price-history?vendorId=${vendorId}`);
       
-      console.log('Price history response:', response.data);
-      
-      setPriceHistory(new Map(priceHistory.set(itemId, response.data.data)));
-      console.log('New price history:', priceHistory);
+      if (response.data.isSuccess) {
+        setPriceHistory(new Map(priceHistory.set(itemId, response.data.data)));
+      }
     } catch (error) {
       console.error('Error fetching price history:', error);
+    } finally {
+      setLoadingPriceHistory(false);
     }
   };
 
@@ -124,12 +126,12 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
         await fetchPriceHistory(itemId);
       }
 
+      const selectedVendorItem = vendorItems.find(vi => vi.item.id === itemId);
+      if (!selectedVendorItem) return;
+
       const history = priceHistory.get(itemId);
-      console.log("history in item selector", history);
       const lastPurchasePrice = history?.priceHistory[0]?.unitPrice;
-      console.log("lastPurchasePrice in item selector", lastPurchasePrice);
-      const currentPrice = vendorItems.find(vi => vi.item.id === itemId)?.unitPrice || 0;
-      const priceToUse = lastPurchasePrice || currentPrice;
+      const priceToUse = lastPurchasePrice || selectedVendorItem.unitPrice;
 
       onChange(itemId, priceToUse);
       setOpen(false);
@@ -183,17 +185,20 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
               {filteredItems.map((vi) => (
                 <CommandItem
                   key={vi.item.id}
-                  onSelect={() => {
-                    handleSelect(vi.item.id);
-                  }}
+                  onSelect={() => handleSelect(vi.item.id)}
+                  disabled={loadingPriceHistory}
                 >
                   <div className="flex items-center gap-2">
-                    <CheckIcon
-                      className={cn(
-                        "h-4 w-4",
-                        value === vi.item.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
+                    {loadingPriceHistory ? (
+                      <span className="h-4 w-4 animate-spin">⌛</span>
+                    ) : (
+                      <CheckIcon
+                        className={cn(
+                          "h-4 w-4",
+                          value === vi.item.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    )}
                     <div className="flex flex-col">
                       <span className="font-medium">{vi.item.name}</span>
                       <span className="text-sm text-muted-foreground">
