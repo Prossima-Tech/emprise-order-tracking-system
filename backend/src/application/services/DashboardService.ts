@@ -16,6 +16,7 @@ export class DashboardService {
       currentMonthOffers,
       currentMonthPOs,
       activeEMDs,
+      activeEMDsValue,
       offerStatusCounts,
       emdMaturity
     ] = await Promise.all([
@@ -41,6 +42,15 @@ export class DashboardService {
       this.prisma.eMD.count({
         where: {
           status: 'ACTIVE'
+        }
+      }),
+      // Get sum of active EMDs value
+      this.prisma.eMD.aggregate({
+        where: {
+          status: 'ACTIVE'
+        },
+        _sum: {
+          amount: true
         }
       }),
       // Get offer status distribution
@@ -78,6 +88,7 @@ export class DashboardService {
       })
     ]);
 
+    // console.log("activeEMDsValue", activeEMDsValue);
     // Calculate trends (percentage change)
     const offersTrend = previousMonthOffers === 0 ? 100 : 
       ((currentMonthOffers - previousMonthOffers) / previousMonthOffers) * 100;
@@ -88,6 +99,7 @@ export class DashboardService {
       totalOffers: currentMonthOffers,
       totalOrders: currentMonthPOs,
       activeEmds: activeEMDs,
+      activeEmdsValue: activeEMDsValue._sum.amount || 0,
       offersTrend: Math.round(offersTrend),
       ordersTrend: Math.round(ordersTrend),
       offerStatus: offerStatusCounts.map(status => ({
@@ -109,7 +121,8 @@ export class DashboardService {
           id: true,
           offerId: true,
           status: true,
-          createdAt: true
+          createdAt: true,
+
         }
       }),
       // Get recent POs
@@ -130,7 +143,8 @@ export class DashboardService {
         select: {
           id: true,
           status: true,
-          createdAt: true
+          createdAt: true,
+          amount: true
         }
       })
     ]);

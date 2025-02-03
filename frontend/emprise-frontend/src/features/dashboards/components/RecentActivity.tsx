@@ -8,6 +8,19 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ activities }: RecentActivityProps) {
+  const formatActivityTitle = (activity: Activity) => {
+    switch (activity.type) {
+      case 'emd':
+        return activity.title.replace('undefined', '');
+      case 'offer':
+        return activity.title.replace('undefined', '');
+      case 'po':
+        return activity.title;
+      default:
+        return activity.title;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -21,7 +34,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
               className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
             >
               <div className="space-y-1">
-                <p className="text-sm font-medium">{activity.title}</p>
+                <p className="text-sm font-medium">{formatActivityTitle(activity)}</p>
                 <p className="text-sm text-muted-foreground">
                   {activity.description}
                 </p>

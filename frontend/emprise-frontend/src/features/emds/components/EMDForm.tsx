@@ -207,15 +207,25 @@ export function EMDForm({ initialData, onSubmit, onCancel }: EMDFormProps) {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount (INR)</FormLabel>
+              <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="100"
-                  placeholder="Enter FDR amount"
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2">₹</span>
+                  <Input
+                    type="text"
+                    placeholder="Enter FDR amount"
+                    {...field}
+                    className="pl-7"
+                    value={field.value.toLocaleString('en-IN')}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/,/g, '');
+                      const numValue = Number(value);
+                      if (!isNaN(numValue)) {
+                        field.onChange(numValue);
+                      }
+                    }}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

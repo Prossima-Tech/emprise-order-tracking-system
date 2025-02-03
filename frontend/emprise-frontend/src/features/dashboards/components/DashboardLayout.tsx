@@ -48,6 +48,7 @@ export function DashboardLayout({
     );
   }
 
+
   const statisticsCards = [
     {
       title: "Total Offers",
@@ -62,7 +63,7 @@ export function DashboardLayout({
     {
       title: "Active EMDs",
       value: stats.activeEmds,
-      description: "Current active EMDs",
+      description: `Total value: ₹${(stats.activeEmdsValue || 0).toLocaleString()}`,
       icon: Wallet
     },
     {
@@ -95,11 +96,15 @@ export function DashboardLayout({
 
       {/* Main Content Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-        <div className="col-span-full lg:col-span-2 space-y-4">
+        <div className="col-span-full lg:col-span-2 space-y-4 ">
           <QuickActions />
           {/* <Notifications /> */}
           {/* <MetricsOverview data={stats.metrics} /> */}
-          <EMDMaturityChart data={[]} />
+            <EMDMaturityChart data={[{
+              month: 'Total EMD Value',
+              value: stats.activeEmdsValue
+            }]} />
+
         </div>
         <div className="col-span-full lg:col-span-4 space-y-4">
           <ProcurementTrends data={trends} />

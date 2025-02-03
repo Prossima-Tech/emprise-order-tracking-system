@@ -42,13 +42,19 @@ export interface StatisticCard {
     color: string;
   }
 
+  export interface EMDMaturityData {
+    range: string;
+    count: number;
+  }
+
   export interface DashboardStats {
-    metrics: Metric[];
     totalOffers: number;
     totalOrders: number;
     activeEmds: number;
+    activeEmdsValue: number;
     offersTrend: number;
     ordersTrend: number;
-    offerStatus: OfferStatus[];
-    emdMaturity: EMDMaturity[];
+    offerStatus: Array<{ name: string; value: number; color: string }>;
+    emdMaturity: Array<{ range: string; count: number }>;
+    metrics: any[];
   }
