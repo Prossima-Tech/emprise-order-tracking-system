@@ -195,20 +195,13 @@ export class EmdService {
   }
 
   async getAllEMDs(params: {
-    page?: number;
-    limit?: number;
     status?: EMDStatus;
     offerId?: string;
     searchTerm?: string;
   }): Promise<ServiceResult<{ data: EmdResponseDto[]; total: number }>> {
     try {
-      const { page = 1, limit = 10 } = params;
-      const skip = (page - 1) * limit;
-
       const [emds, total] = await Promise.all([
         this.repository.findAll({
-          skip,
-          take: limit,
           status: params.status,
           offerId: params.offerId,
           searchTerm: params.searchTerm

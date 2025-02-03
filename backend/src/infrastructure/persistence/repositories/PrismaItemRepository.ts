@@ -1,6 +1,23 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateItemDto, UpdateItemDto } from '../../../application/dtos/item/CreateItemDto';
-import { Item, TaxRates } from '../../../domain/entities/Item';
+import { Item } from '../../../domain/entities/Item';
+
+interface PriceHistoryEntry {
+  purchaseDate: Date;
+  poNumber: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  status: string;
+}
+
+interface PriceHistoryData {
+  currentPrice: number;
+  priceHistory: PriceHistoryEntry[];
+  averagePrice: number;
+  lowestPrice: number;
+  highestPrice: number;
+}
 
 export class PrismaItemRepository {
     constructor(private prisma: PrismaClient) {}
@@ -12,7 +29,7 @@ export class PrismaItemRepository {
             unitPrice: data.unitPrice,
             uom: data.uom,
             hsnCode: data.hsnCode,
-            taxRates: data.taxRates as Prisma.InputJsonValue
+            // taxRates: data.taxRates as Prisma.InputJsonValue
         };
     }
 
@@ -34,9 +51,9 @@ export class PrismaItemRepository {
         if (data.hsnCode !== undefined) {
             updateData.hsnCode = data.hsnCode;
         }
-        if (data.taxRates !== undefined) {
-            updateData.taxRates = data.taxRates as Prisma.InputJsonValue;
-        }
+        // if (data.taxRates !== undefined) {
+        //     updateData.taxRates = data.taxRates as Prisma.InputJsonValue;
+        // }
 
         return updateData;
     }
@@ -44,22 +61,28 @@ export class PrismaItemRepository {
     private transformToEntity(prismaItem: any): Item {
         return {
             ...prismaItem,
-            taxRates: prismaItem.taxRates as Item['taxRates']
+            // taxRates: prismaItem.taxRates as Item['taxRates']
         };
     }
 
     async create(data: CreateItemDto): Promise<Item> {
-        const prismaItem = await this.prisma.item.create({
-            data: this.transformToCreateInput(data),
-            include: {
-                vendors: {
-                    include: {
-                        vendor: true
+        try {
+            console.log(data);
+            const prismaItem = await this.prisma.item.create({
+                data: this.transformToCreateInput(data),
+                include: {
+                    vendors: {
+                        include: {
+                            vendor: true
+                        }
                     }
                 }
-            }
-        });
-        return this.transformToEntity(prismaItem);
+            });
+            return this.transformToEntity(prismaItem);
+        } catch (error) {
+            console.error('Failed to create item:', error);
+            throw error;
+        }
     }
 
     async update(id: string, data: UpdateItemDto): Promise<Item> {
@@ -141,5 +164,90 @@ export class PrismaItemRepository {
                 ]
             } : undefined
         });
+    }
+
+    async getPriceHistory(itemId: string, vendorId: string): Promise<PriceHistoryData> {
+        try {
+            // Get current price from VendorItem
+            const currentVendorPrice = await this.prisma.vendorItem.findUnique({
+                where: {
+                    vendorId_itemId: {
+                        vendorId,
+                        itemId,
+                    },
+                },
+                select: {
+                    unitPrice: true,
+                },
+            });
+
+            // Get purchase history
+            const purchaseHistory = await this.prisma.purchaseOrderItem.findMany({
+                where: {
+                    itemId,
+                    purchaseOrder: {
+                        vendorId,
+                        status: {
+                            not: 'DRAFT',
+                        },
+                    },
+                },
+                select: {
+                    quantity: true,
+                    unitPrice: true,
+                    totalAmount: true,
+                    purchaseOrder: {
+                        select: {
+                            poNumber: true,
+                            status: true,
+                            createdAt: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    purchaseOrder: {
+                        createdAt: 'desc',
+                    },
+                },
+                take: 10, // Last 10 purchases
+            });
+
+            const priceHistory = purchaseHistory.map(record => ({
+                purchaseDate: record.purchaseOrder.createdAt,
+                poNumber: record.purchaseOrder.poNumber,
+                quantity: record.quantity,
+                unitPrice: record.unitPrice || 0,
+                totalAmount: record.totalAmount || 0,
+                status: record.purchaseOrder.status,
+            }));
+
+            // Calculate statistics from valid prices (excluding null/undefined)
+            const validPrices = priceHistory
+                .map(record => record.unitPrice)
+                .filter(price => price !== null && price !== undefined);
+
+            const averagePrice = validPrices.length > 0
+                ? validPrices.reduce((a, b) => a + b, 0) / validPrices.length
+                : 0;
+
+            const lowestPrice = validPrices.length > 0
+                ? Math.min(...validPrices)
+                : 0;
+
+            const highestPrice = validPrices.length > 0
+                ? Math.max(...validPrices)
+                : 0;
+
+            return {
+                currentPrice: currentVendorPrice?.unitPrice || 0,
+                priceHistory,
+                averagePrice,
+                lowestPrice,
+                highestPrice,
+            };
+        } catch (error) {
+            console.error('Failed to fetch price history:', error);
+            throw error;
+        }
     }
 }

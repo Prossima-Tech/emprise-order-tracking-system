@@ -89,16 +89,6 @@ export function ItemList() {
       accessor: "hsnCode",
     },
     {
-      header: "Tax Rates",
-      accessor: (row: Item) => (
-        <div className="text-sm">
-          {row.taxRates.igst !== 0 && <div>IGST: {row.taxRates.igst}%</div>}
-          {row.taxRates.sgst !== 0 && <div>SGST: {row.taxRates.sgst}%</div>}
-          {row.taxRates.ugst !== 0 && <div>UGST: {row.taxRates.ugst}%</div>}
-        </div>
-      ),
-    },
-    {
       header: "Vendors",
       accessor: (row: Item) => (
         <div className="flex ml-3">

@@ -47,7 +47,7 @@ export class VendorItemService {
   async getVendorItems(
     vendorId: string,
     params: PaginationParams
-  ): Promise<Result<{ items: VendorItem[]; total: number; pages: number }>> {
+  ): Promise<Result<{ items: VendorItem[]; total: number }>> {
     try {
       const page = params.page || 1;
       const limit = params.limit || 10;
@@ -69,22 +69,15 @@ export class VendorItemService {
   }
 
   async getItemVendors(
-    itemId: string,
-    params: PaginationParams
-  ): Promise<Result<{ vendors: VendorItem[]; total: number; pages: number }>> {
+    itemId: string
+  ): Promise<Result<{ vendors: VendorItem[]; total: number }>> {
     try {
-      const page = params.page || 1;
-      const limit = params.limit || 10;
-      const skip = (page - 1) * limit;
-
       const vendors = await this.repository.findByItem(itemId);
       const total = vendors.length;
-      const paginatedVendors = vendors.slice(skip, skip + limit);
 
       return ResultUtils.ok({
-        vendors: paginatedVendors,
-        total,
-        pages: Math.ceil(total / limit)
+        vendors,
+        total
       });
     } catch (error) {
       console.error('Error in getItemVendors:', error);

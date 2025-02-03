@@ -28,24 +28,45 @@ interface VendorItem {
     description: string;
     unitPrice: number;
     uom: string;
-    taxRates: {
-      igst: number;
-      sgst: number;
-      ugst: number;
-    };
+    // taxRates: {
+    //   igst: number;
+    //   sgst: number;
+    //   ugst: number;
+    // };
   };
   unitPrice: number;
+}
+
+interface PriceHistoryData {
+  currentPrice: number;
+  priceHistory: Array<{
+    purchaseDate: string;
+    poNumber: string;
+    quantity: number;
+    unitPrice: number;
+    totalAmount: number;
+    status: string;
+  }>;
+  averagePrice: number;
+  lowestPrice: number;
+  highestPrice: number;
+}
+
+interface PriceHistoryResponse {
+  isSuccess: boolean;
+  data: PriceHistoryData;
 }
 
 interface ItemSelectorProps {
   vendorId: string;
   value?: string;
-  onChange: (itemId: string, unitPrice: number, taxRates: { igst: number; sgst: number; ugst: number }) => void;
+  onChange: (itemId: string, unitPrice: number) => void;
 }
 
 export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
   const [open, setOpen] = useState(false);
   const [vendorItems, setVendorItems] = useState<VendorItem[]>([]);
+  const [priceHistory, setPriceHistory] = useState<Map<string, PriceHistoryData>>(new Map());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -78,6 +99,45 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
     vi.item.name.toLowerCase().includes(search.toLowerCase()) ||
     vi.item.description.toLowerCase().includes(search.toLowerCase())
   );
+
+  const fetchPriceHistory = async (itemId: string) => {
+    try {
+      console.log('Fetching price history for item:', itemId);
+      const response = await apiClient.get<PriceHistoryResponse>(`/items/${itemId}/price-history?vendorId=${vendorId}`);
+      
+      console.log('Price history response:', response.data);
+      
+      setPriceHistory(new Map(priceHistory.set(itemId, response.data.data)));
+      console.log('New price history:', priceHistory);
+    } catch (error) {
+      console.error('Error fetching price history:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('Current price history:', priceHistory);
+  }, [priceHistory]);
+
+  const handleSelect = async (itemId: string) => {
+    try {
+      if (!priceHistory.has(itemId)) {
+        await fetchPriceHistory(itemId);
+      }
+
+      const history = priceHistory.get(itemId);
+      console.log("history in item selector", history);
+      const lastPurchasePrice = history?.priceHistory[0]?.unitPrice;
+      console.log("lastPurchasePrice in item selector", lastPurchasePrice);
+      const currentPrice = vendorItems.find(vi => vi.item.id === itemId)?.unitPrice || 0;
+      const priceToUse = lastPurchasePrice || currentPrice;
+
+      onChange(itemId, priceToUse);
+      setOpen(false);
+      setSearch("");
+    } catch (error) {
+      console.error('Error handling item selection:', error);
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -124,9 +184,7 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
                 <CommandItem
                   key={vi.item.id}
                   onSelect={() => {
-                    onChange(vi.item.id, vi.unitPrice, vi.item.taxRates);
-                    setOpen(false);
-                    setSearch("");
+                    handleSelect(vi.item.id);
                   }}
                 >
                   <div className="flex items-center gap-2">

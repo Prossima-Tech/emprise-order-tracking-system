@@ -396,21 +396,13 @@ export class BudgetaryOfferService {
   }
 
   async getOffers(params: {
-    page?: number;
-    limit?: number;
     status?: string;
     createdById?: string;
     approverId?: string;
-  }): Promise<Result<{ offers: BudgetaryOffer[]; total: number; pages: number }>> {
+  }): Promise<Result<{ offers: BudgetaryOffer[]; total: number }>> {
     try {
-      const page = params.page || 1;
-      const limit = params.limit || 10;
-      const skip = (page - 1) * limit;
-
       const [rawOffers, total] = await Promise.all([
         this.repository.findAll({
-          skip,
-          take: limit,
           status: params.status,
           createdById: params.createdById,
           approverId: params.approverId
@@ -424,8 +416,7 @@ export class BudgetaryOfferService {
 
       return ResultUtils.ok({
         offers: rawOffers.map(offer => this.convertToBudgetaryOffer(offer)),
-        total,
-        pages: Math.ceil(total / limit)
+        total
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

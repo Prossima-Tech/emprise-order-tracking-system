@@ -40,29 +40,29 @@ export class ItemValidator {
     }
 
     // Tax Rates validation
-    if (!dto.taxRates) {
-      errors.push({ field: 'taxRates', message: 'Tax rates are required' });
-    } else {
-      const { igst, sgst, ugst } = dto.taxRates;
+    // if (!dto.taxRates) {
+    //   errors.push({ field: 'taxRates', message: 'Tax rates are required' });
+    // } else {
+    //   const { igst, sgst, ugst } = dto.taxRates;
       
       // At least one tax rate should be provided
-      if (igst === undefined && sgst === undefined && ugst === undefined) {
-        errors.push({ field: 'taxRates', message: 'At least one tax rate must be provided' });
-      }
+    //   if (igst === undefined && sgst === undefined && ugst === undefined) {
+    //     errors.push({ field: 'taxRates', message: 'At least one tax rate must be provided' });
+    //   }
 
       // Validate each provided tax rate
-      if (igst !== undefined && (igst < 0 || igst > 100)) {
-        errors.push({ field: 'taxRates.igst', message: 'IGST must be between 0 and 100' });
-      }
+    //   if (igst !== undefined && (igst < 0 || igst > 100)) {
+    //     errors.push({ field: 'taxRates.igst', message: 'IGST must be between 0 and 100' });
+    //   }
 
-      if (sgst !== undefined && (sgst < 0 || sgst > 100)) {
-        errors.push({ field: 'taxRates.sgst', message: 'SGST must be between 0 and 100' });
-      }
+    //   if (sgst !== undefined && (sgst < 0 || sgst > 100)) {
+    //     errors.push({ field: 'taxRates.sgst', message: 'SGST must be between 0 and 100' });
+    //   }
 
-      if (ugst !== undefined && (ugst < 0 || ugst > 100)) {
-        errors.push({ field: 'taxRates.ugst', message: 'UGST must be between 0 and 100' });
-      }
-    }
+    //   if (ugst !== undefined && (ugst < 0 || ugst > 100)) {
+    //     errors.push({ field: 'taxRates.ugst', message: 'UGST must be between 0 and 100' });
+    //   }
+    // }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);
   }

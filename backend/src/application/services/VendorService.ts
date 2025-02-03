@@ -76,24 +76,17 @@ export class VendorService {
   }
 
   async getAllVendors(params: {
-    page?: number;
-    limit?: number;
     searchTerm?: string;
-  }): Promise<Result<{ vendors: any[]; total: number; pages: number }>> {
+  }): Promise<Result<{ vendors: any[]; total: number }>> {
     try {
-      const page = params.page || 1;
-      const limit = params.limit || 10;
-      const skip = (page - 1) * limit;
-
       const [vendors, total] = await Promise.all([
-        this.repository.findAll({ skip, take: limit, searchTerm: params.searchTerm }),
+        this.repository.findAll({ searchTerm: params.searchTerm }),
         this.repository.count({ searchTerm: params.searchTerm })
       ]);
 
       return ResultUtils.ok({
         vendors,
-        total,
-        pages: Math.ceil(total / limit)
+        total
       });
     } catch (error) {
       throw new AppError('Failed to fetch vendors');

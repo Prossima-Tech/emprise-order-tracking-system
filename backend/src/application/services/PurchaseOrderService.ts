@@ -33,6 +33,7 @@ export class PurchaseOrderService {
   
   async createPurchaseOrder(dto: CreatePurchaseOrderDto, userId: string): Promise<Result<any>> {
     try {
+
       // Validate input
       const validationResult = this.validator.validate(dto);
       if (!validationResult.isSuccess || (validationResult.data && validationResult.data.length > 0)) {
@@ -51,12 +52,6 @@ export class PurchaseOrderService {
         return ResultUtils.fail('Failed to validate items', itemsResult.error as any);
       }
 
-      // Calculate total PO value
-      // const totalPoValue = itemsResult.data?.reduce((sum, item) => sum + item.totalAmount, 0) ?? 0;
-      // if (totalPoValue > loa.loaValue) {
-      //   return ResultUtils.fail('PO value exceeds LOA value');
-      // }
-
       // Generate PO number
       const poNumber = await this.generatePoNumber();
 
@@ -71,15 +66,28 @@ export class PurchaseOrderService {
         );
       }
 
+      // Calculate base amount from items
+      const baseAmount = itemsResult.data!.reduce((total, item) => {
+        return total + (item.quantity * item.unitPrice);
+      }, 0);
+
       // Create PO
+      console.log("dto", dto);
+      console.log("itemsResult.data", itemsResult.data);
       const po = await this.repository.create({
         poNumber,
         loaId: dto.loaId,
         vendorId: dto.vendorId,
         items: itemsResult.data!.map(item => ({
-          ...item,
-          taxRate: item.taxRates.igst + item.taxRates.sgst + item.taxRates.ugst
+          itemId: item.itemId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalAmount: item.quantity * item.unitPrice,
+          // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
         })),
+        baseAmount: baseAmount, // Use calculated base amount
+        taxAmount: dto.taxAmount,
+        totalAmount: baseAmount + dto.taxAmount, // Update total amount based on calculated base
         requirementDesc: dto.requirementDesc,
         termsConditions: dto.termsConditions,
         shipToAddress: dto.shipToAddress,
@@ -90,21 +98,6 @@ export class PurchaseOrderService {
         approverId: dto.approverId,
         tags: dto.tags || []
       });
-
-      // If no document was uploaded, generate PDF
-      // if (!documentUrl) {
-      //   const pdfResult = await this.generatePDF(po.id);
-      //   if (!pdfResult.isSuccess || !pdfResult.data) {
-      //     throw new Error('Failed to generate PDF');
-      //   }
-      //   const { url, hash } = pdfResult.data;
-      //   await this.repository.update(po.id, {
-      //     documentUrl: url,
-      //     documentHash: hash
-      //   });
-      //   po.documentUrl = url;
-      //   po.documentHash = hash;
-      // }
 
       return ResultUtils.ok(po);
     } catch (error) {
@@ -209,33 +202,22 @@ export class PurchaseOrderService {
   }
 
   async getAllPurchaseOrders(params: {
-    page?: number;
-    limit?: number;
     status?: POStatus;
     vendorId?: string;
     loaId?: string;
     createdById?: string;
     approverId?: string;
     searchTerm?: string;
-  }): Promise<Result<{ purchaseOrders: any[]; total: number; pages: number }>> {
+  }): Promise<Result<{ purchaseOrders: any[]; total: number }>> {
     try {
-      const page = params.page || 1;
-      const limit = params.limit || 10;
-      const skip = (page - 1) * limit;
-
       const [pos, total] = await Promise.all([
-        this.repository.findAll({
-          skip,
-          take: limit,
-          ...params
-        }),
+        this.repository.findAll(params),
         this.repository.count(params)
       ]);
 
       return ResultUtils.ok({
         purchaseOrders: pos,
-        total,
-        pages: Math.ceil(total / limit)
+        total
       });
     } catch (error) {
       console.error('POs Fetch Error:', error);
@@ -306,21 +288,21 @@ export class PurchaseOrderService {
         },
         items: po.items.map(item => {
           // Ensure taxRates exists with default values
-          const taxRates = {
-            igst: item.taxRates?.igst ?? 0,
-            sgst: item.taxRates?.sgst ?? 0,
-            ugst: item.taxRates?.ugst ?? 0
-          };
+          // const taxRates = {
+          //   igst: item.taxRates?.igst ?? 0,
+          //   sgst: item.taxRates?.sgst ?? 0,
+          //   ugst: item.taxRates?.ugst ?? 0
+          // };
 
           // Calculate base amount
-          const baseAmount = item.quantity * item.unitPrice;
+          // const baseAmount = item.quantity * item.unitPrice;
 
-          // Calculate tax amounts
-          const taxAmounts = {
-            igst: baseAmount * (taxRates.igst / 100),
-            sgst: baseAmount * (taxRates.sgst / 100),
-            ugst: baseAmount * (taxRates.ugst / 100)
-          };
+          // // Calculate tax amounts
+          // const taxAmounts = {
+          //   igst: baseAmount * (taxRates.igst / 100),
+          //   sgst: baseAmount * (taxRates.sgst / 100),
+          //   ugst: baseAmount * (taxRates.ugst / 100)
+          // };
 
           return {
             item: {
@@ -329,10 +311,10 @@ export class PurchaseOrderService {
             },
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            taxRates,
-            taxAmounts,
-            baseAmount,
-            totalAmount: baseAmount + Object.values(taxAmounts).reduce((a, b) => a + b, 0)
+            // taxRates,
+            // taxAmounts,
+            // baseAmount,
+            // totalAmount: baseAmount
           };
         }),
         requirementDesc: po.requirementDesc,
@@ -417,11 +399,11 @@ export class PurchaseOrderService {
     itemId: string;
     quantity: number;
     unitPrice: number;
-    taxRates: {
-      igst: number;
-      sgst: number;
-      ugst: number;
-    };
+    // taxRates: {
+    //   igst: number;
+    //   sgst: number;
+    //   ugst: number;
+    // };
     totalAmount: number;
   }>>> {
     const validatedItems = [];
@@ -433,19 +415,20 @@ export class PurchaseOrderService {
       }
 
       // Get vendor-specific price and item tax rates
-      const unitPrice = vendorItem.unitPrice;
-      const taxRates = vendorItem.item.taxRates;
+      // const unitPrice = vendorItem.unitPrice;
+      const unitPrice = item.unitPrice;
+      // const taxRates = vendorItem.item.taxRates;
 
       // Calculate total amount including tax
       const baseAmount = item.quantity * unitPrice;
-      const totalTaxRate = (taxRates.igst || 0) + (taxRates.sgst || 0) + (taxRates.ugst || 0);
-      const totalAmount = baseAmount + (baseAmount * (totalTaxRate / 100));
+      // const totalTaxRate = (taxRates.igst || 0) + (taxRates.sgst || 0) + (taxRates.ugst || 0);
+      const totalAmount = baseAmount;
 
       validatedItems.push({
         itemId: item.itemId,
         quantity: item.quantity,
         unitPrice,
-        taxRates,
+        // taxRates,
         totalAmount
       });
     }
@@ -453,11 +436,11 @@ export class PurchaseOrderService {
     // Convert tax rates to required format with non-nullable numbers
     const validatedItemsWithNonNullableTaxRates = validatedItems.map(item => ({
       ...item,
-      taxRates: {
-        igst: item.taxRates.igst || 0,
-        sgst: item.taxRates.sgst || 0, 
-        ugst: item.taxRates.ugst || 0
-      }
+      // taxRates: {
+      //   igst: item.taxRates.igst || 0,
+      //   sgst: item.taxRates.sgst || 0, 
+      //   ugst: item.taxRates.ugst || 0
+      // }
     }));
 
     return ResultUtils.ok(validatedItemsWithNonNullableTaxRates);
@@ -478,21 +461,21 @@ export class PurchaseOrderService {
       },
       items: po.items.map(item => {
         // Extract tax rates
-        const taxRates = {
-          igst: item.item.taxRates?.igst || 0,
-          sgst: item.item.taxRates?.sgst || 0,
-          ugst: item.item.taxRates?.ugst || 0
-        };
+        // const taxRates = {
+        //   igst: item.item.taxRates?.igst || 0,
+        //   sgst: item.item.taxRates?.sgst || 0,
+        //   ugst: item.item.taxRates?.ugst || 0
+        // };
 
         // Calculate base amount
         const baseAmount = item.quantity * item.unitPrice;
 
         // Calculate tax amounts
-        const taxAmounts = {
-          igst: baseAmount * (taxRates.igst / 100),
-          sgst: baseAmount * (taxRates.sgst / 100),
-          ugst: baseAmount * (taxRates.ugst / 100)
-        };
+        // const taxAmounts = {
+        //   igst: baseAmount * (taxRates.igst / 100),
+        //   sgst: baseAmount * (taxRates.sgst / 100),
+        //   ugst: baseAmount * (taxRates.ugst / 100)
+        // };
 
         return {
           item: {
@@ -501,8 +484,8 @@ export class PurchaseOrderService {
           },
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          taxRates,
-          taxAmounts,
+          // taxRates,
+          // taxAmounts,
           baseAmount,
           totalAmount: item.totalAmount
         };

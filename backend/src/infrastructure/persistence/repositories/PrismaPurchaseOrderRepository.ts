@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { PurchaseOrder } from '../../../domain/entities/PurchaseOrder';
 import { PurchaseOrderItem } from '../../../domain/entities/PurchaseOrderItem';
 import { POStatus } from '../../../domain/entities/constants';
-import { TaxRates } from '../../../domain/entities/Item';
+
 
 export class PrismaPurchaseOrderRepository {
   constructor(private prisma: PrismaClient) {}
@@ -20,7 +20,7 @@ export class PrismaPurchaseOrderRepository {
         item: item.item,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxRate: item.taxRate,
+        // taxRate: item.taxRate,
         totalAmount: item.totalAmount,
         purchaseOrderId: item.purchaseOrderId,
         createdAt: item.createdAt,
@@ -29,6 +29,9 @@ export class PrismaPurchaseOrderRepository {
       requirementDesc: prismaOrder.requirementDesc,
       termsConditions: prismaOrder.termsConditions,
       shipToAddress: prismaOrder.shipToAddress,
+      baseAmount: prismaOrder.baseAmount,
+      taxAmount: prismaOrder.taxAmount,
+      totalAmount: prismaOrder.totalAmount,
       notes: prismaOrder.notes,
       documentUrl: prismaOrder.documentUrl,
       documentHash: prismaOrder.documentHash,
@@ -77,9 +80,12 @@ export class PrismaPurchaseOrderRepository {
       itemId: string;
       quantity: number;
       unitPrice: number;
-      taxRate: number;
+      // taxRate: number;
       totalAmount: number;
     }>;
+    baseAmount: number;
+    taxAmount: number;
+    totalAmount: number;
     requirementDesc: string;
     termsConditions: string;
     shipToAddress: string;
@@ -95,13 +101,15 @@ export class PrismaPurchaseOrderRepository {
     tags: string[];
   }): Promise<PurchaseOrder> {
     const { items, ...poData } = data;
-  
     const prismaResult = await this.prisma.purchaseOrder.create({
       data: {
         ...poData,
         approvalHistory: poData.approvalHistory || [],
         items: {
-          create: items
+          create: items.map(item => ({
+            ...item,
+            // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
+          }))
         }
       },
       include: {
@@ -146,11 +154,11 @@ export class PrismaPurchaseOrderRepository {
         itemId: item.itemId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxRates: {
-          igst: item.taxRates.igst || 0,
-          sgst: item.taxRates.sgst || 0,
-          ugst: item.taxRates.ugst || 0
-        }
+        // taxRates: {
+        //   igst: item.taxRates.igst || 0,
+        //   sgst: item.taxRates.sgst || 0,
+        //   ugst: item.taxRates.ugst || 0
+        // }
       })));
     }
 
@@ -319,11 +327,11 @@ export class PrismaPurchaseOrderRepository {
       itemId: string;
       quantity: number;
       unitPrice: number;
-      taxRates: {
-        igst: number;
-        sgst: number;
-        ugst: number;
-      };
+      // taxRates: {
+      //   igst: number;
+      //   sgst: number;
+      //   ugst: number;
+      // };
     }>
   ): Promise<void> {
     try {
@@ -341,8 +349,8 @@ export class PrismaPurchaseOrderRepository {
               itemId: item.itemId,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              taxRates: item.taxRates,
-              taxRate: (item.taxRates.igst || 0) + (item.taxRates.sgst || 0) + (item.taxRates.ugst || 0),
+              // taxRates: item.taxRates,
+              // taxRate: (item.taxRates.igst || 0) + (item.taxRates.sgst || 0) + (item.taxRates.ugst || 0),
               totalAmount: this.calculateItemTotal(item)
             }
           });
@@ -360,18 +368,10 @@ export class PrismaPurchaseOrderRepository {
   private calculateItemTotal(item: {
     quantity: number;
     unitPrice: number;
-    taxRates: {
-      igst: number;
-      sgst: number;
-      ugst: number;
-    };
   }): number {
     const baseAmount = item.quantity * item.unitPrice;
-    const totalTaxRate = 
-      (item.taxRates.igst || 0) + 
-      (item.taxRates.sgst || 0) + 
-      (item.taxRates.ugst || 0);
-    return baseAmount + (baseAmount * (totalTaxRate / 100));
+    // return baseAmount + (baseAmount * (totalTaxRate / 100));
+    return baseAmount;
   }
   async getItemsForPo(purchaseOrderId: string): Promise<PurchaseOrderItem[]> {
     const prismaItems = await this.prisma.purchaseOrderItem.findMany({
@@ -394,39 +394,27 @@ export class PrismaPurchaseOrderRepository {
       }
     });
   
-    return prismaItems.map(prismaItem => {
-      // Convert JSON taxRates to proper TaxRates type
-      const taxRates: TaxRates = {
-        igst: (prismaItem.item.taxRates as any)?.igst || 0,
-        sgst: (prismaItem.item.taxRates as any)?.sgst || 0,
-        ugst: (prismaItem.item.taxRates as any)?.ugst || 0
-      };
-  
-      return {
-        id: prismaItem.id,
-        purchaseOrder: this.toDomainEntity(prismaItem.purchaseOrder),
-        purchaseOrderId: prismaItem.purchaseOrderId,
-        item: {
-          id: prismaItem.item.id,
-          name: prismaItem.item.name,
-          description: prismaItem.item.description || undefined,
-          unitPrice: prismaItem.item.unitPrice,
-          uom: prismaItem.item.uom,
-          hsnCode: prismaItem.item.hsnCode || undefined,
-          taxRates: taxRates, // Use properly typed taxRates
-          createdAt: prismaItem.item.createdAt,
-          updatedAt: prismaItem.item.updatedAt
-        },
-        itemId: prismaItem.itemId,
-        quantity: prismaItem.quantity,
-        unitPrice: prismaItem.unitPrice,
-        taxRate: prismaItem.taxRate,
-        taxRates: taxRates, // Use the same properly typed taxRates
-        totalAmount: prismaItem.totalAmount,
-        createdAt: prismaItem.createdAt,
-        updatedAt: prismaItem.updatedAt
-      };
-    });
+    return prismaItems.map(prismaItem => ({
+      id: prismaItem.id,
+      purchaseOrder: this.toDomainEntity(prismaItem.purchaseOrder),
+      purchaseOrderId: prismaItem.purchaseOrderId,
+      item: {
+        id: prismaItem.item.id,
+        name: prismaItem.item.name,
+        description: prismaItem.item.description || undefined,
+        unitPrice: prismaItem.item.unitPrice || 0,
+        uom: prismaItem.item.uom,
+        hsnCode: prismaItem.item.hsnCode || undefined,
+        createdAt: prismaItem.item.createdAt,
+        updatedAt: prismaItem.item.updatedAt
+      },
+      itemId: prismaItem.itemId,
+      quantity: prismaItem.quantity || 0,
+      unitPrice: prismaItem.unitPrice || 0,
+      totalAmount: prismaItem.totalAmount || 0,
+      createdAt: prismaItem.createdAt,
+      updatedAt: prismaItem.updatedAt
+    }));
   }
 
   async getTotalValue(purchaseOrderId: string): Promise<number> {

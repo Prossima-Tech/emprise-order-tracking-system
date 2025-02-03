@@ -15,6 +15,9 @@ export interface PurchaseOrder {
   requirementDesc: string;
   termsConditions: string;
   shipToAddress: string;
+  baseAmount: number;
+  taxAmount: number;
+  totalAmount: number;
   notes?: string;
   documentUrl?: string;
   status: POStatus;
@@ -38,18 +41,18 @@ export interface PDFItemData {
   };
   quantity: number;
   unitPrice: number;
-  taxRates: {
-    igst: number;
-    sgst: number;
-    ugst: number;
-  };
-  taxAmounts: {
-    igst: number;
-    sgst: number;
-    ugst: number;
-  };
-  baseAmount: number;
-  totalAmount: number;
+  // taxRates: {
+  //   igst: number;
+  //   sgst: number;
+  //   ugst: number;
+  // };
+  // taxAmounts: {
+  //   igst: number;
+  //   sgst: number;
+  //   ugst: number;
+  // };
+  // baseAmount: number;
+  // totalAmount: number;
 }
 
 export interface PDFGenerationData {

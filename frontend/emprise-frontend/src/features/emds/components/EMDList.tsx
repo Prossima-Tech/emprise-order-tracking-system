@@ -33,6 +33,15 @@ import { ExpiryNotification } from "./ExpiryNotification";
 import { LoadingSpinner } from "../../../components/feedback/LoadingSpinner";
 
 import { StatusBadge } from "../../../components/data-display/StatusBadge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "../../../components/ui/pagination";
 
 const statusOptions = [
   { label: "All Status", value: "all" },
@@ -55,6 +64,8 @@ export function EMDList() {
   const [maturityFilter, setMaturityFilter] = useState("all");
   const [emds, setEMDs] = useState<EMD[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10); // Number of items per page
 
   useEffect(() => {
     const fetchEMDs = async () => {
@@ -181,6 +192,18 @@ export function EMDList() {
         })
       : [];
   
+    // Calculate pagination values
+    const totalItems = filteredEMDs.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const currentItems = filteredEMDs.slice(startIndex, endIndex);
+
+    // Handle page changes
+    const handlePageChange = (page: number) => {
+      setCurrentPage(page);
+    };
+
     return (
       <div className="space-y-6">
         {/* Filter Section */}
@@ -237,12 +260,109 @@ export function EMDList() {
         {loading ? (
           <LoadingSpinner />
         ) : (
-          <DataTable
-            columns={columns as Column<EMD>[]}
-            data={filteredEMDs}
-            loading={loading}
-            onRowClick={(row) => navigate(`/emds/${row.id}`)}
-          />
+          <div className="space-y-4">
+            <DataTable
+              columns={columns as Column<EMD>[]}
+              data={currentItems}
+              loading={loading}
+              onRowClick={(row) => navigate(`/emds/${row.id}`)}
+            />
+            
+            {/* Pagination */}
+            {totalItems > pageSize && (
+              <Pagination>
+                <PaginationContent>
+                  {/* Previous Button */}
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) handlePageChange(currentPage - 1);
+                      }}
+                    />
+                  </PaginationItem>
+
+                  {/* First Page */}
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(1);
+                      }}
+                      isActive={currentPage === 1}
+                    >
+                      1
+                    </PaginationLink>
+                  </PaginationItem>
+
+                  {/* Ellipsis after first page */}
+                  {currentPage > 3 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+
+                  {/* Pages around current page */}
+                  {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                    const pageNumber = currentPage - 1 + i;
+                    if (pageNumber > 1 && pageNumber < totalPages) {
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNumber);
+                            }}
+                            isActive={currentPage === pageNumber}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  {/* Ellipsis before last page */}
+                  {currentPage < totalPages - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+
+                  {/* Last Page */}
+                  {totalPages > 1 && (
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(totalPages);
+                        }}
+                        isActive={currentPage === totalPages}
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+
+                  {/* Next Button */}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
         )}
       </div>
     );

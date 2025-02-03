@@ -200,19 +200,11 @@ export class LoaService {
     }
 
     async getAllLoas(params: {
-        page?: number;
-        limit?: number;
         searchTerm?: string;
-    }): Promise<Result<{ loas: any[]; total: number; pages: number }>> {
+    }): Promise<Result<{ loas: any[]; total: number }>> {
         try {
-            const page = params.page || 1;
-            const limit = params.limit || 10;
-            const skip = (page - 1) * limit;
-
             const [loas, total] = await Promise.all([
                 this.repository.findAll({
-                    skip,
-                    take: limit,
                     searchTerm: params.searchTerm
                 }),
                 this.repository.count({
@@ -222,8 +214,7 @@ export class LoaService {
 
             return ResultUtils.ok({
                 loas,
-                total,
-                pages: Math.ceil(total / limit)
+                total
             });
         } catch (error) {
             console.error('LOAs Fetch Error:', error);

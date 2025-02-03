@@ -1,4 +1,4 @@
-import { Item, TaxRates } from "./Item";
+import { Item} from "./Item";
 import { PurchaseOrder } from "./PurchaseOrder";
 
 export interface PurchaseOrderItem {
@@ -9,12 +9,12 @@ export interface PurchaseOrderItem {
   itemId: string;
   quantity: number;
   unitPrice: number;
-  taxRates: {
-    igst?: number;
-    sgst?: number;
-    ugst?: number;
-  };
-  taxRate: number;
+  // taxRates: {
+  //   igst?: number;
+  //   sgst?: number;
+  //   ugst?: number;
+  // };
+  // taxRate: number;
   totalAmount: number;
   createdAt: Date;
   updatedAt: Date;
