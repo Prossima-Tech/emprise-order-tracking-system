@@ -7,6 +7,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "../../../components/ui/form";
 import { Input } from "../../../components/ui/input";
 import { Calendar } from "../../../components/ui/calendar";
@@ -15,7 +16,7 @@ import { format } from "date-fns";
 import { cn } from "../../../lib/utils";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { loaSchema, type LOAFormData } from '../types/loa';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from "../../../components/ui/badge";
 import { X } from "lucide-react";
 import { useToast } from "../../../hooks/use-toast-app";
@@ -24,6 +25,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../../components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { useLOAs } from '../hooks/use-loas';
 
 interface LOAFormProps {
   initialData?: Partial<LOAFormData>;
@@ -31,10 +40,24 @@ interface LOAFormProps {
   onClose: () => void;
 }
 
+// Add EMD type
+interface EMD {
+  id: string;
+  amount: number;
+  bankName: string;
+  paymentMode: string;
+  status: string;
+  submissionDate: string;
+  maturityDate: string;
+  tags: string[];
+}
+
 export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
   const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showError } = useToast();
+  const [availableEMDs, setAvailableEMDs] = useState<EMD[]>([]);
+  const { getAvailableEMDs } = useLOAs();
   
   // Initialize form with React Hook Form and Zod validation
   const form = useForm<LOAFormData>({
@@ -50,6 +73,20 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       tags: initialData?.tags || [],
     },
   });
+
+  // Fetch available EMDs
+  useEffect(() => {
+    const fetchEMDs = async () => {
+      try {
+        const emds = await getAvailableEMDs();
+        setAvailableEMDs(emds);
+      } catch (error) {
+        console.error('Error fetching EMDs:', error);
+      }
+    };
+
+    fetchEMDs();
+  }, []);
 
   const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -300,6 +337,43 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
                   </div>
                 </div>
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* EMD Selection */}
+        <FormField
+          control={form.control}
+          name="emdId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>EMD</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an EMD" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {availableEMDs.map((emd) => (
+                    <SelectItem key={emd.id} value={emd.id}>
+                      {emd.bankName} - ₹{emd.amount.toLocaleString()} ({format(new Date(emd.submissionDate), "PP")})
+                      {emd.tags.length > 0 && (
+                        <span className="ml-2 text-muted-foreground">
+                          [{emd.tags.join(', ')}]
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Only EMDs that are not associated with any LOA are shown
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

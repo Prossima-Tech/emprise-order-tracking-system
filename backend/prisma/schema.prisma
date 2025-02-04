@@ -93,13 +93,15 @@ model EMD {
   documentUrl     String          // S3 URL of FDR document
   extractedData   Json?           // OCR extracted data
   status          EMDStatus
-  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])  // Add relation
+  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])
   offerId         String?         // Make it optional as EMD might be created before offer
+  loa             LOA?            @relation(fields: [loaId], references: [id])
+  loaId           String?         @unique  // Add @unique to ensure one-to-one relationship
   tags            String[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  @@index([offerId])  // Add index for better query performance
+  @@index([offerId])
 }
 
 enum EMDStatus {
@@ -118,6 +120,7 @@ model LOA {
   amendments      Amendment[]
   purchaseOrders  PurchaseOrder[]
   tags            String[]
+  emd             EMD?      @relation
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }

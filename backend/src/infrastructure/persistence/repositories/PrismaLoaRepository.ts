@@ -9,6 +9,7 @@ export class PrismaLoaRepository {
   private mapPrismaLoaToLoa(prismaLoa: PrismaLOA & {
     amendments: PrismaAmendment[];
     purchaseOrders: any[]; // Replace 'any' with your PO type
+    emd?: any; // Add EMD to the mapping
   }): LOA {
     // Don't parse the deliveryPeriod as it's already an object
     return {
@@ -32,6 +33,7 @@ export class PrismaLoaRepository {
         loaId: amendment.loaId
       })),
       purchaseOrders: prismaLoa.purchaseOrders,
+      emd: prismaLoa.emd ,
       createdAt: prismaLoa.createdAt,
       updatedAt: prismaLoa.updatedAt
     };
@@ -62,6 +64,7 @@ export class PrismaLoaRepository {
     workDescription: string;
     documentUrl: string;
     tags: string[];
+    emdId?: string; // Single EMD ID
   }): Promise<LOA> {
     try {
       const prismaLoa = await this.prisma.lOA.create({
@@ -74,11 +77,15 @@ export class PrismaLoaRepository {
           },
           workDescription: data.workDescription,
           documentUrl: data.documentUrl,
-          tags: data.tags
+          tags: data.tags,
+          emd: data.emdId ? {
+            connect: { id: data.emdId }
+          } : undefined
         },
         include: {
           amendments: true,
-          purchaseOrders: true
+          purchaseOrders: true,
+          emd: true // Include single EMD in the response
         }
       });
 
@@ -99,6 +106,9 @@ export class PrismaLoaRepository {
       deliveryPeriod: data.deliveryPeriod ? {
         start: new Date(data.deliveryPeriod.start),
         end: new Date(data.deliveryPeriod.end)
+      } : undefined,
+      emd: (data as any).emdId ? {
+        connect: { id: (data as any).emdId }
       } : undefined
     };
 
@@ -107,7 +117,8 @@ export class PrismaLoaRepository {
       data: updateData,
       include: {
         amendments: true,
-        purchaseOrders: true
+        purchaseOrders: true,
+        emd: true // Include single EMD in the response
       }
     });
 
@@ -131,7 +142,8 @@ export class PrismaLoaRepository {
       where: { id },
       include: {
         amendments: true,
-        purchaseOrders: true
+        purchaseOrders: true,
+        emd: true // Include single EMD
       }
     });
 
@@ -143,7 +155,8 @@ export class PrismaLoaRepository {
       where: { loaNumber },
       include: {
         amendments: true,
-        purchaseOrders: true
+        purchaseOrders: true,
+        emd: true // Include single EMD
       }
     });
 
@@ -167,7 +180,8 @@ export class PrismaLoaRepository {
       } : undefined,
       include: {
         amendments: true,
-        purchaseOrders: true
+        purchaseOrders: true,
+        emd: true // Include single EMD
       },
       orderBy: {
         createdAt: 'desc'
@@ -263,5 +277,14 @@ export class PrismaLoaRepository {
     });
 
     return prismaAmendment ? this.mapPrismaAmendmentToAmendment(prismaAmendment) : null;
+  }
+
+  // Replace findEMDsByIds with findEMDById
+  async findEMDById(emdId: string): Promise<any | null> {
+    return this.prisma.eMD.findUnique({
+      where: {
+        id: emdId
+      }
+    });
   }
 }

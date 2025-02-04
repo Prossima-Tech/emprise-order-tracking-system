@@ -10,6 +10,7 @@ export interface LOA {
     workDescription: string;
     documentUrl: string;
     amendments?: Amendment[];
+    emd?: any;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;

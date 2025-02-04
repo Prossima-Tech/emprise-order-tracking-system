@@ -289,6 +289,53 @@ export function LOADetail() {
                   </div>
                 </div>
               )}
+
+              {/* EMD Information */}
+              {loa.emd && (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">EMD Details</h3>
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <div className="text-sm font-medium">Amount</div>
+                        <div className="text-sm text-muted-foreground">
+                          ₹{loa.emd.amount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Bank</div>
+                        <div className="text-sm text-muted-foreground">
+                          {loa.emd.bankName}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Payment Mode</div>
+                        <div className="text-sm text-muted-foreground">
+                          {loa.emd.paymentMode}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Status</div>
+                        <div className="text-sm text-muted-foreground">
+                          {loa.emd.status}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Submission Date</div>
+                        <div className="text-sm text-muted-foreground">
+                          {format(new Date(loa.emd.submissionDate), "PPP")}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">Maturity Date</div>
+                        <div className="text-sm text-muted-foreground">
+                          {format(new Date(loa.emd.maturityDate), "PPP")}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
