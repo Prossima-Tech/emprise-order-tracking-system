@@ -99,8 +99,8 @@ export class BudgetaryOfferController {
       const { page, limit, status, createdById, approverId } = req.query;
 
       const result = await this.service.getOffers({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        ...(page ? { page: parseInt(page as string) } : {}),
+        ...(limit ? { limit: parseInt(limit as string) } : {}),
         status: status as string,
         createdById: createdById as string,
         approverId: approverId as string

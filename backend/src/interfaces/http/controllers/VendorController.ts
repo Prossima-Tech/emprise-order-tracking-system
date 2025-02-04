@@ -74,9 +74,9 @@ export class VendorController {
       const { page, limit, search } = req.query;
       
       const vendors = await this.service.getAllVendors({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        searchTerm: search as string
+        searchTerm: search as string,
+        ...(page ? { page: parseInt(page as string) } : {}),
+        ...(limit ? { limit: parseInt(limit as string) } : {})
       });
 
       res.json({

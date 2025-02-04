@@ -113,11 +113,11 @@ export class EmdController {
       const { page, limit, status, offerId, search } = req.query;
       
       const result = await this.service.getAllEMDs({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
         status: status as EMDStatus,
         offerId: offerId as string,
-        searchTerm: search as string
+        searchTerm: search as string,
+        ...(page ? { page: parseInt(page as string) } : {}),
+        ...(limit ? { limit: parseInt(limit as string) } : {})
       });
 
       if (!result.isSuccess) {
