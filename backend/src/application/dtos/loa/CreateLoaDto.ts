@@ -10,4 +10,5 @@ export interface CreateLoaDto {
     workDescription: string;
     documentFile?: Express.Multer.File;
     tags?: string[];
+    emdId?: string;
 }

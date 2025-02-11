@@ -7,4 +7,5 @@ export interface UpdateLoaDto {
     workDescription?: string;
     documentFile?: Express.Multer.File;
     tags?: string[];
+    emdId?: string;
 }

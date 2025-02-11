@@ -8,7 +8,7 @@ export class ItemController {
   createItem = async (req: Request, res: Response) => {
     try {
       const item = await this.service.createItem(req.body);
-      
+
       res.status(201).json({
         status: 'success',
         data: item
@@ -72,11 +72,11 @@ export class ItemController {
   getAllItems = async (req: Request, res: Response) => {
     try {
       const { page, limit, search } = req.query;
-      
+
       const items = await this.service.getAllItems({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        searchTerm: search as string
+        searchTerm: search as string,
+        ...(page ? { page: parseInt(page as string) } : {}),
+        ...(limit ? { limit: parseInt(limit as string) } : {})
       });
 
       res.json({
@@ -88,6 +88,28 @@ export class ItemController {
         throw error;
       }
       throw new AppError('Failed to fetch items');
+    }
+  };
+
+  getPriceHistory = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { vendorId } = req.query;
+
+      if (!vendorId || typeof vendorId !== 'string') {
+        res.status(400).json({
+          message: 'Vendor ID is required as a query parameter'
+        });
+        return;
+      }
+
+      const priceHistory = await this.service.getPriceHistory(id, vendorId);
+      res.json(priceHistory);
+    } catch (error) {
+      console.error('Error in getPriceHistory controller:', error);
+      res.status(500).json({
+        message: 'Failed to fetch price history'
+      });
     }
   };
 }

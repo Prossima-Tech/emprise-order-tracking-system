@@ -22,7 +22,6 @@ import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Textarea } from "../../../components/ui/textarea";
 import { Card, CardContent } from "../../../components/ui/card";
-// import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Trash2, Plus, X } from "lucide-react";
 import { ItemSelector } from "./ItemSelector";
 import { PurchaseOrder, purchaseOrderSchema, type PurchaseOrderFormData } from "../types/purchase-order";
@@ -36,6 +35,7 @@ import { usePurchaseOrders } from "../hooks/use-purchase-orders";
 import { Badge } from "../../../components/ui/badge";
 import { useLOAs } from "../../loas/hooks/use-loas";
 import { useVendors } from "../../vendors/hooks/use-vendors";
+import { VendorSelector } from "./VendorSelector";
 
 interface POFormProps {
   mode: 'create' | 'edit';
@@ -67,6 +67,9 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
     mode === 'edit' && initialData?.tags ? initialData.tags : []
   );
   const [tagInput, setTagInput] = useState('');
+  const [taxType, setTaxType] = useState<'amount' | 'percentage'>(
+    mode === 'edit' && initialData?.taxAmount ? 'amount' : 'percentage'
+  );
   const { toast } = useToast();
   const navigate = useNavigate();
   const { getLOAs} = useLOAs();
@@ -82,29 +85,31 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
         itemId: item.item.id,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxRates: item.item.taxRates,
       })),
+      taxAmount: initialData.taxAmount || 0,
       requirementDesc: initialData.requirementDesc,
       termsConditions: initialData.termsConditions,
       shipToAddress: initialData.shipToAddress,
       notes: initialData.notes || '',
       tags: initialData.tags || [],
       approverId: initialData.approverId || '',
+      expectedDeliveryDate: initialData.expectedDeliveryDate || '',
     } : {
       loaId: '',
       vendorId: '',
       items: [{ 
         itemId: '', 
         quantity: 1, 
-        unitPrice: 0, 
-        taxRates: { igst: 0, sgst: 0, ugst: 0 } 
+        unitPrice: 0,
       }],
+      taxAmount: 0,
       termsConditions: defaultTermsAndConditions,
       requirementDesc: '',
       shipToAddress: '',
       notes: '',
       tags: [],
       approverId: '',
+      expectedDeliveryDate: '',
     },
     mode: 'onChange',
   });
@@ -117,6 +122,37 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
   const watchItems = form.watch("items");
   const selectedVendor = form.watch("vendorId");
   const watchVendorId = form.watch("vendorId");
+  const watchTaxAmount = form.watch("taxAmount");
+
+  const calculateTotals = () => {
+    const subtotal = watchItems.reduce(
+      (acc, item) => acc + (item.quantity * item.unitPrice),
+      0
+    );
+    
+    let taxAmount = 0;
+    if (taxType === 'percentage') {
+      taxAmount = (subtotal * (watchTaxAmount || 0)) / 100;
+    } else {
+      taxAmount = watchTaxAmount || 0;
+    }
+    
+    return {
+      subtotal,
+      tax: taxAmount,
+      total: subtotal + taxAmount,
+    };
+  };
+
+  const totals = calculateTotals();
+
+  const handleItemSelect = async (index: number, itemId: string, unitPrice: number) => {
+    form.setValue(`items.${index}`, {
+      itemId,
+      quantity: form.getValues(`items.${index}.quantity`) || 1,
+      unitPrice,
+    }, { shouldValidate: true });
+  };
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -156,48 +192,23 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
     fetchApprovers();
   }, []);
 
-  const calculateTotals = () => {
-    return watchItems.reduce(
-      (acc, item) => {
-        const subtotal = item.quantity * item.unitPrice;
-
-        const taxes = subtotal * item.taxRates.igst / 100 + subtotal * item.taxRates.sgst / 100 + subtotal * item.taxRates.ugst / 100;
-        const total = subtotal + taxes;
-        return {
-          subtotal: acc.subtotal + subtotal,
-          taxes: acc.taxes + taxes,
-          total: acc.total + total,
-        };
-      },
-      { subtotal: 0, taxes: 0, total: 0 }
-    );
-  };
-
-  const totals = calculateTotals();
-
-  const handleItemSelect = (index: number, itemId: string, unitPrice: number, taxRates: { igst: number; sgst: number; ugst: number }) => {
-    console.log("Updating item with:", { itemId, unitPrice, taxRates }); // Debug log
-    
-    form.setValue(`items.${index}`, {
-      itemId,
-      quantity: form.getValues(`items.${index}.quantity`) || 1,
-      unitPrice,
-      taxRates
-    }, { shouldValidate: true });
-  };
-
   const handleSubmit = async (data: PurchaseOrderFormData) => {
     try {
       setSubmitting(true);
       
+      // Convert tax percentage to amount if needed
+      const taxAmount = taxType === 'percentage' 
+        ? (calculateTotals().subtotal * (data.taxAmount || 0)) / 100
+        : data.taxAmount;
+      
       if (mode === 'edit' && initialData?.id) {
         const updatedData = {
           ...data,
+          taxAmount,
           items: data.items.map(item => ({
             itemId: item.itemId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            taxRates: item.taxRates
           }))
         };
         
@@ -208,14 +219,13 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
         });
         navigate(`/purchase-orders/${initialData.id}`);
       } else {
-        // Add create case
         const formattedData = {
           ...data,
+          taxAmount,
           items: data.items.map(item => ({
             itemId: item.itemId,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            taxRates: item.taxRates
           }))
         };
         
@@ -240,7 +250,6 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           itemId: "", 
           quantity: 1, 
           unitPrice: 0,
-          taxRates: { igst: 0, sgst: 0, ugst: 0 }
         }], {
           shouldValidate: true,
         });
@@ -306,24 +315,14 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Vendor</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
-                value={field.value}
-                disabled={submitting}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {vendors.map((vendor) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <VendorSelector
+                  vendors={vendors}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={submitting}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -338,8 +337,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
               onClick={() => append({ 
                 itemId: "", 
                 quantity: 1, 
-                unitPrice: 0, 
-                taxRates: { igst: 0, sgst: 0, ugst: 0 } 
+                unitPrice: 0,
               })}
               disabled={!selectedVendor}
             >
@@ -362,8 +360,8 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
                           <ItemSelector
                             vendorId={selectedVendor}
                             value={itemField.value}
-                            onChange={(itemId, unitPrice, taxRates) => 
-                              handleItemSelect(index, itemId, unitPrice, taxRates)
+                            onChange={(itemId, unitPrice) => 
+                              handleItemSelect(index, itemId, unitPrice)
                             }
                           />
                         </FormControl>
@@ -404,8 +402,8 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
                             <Input
                               type="number"
                               step="0.01"
-                              readOnly
                               {...priceField}
+                              onChange={(e) => priceField.onChange(parseFloat(e.target.value))}
                             />
                           </FormControl>
                           <FormMessage />
@@ -420,24 +418,6 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
                       <div>
                         Subtotal: ₹{(watchItems[index].quantity * watchItems[index].unitPrice).toFixed(2)}
                       </div>
-                      {watchItems[index].taxRates.igst > 0 && (
-                        <div className="text-muted-foreground">
-                          IGST ({watchItems[index].taxRates.igst}%): 
-                          ₹{((watchItems[index].quantity * watchItems[index].unitPrice * watchItems[index].taxRates.igst) / 100).toFixed(2)}
-                        </div>
-                      )}
-                      {watchItems[index].taxRates.sgst > 0 && (
-                        <div className="text-muted-foreground">
-                          SGST ({watchItems[index].taxRates.sgst}%): 
-                          ₹{((watchItems[index].quantity * watchItems[index].unitPrice * watchItems[index].taxRates.sgst) / 100).toFixed(2)}
-                        </div>
-                      )}
-                      {watchItems[index].taxRates.ugst > 0 && (
-                        <div className="text-muted-foreground">
-                          UGST ({watchItems[index].taxRates.ugst}%): 
-                          ₹{((watchItems[index].quantity * watchItems[index].unitPrice * watchItems[index].taxRates.ugst) / 100).toFixed(2)}
-                        </div>
-                      )}
                     </div>
                     <Button
                       type="button"
@@ -455,6 +435,70 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           ))}
         </div>
 
+        {/* Tax Type Selection and Amount */}
+        <div className="space-y-4">
+          <FormItem>
+            <FormLabel>Tax Type</FormLabel>
+            <Select
+              value={taxType}
+              onValueChange={(value: 'amount' | 'percentage') => {
+                setTaxType(value);
+                form.setValue('taxAmount', 0);
+              }}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tax type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="amount">Fixed Amount</SelectItem>
+                <SelectItem value="percentage">Percentage</SelectItem>
+              </SelectContent>
+            </Select>
+          </FormItem>
+
+          <FormField
+            control={form.control}
+            name="taxAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {taxType === 'percentage' ? 'Tax Percentage (%)' : 'Tax Amount (₹)'}
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Expected Delivery Date */}
+        {/* <FormField
+          control={form.control}
+          name="expectedDeliveryDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Expected Delivery Date</FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        /> */}
+
         {/* Order Totals */}
         <Card>
           <CardContent className="pt-6">
@@ -464,8 +508,10 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
                 <span>₹{totals.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Tax:</span>
-                <span>₹{totals.taxes.toFixed(2)}</span>
+                <span>
+                  Tax {taxType === 'percentage' ? `(${watchTaxAmount || 0}%)` : 'Amount'}:
+                </span>
+                <span>₹{totals.tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-medium text-lg border-t pt-2">
                 <span>Total:</span>
@@ -474,17 +520,6 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             </div>
           </CardContent>
         </Card>
-
-        {/* LOA Amount Warning */}
-        {/* {exceedsLOAAmount && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Order total exceeds available LOA amount 
-              (₹{selectedLOADetails?.availableAmount.toLocaleString()})
-            </AlertDescription>
-          </Alert>
-        )} */}
 
         {/* Additional Fields */}
         <FormField
@@ -663,7 +698,6 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
 
 // Default terms and conditions template
 const defaultTermsAndConditions = `
-<h3>Standard Terms and Conditions</h3>
 <ol>
   <li>Delivery Timeline: All items must be delivered within the specified timeline.</li>
   <li>Quality Standards: All items must meet the specified quality standards.</li>

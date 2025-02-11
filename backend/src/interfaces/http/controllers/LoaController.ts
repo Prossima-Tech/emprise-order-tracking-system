@@ -26,6 +26,9 @@ export class LoaController {
       // Parse loaValue as number with default value of 0
       const loaValue = req.body.loaValue ? Number(req.body.loaValue) : 0;
 
+      // Parse EMD IDs if they're provided
+      let emdId: string | undefined = req.body.emdId;
+
       if (!req.file) {
         throw new AppError('Document file is required');
       }
@@ -36,7 +39,8 @@ export class LoaController {
         deliveryPeriod: deliveryPeriod,
         workDescription: req.body.workDescription,
         documentFile: req.file,
-        tags: tags
+        tags: tags,
+        emdId: emdId
       });
 
       if (!result.isSuccess) {
@@ -78,13 +82,22 @@ export class LoaController {
       // Parse loaValue as number if present
       const loaValue = req.body.loaValue ? Number(req.body.loaValue) : undefined;
 
+      // Parse EMD IDs if they're provided
+      let emdId: string | undefined;
+      try {
+        emdId = req.body.emdId ? JSON.parse(req.body.emdId) : undefined;
+      } catch (error) {
+        throw new AppError('Invalid EMD IDs format');
+      }
+
       const result = await this.service.updateLoa(id, {
         loaNumber: req.body.loaNumber,
         loaValue: loaValue,
         deliveryPeriod: deliveryPeriod,
         workDescription: req.body.workDescription,
         documentFile: req.file,
-        tags: tags
+        tags: tags,
+        emdId: emdId
       });
 
       if (!result.isSuccess) {
@@ -147,9 +160,9 @@ export class LoaController {
       const { page, limit, search } = req.query;
       
       const result = await this.service.getAllLoas({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
-        searchTerm: search as string
+        searchTerm: search as string,
+        ...(page ? { page: parseInt(page as string) } : {}),
+        ...(limit ? { limit: parseInt(limit as string) } : {})
       });
 
       if (!result.isSuccess) {

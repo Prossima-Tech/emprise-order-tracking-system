@@ -91,5 +91,10 @@ export function itemRoutes(controller: ItemController) {
     controller.getAllItems
   );
 
+  router.get('/:id/price-history',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    controller.getPriceHistory
+  );
+
   return router;
 }

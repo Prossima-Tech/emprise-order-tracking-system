@@ -10,7 +10,11 @@ export function DashboardPage() {
       <DashboardLayout
         loading={loading}
         error={error}
-        stats={stats ? { ...stats, metrics: [] } : null}
+        stats={stats ? { 
+          ...stats, 
+          metrics: [],
+          activeEmdsValue: stats.activeEmdsValue 
+        } : null}
         activities={activities}
         trends={trends}
       />

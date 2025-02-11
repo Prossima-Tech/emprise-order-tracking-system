@@ -37,6 +37,15 @@ import { usePurchaseOrders } from "../hooks/use-purchase-orders";
 import type { PurchaseOrder } from "../types/purchase-order";
 // import apiClient from "../../../lib/utils/api-client";
 import { StatusBadge } from "../../../components/data-display/StatusBadge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "../../../components/ui/pagination";
 
 export function POList() {
   const navigate = useNavigate();
@@ -45,6 +54,8 @@ export function POList() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const { submitForApproval, markAsCompleted, getPurchaseOrders } = usePurchaseOrders();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
   // Fetch initial data
   useEffect(() => {
@@ -112,18 +123,11 @@ export function POList() {
 
   // Helper function to calculate total amount for an order
   const calculateOrderTotal = (order: PurchaseOrder) => {
-    if (!order.items || !Array.isArray(order.items)) return 0;
-
-    return order.items.reduce((acc, item) => {
-      if (!item || !item.quantity || !item.unitPrice) return acc;
-
-      const subtotal = item.quantity * item.unitPrice;
-      const taxRates = item.item?.taxRates || { igst: 0, sgst: 0, ugst: 0 };
-      const totalTaxRate = (taxRates.igst || 0) + (taxRates.sgst || 0) + (taxRates.ugst || 0);
-      const taxes = subtotal * (totalTaxRate / 100);
-
-      return acc + subtotal + taxes;
+    const subtotal = order.items.reduce((acc, item) => {
+      return acc + (item.quantity * item.unitPrice);
     }, 0);
+
+    return subtotal + order.taxAmount;
   };
 
   const columns = [
@@ -229,6 +233,17 @@ export function POList() {
     });
   }, [orders, searchTerm, statusFilter]);
 
+  // Calculate pagination values
+  const totalItems = filteredOrders.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentItems = filteredOrders.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="space-y-6">
       {/* Filters Section */}
@@ -278,11 +293,103 @@ export function POList() {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <DataTable
-          columns={columns as Column<PurchaseOrder>[]}
-          data={filteredOrders}
-          onRowClick={(row) => navigate(`/purchase-orders/${row.id}`)}
-        />
+        <div className="space-y-4">
+          <DataTable
+            columns={columns as Column<PurchaseOrder>[]}
+            data={currentItems}
+            loading={loading}
+            onRowClick={(row) => navigate(`/purchase-orders/${row.id}`)}
+          />
+          
+          {/* Pagination */}
+          {totalItems > pageSize && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) handlePageChange(currentPage - 1);
+                    }}
+                  />
+                </PaginationItem>
+
+                {/* First Page */}
+                <PaginationItem>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePageChange(1);
+                    }}
+                    isActive={currentPage === 1}
+                  >
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+
+                {/* Show ellipsis if there are many pages before current */}
+                {currentPage > 3 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+
+                {/* Pages around current page */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => page !== 1 && page !== totalPages && Math.abs(currentPage - page) <= 1)
+                  .map(page => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(page);
+                        }}
+                        isActive={currentPage === page}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                {/* Show ellipsis if there are many pages after current */}
+                {currentPage < totalPages - 2 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+
+                {/* Last Page */}
+                {totalPages > 1 && (
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handlePageChange(totalPages);
+                      }}
+                      isActive={currentPage === totalPages}
+                    >
+                      {totalPages}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                    }}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
       )}
     </div>
   );

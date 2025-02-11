@@ -105,8 +105,6 @@ export class PurchaseOrderController {
       } = req.query;
 
       const purchaseOrders = await this.service.getAllPurchaseOrders({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
         status: status as POStatus,
         vendorId: vendorId as string,
         loaId: loaId as string,

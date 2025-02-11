@@ -76,23 +76,19 @@ export function PODetail() {
   }
 
   // Calculate totals for all items
-  const totals = order.items.reduce(
-    (acc, item) => {
-      if (!item || !item.quantity || !item.unitPrice) return acc;
+  const calculateTotals = (order: PurchaseOrder) => {
+    const subtotal = order.items.reduce((acc, item) => {
+      return acc + (item.quantity * item.unitPrice);
+    }, 0);
 
-      const subtotal = item.quantity * item.unitPrice;
-      const taxRates = item.item?.taxRates || { igst: 0, sgst: 0, ugst: 0 };
-      const totalTaxRate = (taxRates.igst || 0) + (taxRates.sgst || 0) + (taxRates.ugst || 0);
-      const taxes = subtotal * (totalTaxRate / 100);
+    return {
+      subtotal,
+      taxAmount: order.taxAmount,
+      total: subtotal + order.taxAmount
+    };
+  };
 
-      return {
-        subtotal: acc.subtotal + subtotal,
-        taxes: acc.taxes + taxes,
-        total: acc.total + subtotal + taxes,
-      };
-    },
-    { subtotal: 0, taxes: 0, total: 0 }
-  );
+  const totals = calculateTotals(order);
 
   // Handle status changes
   const handleStatusChange = async (action: "submit" | "complete") => {
@@ -303,7 +299,7 @@ export function PODetail() {
                               }).format(item.quantity * item.unitPrice)}
                             </div>
                           </div>
-                          <div>
+                          {/* <div>
                             <div className="text-sm text-muted-foreground">
                               Tax Rates
                             </div>
@@ -318,7 +314,7 @@ export function PODetail() {
                                 <div>UGST: {item.item.taxRates.ugst}%</div>
                               )}
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </CardContent>
@@ -330,30 +326,15 @@ export function PODetail() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>  {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }).format(totals.subtotal)}</span>
+                      <span>₹{totals.subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Total Taxes</span>
-                      <span>  {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }).format(totals.taxes)}</span>
+                      <span>Tax Amount</span>
+                      <span>₹{totals.taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold pt-2 border-t">
                       <span>Total</span>
-                      <span>  {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }).format(totals.total)}</span>
+                      <span>₹{totals.total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

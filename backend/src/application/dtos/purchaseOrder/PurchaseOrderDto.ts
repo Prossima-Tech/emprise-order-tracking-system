@@ -5,7 +5,7 @@ export interface PurchaseOrderItemDto {
   itemId: string;
   quantity: number;
   unitPrice: number;  
-  taxRate: number;    
+  // taxRate: number;
   totalAmount?: number; 
 }
 
@@ -25,6 +25,9 @@ export interface CreatePurchaseOrderDto {
   loaId: string;
   vendorId: string;
   items: PurchaseOrderItemDto[];
+  baseAmount?: number;
+  taxAmount: number;
+  totalAmount?: number;
   requirementDesc: string;
   termsConditions: string;
   shipToAddress: string;
@@ -41,6 +44,9 @@ export interface UpdatePurchaseOrderDto {
   notes?: string;
   documentFile?: Express.Multer.File;
   tags?: string[];
+  baseAmount?: number;
+  taxAmount?: number;
+  totalAmount?: number;
   approverId?: string;
   status?: POStatus;
   regeneratePdf?: boolean;
@@ -73,11 +79,16 @@ export interface PurchaseOrderResponseDto {
     taxRate: number;
     totalAmount: number;
   }>;
+
+  baseAmount: number;
+  taxAmount: number;
+  totalAmount: number;
   requirementDesc: string;
   termsConditions: string;
   shipToAddress: string;
   notes?: string;
   documentUrl?: string;
+  documentHash?: string;
   status: POStatus;
   createdBy: {
     id: string;

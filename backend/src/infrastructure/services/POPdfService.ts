@@ -16,18 +16,18 @@ export interface PDFItemData {
   };
   quantity: number;
   unitPrice: number;
-  taxRates: {
-    igst: number;
-    sgst: number;
-    ugst: number;
-  };
-  taxAmounts: {
-    igst: number;
-    sgst: number;
-    ugst: number;
-  };
-  baseAmount: number;
-  totalAmount: number;
+  // taxRates: {
+  //   igst: number;
+  //   sgst: number;
+  //   ugst: number;
+  // };
+  // taxAmounts: {
+  //   igst: number;
+  //   sgst: number;
+  //   ugst: number;
+  // };
+  // baseAmount: number;
+  // totalAmount: number;
 }
 
 export interface PDFGenerationData {
@@ -220,7 +220,7 @@ export class POPDFService {
         item.item.name + (item.item.description ? `\n${item.item.description}` : ''),
         item.quantity.toLocaleString('en-IN'),
         `₹${item.unitPrice.toLocaleString('en-IN')}`,
-        `₹${item.totalAmount.toLocaleString('en-IN')}`
+        // `₹${item.totalAmount.toLocaleString('en-IN')}`
       ], columns as Column[]);
 
       this.doc.rect(this.margin, this.currentY - rowHeight, this.tableWidth, rowHeight).stroke();
@@ -233,8 +233,8 @@ export class POPDFService {
     this.checkPageBreak(90);
     
     const totals = data.items.reduce((acc, item) => ({
-      base: acc.base + item.baseAmount,
-      total: acc.total + item.totalAmount
+      base: acc.base || 0,
+      total: acc.total || 0
     }), { base: 0, total: 0 });
 
     const summaryX = this.margin + 260;
@@ -243,11 +243,11 @@ export class POPDFService {
     this.doc.fontSize(10)
       .font('Helvetica')
       .text('Total (Basic Price):', summaryX, this.currentY + 8)
-      .text(`₹${totals.base.toLocaleString('en-IN')}`, valueX, this.currentY + 8)
+      // .text(`₹${totals.base.toLocaleString('en-IN')}`, valueX, this.currentY + 8)
       .moveDown(0.4)
       .font('Helvetica-Bold')
       .text('Grand Total (Inclusive of GST@18%):', summaryX, this.currentY + 20)
-      .text(`₹${totals.total.toLocaleString('en-IN')}`, valueX, this.currentY + 20);
+      // .text(`₹${totals.total.toLocaleString('en-IN')}`, valueX, this.currentY + 20);
 
     this.currentY += 35;
   }

@@ -63,6 +63,26 @@ export class LoaService {
                 return ResultUtils.fail('LOA number already exists');
             }
 
+            // Validate EMD ID if provided
+            if (dto.emdId) {
+                // Check if EMD exists and is ACTIVE
+                const emd = await this.repository.findEMDById(dto.emdId);
+
+                if (!emd) {
+                    return ResultUtils.fail('EMD not found');
+                }
+
+                // Check if EMD is already associated with another LOA
+                if (emd.loaId) {
+                    return ResultUtils.fail('EMD is already associated with another LOA');
+                }
+
+                // Check if EMD is ACTIVE
+                if (emd.status !== 'ACTIVE') {
+                    return ResultUtils.fail('EMD is not in ACTIVE status');
+                }
+            }
+
             let documentUrl = '';
             if (dto.documentFile) {
                 documentUrl = await this.processDocument(dto.documentFile);
@@ -84,7 +104,8 @@ export class LoaService {
                 },
                 workDescription: dto.workDescription,
                 documentUrl: documentUrl || 'pending',
-                tags
+                tags,
+                emdId: dto.emdId  // Pass single EMD ID to repository
             });
 
             return ResultUtils.ok(loa);
@@ -109,6 +130,20 @@ export class LoaService {
                 }
             }
 
+            // Validate EMD ID if provided
+            if (dto.emdId) {
+                const emd = await this.repository.findEMDById(dto.emdId);
+                
+                if (!emd) {
+                    return ResultUtils.fail('EMD not found');
+                }
+
+                // Check if EMD is associated with another LOA (excluding current LOA)
+                if (emd.loaId && emd.loaId !== id) {
+                    return ResultUtils.fail('EMD is already associated with another LOA');
+                }
+            }
+
             let documentUrl = existingLoa.documentUrl;
             if (dto.documentFile) {
                 documentUrl = await this.processDocument(dto.documentFile);
@@ -128,6 +163,9 @@ export class LoaService {
                 deliveryPeriod: dto.deliveryPeriod ? {
                     start: new Date(dto.deliveryPeriod.start),
                     end: new Date(dto.deliveryPeriod.end)
+                } : undefined,
+                emd: dto.emdId ? {
+                    connect: { id: dto.emdId }
                 } : undefined
             });
 
@@ -200,19 +238,11 @@ export class LoaService {
     }
 
     async getAllLoas(params: {
-        page?: number;
-        limit?: number;
         searchTerm?: string;
-    }): Promise<Result<{ loas: any[]; total: number; pages: number }>> {
+    }): Promise<Result<{ loas: any[]; total: number }>> {
         try {
-            const page = params.page || 1;
-            const limit = params.limit || 10;
-            const skip = (page - 1) * limit;
-
             const [loas, total] = await Promise.all([
                 this.repository.findAll({
-                    skip,
-                    take: limit,
                     searchTerm: params.searchTerm
                 }),
                 this.repository.count({
@@ -222,8 +252,7 @@ export class LoaService {
 
             return ResultUtils.ok({
                 loas,
-                total,
-                pages: Math.ceil(total / limit)
+                total
             });
         } catch (error) {
             console.error('LOAs Fetch Error:', error);

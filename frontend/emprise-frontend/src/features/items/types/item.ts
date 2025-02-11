@@ -7,12 +7,6 @@ export const itemSchema = z.object({
   unitPrice: z.number().min(0, 'Unit price must be non-negative'),
   uom: z.string().min(1, 'Unit of measurement is required'),
   hsnCode: z.string().min(1, 'HSN code is required'),
-  taxRates: z.object({
-    igst: z.number().min(0, 'IGST rate must be non-negative'),
-    sgst: z.number().min(0, 'SGST rate must be non-negative'),
-    ugst: z.number().min(0, 'UGST rate must be non-negative'),
-    cgst: z.number().optional()
-  })
 });
 
 export type ItemFormData = z.infer<typeof itemSchema>;
@@ -31,11 +25,6 @@ export interface Item extends ItemFormData {
   }>;
   createdAt: string;
   updatedAt: string;
-  taxRates: {
-    igst: number;
-    sgst: number;
-    ugst: number;
-  };
 }
 
 export interface ItemVendor {

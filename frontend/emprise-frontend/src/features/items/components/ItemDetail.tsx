@@ -9,9 +9,9 @@ import {
   ShoppingCart,
   BarChart3,
   Edit,
-  Plus,
   Pencil,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -47,6 +47,23 @@ import { Label } from "../../../components/ui/label";
 import { useToast } from "../../../hooks/use-toast-app";
 import { useItems } from "../hooks/use-items";
 import type { Item, ItemVendor } from "../types/item";
+import { PriceHistory } from "../../../components/data-display/PriceHistory";
+import apiClient from "../../../lib/utils/api-client";
+
+interface PriceHistoryData {
+  currentPrice: number;
+  priceHistory: Array<{
+    purchaseDate: string;
+    poNumber: string;
+    quantity: number;
+    unitPrice: number;
+    totalAmount: number;
+    status: string;
+  }>;
+  averagePrice: number;
+  lowestPrice: number;
+  highestPrice: number;
+}
 
 export function ItemDetail() {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +76,8 @@ export function ItemDetail() {
   const { getItem, updateVendor, removeVendor, deleteItem } = useItems();
   const fetchedRef = useRef(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [vendorPriceHistories, setVendorPriceHistories] = useState<Record<string, PriceHistoryData>>({});
+  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -83,11 +102,38 @@ export function ItemDetail() {
     loadItem();
   }, [id, getItem, showError]);
 
+  useEffect(() => {
+    const fetchAllVendorsPriceHistory = async () => {
+      if (!item?.id || !item.vendors.length) return;
+      
+      try {
+        const histories = await Promise.all(
+          item.vendors.map(async (vendor) => {
+            const response = await apiClient.get(`/items/${item.id}/price-history?vendorId=${vendor.vendor.id}`);
+            return { vendorId: vendor.vendor.id, data: response.data.data };
+          })
+        );
+
+        const historyMap = histories.reduce((acc, { vendorId, data }) => ({
+          ...acc,
+          [vendorId]: data
+        }), {});
+
+        setVendorPriceHistories(historyMap);
+      } catch (error) {
+        console.error('Error fetching price histories:', error);
+        showError("Failed to fetch price histories");
+      }
+    };
+
+    fetchAllVendorsPriceHistory();
+  }, [item?.id, item?.vendors]);
+
   const handleUpdateVendorPrice = async () => {
     if (!item || !selectedVendor) return;
 
     try {
-      setIsLoading(true);
+      setIsUpdatingPrice(true);
       await updateVendor(item.id, selectedVendor.vendor.id, {
         unitPrice: parseFloat(newVendorPrice),
       });
@@ -98,7 +144,7 @@ export function ItemDetail() {
     } catch (error) {
       showError("Failed to update vendor price");
     } finally {
-      setIsLoading(false);
+      setIsUpdatingPrice(false);
     }
   };
 
@@ -316,6 +362,7 @@ export function ItemDetail() {
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="vendors">Vendors</TabsTrigger>
+          <TabsTrigger value="price-history">Price History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
@@ -354,27 +401,6 @@ export function ItemDetail() {
               </CardContent>
             </Card>
 
-            {/* Tax Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tax Information</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label>IGST Rate</Label>
-                  <p className="text-sm">{item.taxRates.igst ? item.taxRates.igst : "N/A"}%</p>
-                </div>
-                <div>
-                  <Label>SGST Rate</Label>
-                  <p className="text-sm">{item.taxRates.sgst ? item.taxRates.sgst : "N/A"}%</p>
-                </div>
-                <div>
-                  <Label>UGST Rate</Label>
-                  <p className="text-sm">{item.taxRates.ugst ? item.taxRates.ugst : "N/A"}%</p>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Metadata */}
             <Card>
               <CardHeader>
@@ -406,10 +432,10 @@ export function ItemDetail() {
                   <CardTitle>Vendor List</CardTitle>
                   <CardDescription>Manage vendor prices for this item</CardDescription>
                 </div>
-                <Button onClick={() => navigate(`/items/${item.id}/vendors/new`)}>
+                {/* <Button onClick={() => navigate(`/items/${item.id}/vendors/new`)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Vendor
-                </Button>
+                </Button> */}
               </div>
             </CardHeader>
             <CardContent>
@@ -419,6 +445,38 @@ export function ItemDetail() {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="price-history">
+          <div className="space-y-6">
+            {item.vendors.map((vendor) => (
+              <Card key={vendor.vendor.id}>
+                <CardHeader>
+                  <CardTitle>{vendor.vendor.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {vendorPriceHistories[vendor.vendor.id] ? (
+                    <PriceHistory 
+                      data={vendorPriceHistories[vendor.vendor.id]}
+                      vendorName={vendor.vendor.name}
+                    />
+                  ) : (
+                    <div className="text-muted-foreground">Loading price history...</div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            
+            {item.vendors.length === 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-muted-foreground text-center">
+                    No vendors found for this item
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -452,15 +510,16 @@ export function ItemDetail() {
               <Button
                 variant="outline"
                 onClick={() => setSelectedVendor(null)}
-                disabled={isLoading}
+                disabled={isUpdatingPrice}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpdateVendorPrice}
-                disabled={isLoading}
+                disabled={isUpdatingPrice}
               >
-                {isLoading ? "Updating..." : "Update Price"}
+                {isUpdatingPrice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isUpdatingPrice ? "Updating..." : "Update Price"}
               </Button>
             </div>
           </div>

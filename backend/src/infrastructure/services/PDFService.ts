@@ -8,6 +8,7 @@ export interface WorkItem {
   description: string;
   baseRate: number;
   taxRate: number;
+  quantity: number;
 }
 
 export interface DocumentData {

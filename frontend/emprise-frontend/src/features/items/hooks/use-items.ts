@@ -89,7 +89,7 @@ export function useItems() {
   const updateVendor = useCallback(async (itemId: string, vendorId: string, data: { unitPrice: number }) => {
     try {
       setLoading(true);
-      const response = await apiClient.patch(`/items/${itemId}/vendors/${vendorId}`, data);
+      const response = await apiClient.put(`/vendors/${vendorId}/items/${itemId}`, data);
       showSuccess('Vendor price updated successfully');
       return response.data.data;
     } catch (error: any) {
@@ -103,7 +103,7 @@ export function useItems() {
   const removeVendor = useCallback(async (itemId: string, vendorId: string) => {
     try {
       setLoading(true);
-      await apiClient.delete(`/items/${itemId}/vendors/${vendorId}`);
+      await apiClient.delete(`/vendors/${vendorId}/items/${itemId}`);
       showSuccess('Vendor removed successfully');
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to remove vendor');

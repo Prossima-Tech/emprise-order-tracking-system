@@ -93,13 +93,15 @@ model EMD {
   documentUrl     String          // S3 URL of FDR document
   extractedData   Json?           // OCR extracted data
   status          EMDStatus
-  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])  // Add relation
+  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])
   offerId         String?         // Make it optional as EMD might be created before offer
+  loa             LOA?            @relation(fields: [loaId], references: [id])
+  loaId           String?         @unique  // Add @unique to ensure one-to-one relationship
   tags            String[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  @@index([offerId])  // Add index for better query performance
+  @@index([offerId])
 }
 
 enum EMDStatus {
@@ -118,6 +120,7 @@ model LOA {
   amendments      Amendment[]
   purchaseOrders  PurchaseOrder[]
   tags            String[]
+  emd             EMD?      @relation
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
@@ -140,10 +143,13 @@ model PurchaseOrder {
   loaId             String
   vendor            Vendor             @relation(fields: [vendorId], references: [id])
   vendorId          String
-  items             PurchaseOrderItem[] // Change from Json to relation
+  items             PurchaseOrderItem[] 
   requirementDesc   String
   termsConditions   String             @db.Text
   shipToAddress     String
+  baseAmount        Float              @default(0)
+  taxAmount         Float              @default(0)
+  totalAmount       Float              @default(0)
   notes             String?
   documentUrl       String?
   documentHash      String?
@@ -167,10 +173,8 @@ model PurchaseOrderItem {
   item            Item          @relation(fields: [itemId], references: [id])
   itemId          String
   quantity        Float
-  unitPrice       Float         // Price at time of purchase
-  taxRate         Float         // Tax rate at time of purchase
-  taxRates        Json          @default("{\"igst\": 0, \"sgst\": 0, \"ugst\": 0}")
-  totalAmount     Float         // Calculated total including tax
+  unitPrice       Float?         // Price at time of purchase
+  totalAmount     Float?         // Calculated total including tax
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -206,7 +210,6 @@ model Item {
   unitPrice   Float
   uom         String    // Unit of Measurement
   hsnCode     String?
-  taxRates    Json      // { igst?: number, sgst?: number, ugst?: number }
   vendors     VendorItem[]
   poItems     PurchaseOrderItem[] // Add this relation
   createdAt   DateTime  @default(now())

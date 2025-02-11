@@ -22,11 +22,6 @@ const itemSchema = z.object({
   unitPrice: z.coerce.number().min(0, "Unit price must be positive"),
   uom: z.string().min(1, "Unit of measurement is required"),
   hsnCode: z.string().min(1, "HSN Code is required"),
-  taxRates: z.object({
-    igst: z.coerce.number().min(0, "IGST rate must be positive"),
-    sgst: z.coerce.number().min(0, "SGST rate must be positive"),
-    ugst: z.coerce.number().min(0, "UGST rate must be positive"),
-  }),
 });
 
 type ItemFormData = z.infer<typeof itemSchema>;
@@ -47,11 +42,6 @@ export function ItemForm({ initialData, onSubmit, isLoading, mode }: ItemFormPro
       unitPrice: initialData?.unitPrice ? parseFloat(initialData.unitPrice.toString()) : 0,
       uom: initialData?.uom || "",
       hsnCode: initialData?.hsnCode || "",
-      taxRates: {
-        igst: initialData?.taxRates.igst || 0,
-        sgst: initialData?.taxRates.sgst || 0,
-        ugst: initialData?.taxRates.ugst || 0,
-      },
     },
   });
 
@@ -134,57 +124,6 @@ export function ItemForm({ initialData, onSubmit, isLoading, mode }: ItemFormPro
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Tax Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="taxRates.igst"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>IGST Rate (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="taxRates.sgst"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SGST Rate (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="taxRates.ugst"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>UGST Rate (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
           </CardContent>
         </Card>
 

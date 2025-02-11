@@ -99,4 +99,13 @@ export class ItemService {
       throw new AppError('Failed to fetch items');
     }
   }
+
+  async getPriceHistory(id: string, vendorId: string): Promise<Result<any>> {
+    try {
+      const priceHistory = await this.repository.getPriceHistory(id, vendorId);
+      return ResultUtils.ok(priceHistory);
+    } catch (error) {
+      throw new AppError('Failed to fetch price history');
+    }
+  }
 }

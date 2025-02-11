@@ -4,6 +4,7 @@ import { Activity } from '../types/dashboard';
 import { useToast } from '../../../hooks/use-toast-app';
 
 interface DashboardStats {
+  activeEmdsValue: number;
   totalOffers: number;
   totalOrders: number;
   activeEmds: number;

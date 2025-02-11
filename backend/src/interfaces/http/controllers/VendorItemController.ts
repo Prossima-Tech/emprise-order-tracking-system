@@ -55,11 +55,8 @@ export class VendorItemController {
       const { itemId } = req.params;
       const { page, limit } = req.query;
 
-      const itemVendors = await this.service.getItemVendors(itemId, {
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined
-      });
-
+      const itemVendors = await this.service.getItemVendors(itemId);
+      
       res.json({
         status: 'success',
         data: itemVendors

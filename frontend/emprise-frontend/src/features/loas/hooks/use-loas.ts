@@ -214,6 +214,20 @@ export function useLOAs() {
     }
   };
 
+  // Add new function to fetch available EMDs
+  const getAvailableEMDs = async () => {
+    try {
+      const response = await apiClient.get('/emds');
+      // Filter EMDs that don't have a loaId (not associated with any LOA)
+      const availableEMDs = response.data.data.data.filter((emd: any) => !emd.loaId);
+      return availableEMDs;
+    } catch (error) {
+      console.error('Error fetching available EMDs:', error);
+      showError('Failed to fetch available EMDs');
+      return [];
+    }
+  };
+
   return {
     loading,
     getLOAs,
@@ -224,5 +238,6 @@ export function useLOAs() {
     createAmendment,
     deleteAmendment,
     updateLOAStatus,
+    getAvailableEMDs,
   };
 }
