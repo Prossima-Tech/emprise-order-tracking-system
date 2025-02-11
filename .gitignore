@@ -3,5 +3,5 @@ dist
 .env
 .env.production
 secrets/
-docker-compose*.yml
+docker-compose.yml
 **/*.env
