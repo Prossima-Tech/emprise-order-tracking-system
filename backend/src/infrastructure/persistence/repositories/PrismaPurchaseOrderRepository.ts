@@ -26,11 +26,19 @@ export class PrismaPurchaseOrderRepository {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       })) || [],
+      site: {
+        id: prismaOrder.site.id,
+        name: prismaOrder.site.name,
+        code: prismaOrder.site.code,
+        zoneId: prismaOrder.site.zoneId
+      } ,
+      siteId: prismaOrder.siteId,
       requirementDesc: prismaOrder.requirementDesc,
       termsConditions: prismaOrder.termsConditions,
       shipToAddress: prismaOrder.shipToAddress,
       baseAmount: prismaOrder.baseAmount,
       taxAmount: prismaOrder.taxAmount,
+      additionalCharges: prismaOrder.additionalCharges || [],
       totalAmount: prismaOrder.totalAmount,
       notes: prismaOrder.notes,
       documentUrl: prismaOrder.documentUrl,
@@ -50,26 +58,47 @@ export class PrismaPurchaseOrderRepository {
   }
 
   private toPrismaEntity(domainOrder: Partial<PurchaseOrder>) {
-    const { items, loa, vendor, createdBy, createdById, approver, approvalHistory, ...prismaData } = domainOrder;
+    const { items, loa, vendor, site, createdBy, approver, ...prismaData } = domainOrder;
     
-    // Convert approvalHistory to Prisma-compatible format
-    if (approvalHistory) {
-      return {
-        ...prismaData,
-        approvalHistory: {
-          set: approvalHistory.map(action => ({
-            actionType: action.actionType,
-            userId: action.userId,
-            timestamp: action.timestamp,
-            comments: action.comments,
-            previousStatus: action.previousStatus,
-            newStatus: action.newStatus
-          }))
-        }
+    const updateData: any = {};
+
+    // Handle scalar fields
+    if (prismaData.poNumber) updateData.poNumber = prismaData.poNumber;
+    if (prismaData.requirementDesc) updateData.requirementDesc = prismaData.requirementDesc;
+    if (prismaData.termsConditions) updateData.termsConditions = prismaData.termsConditions;
+    if (prismaData.shipToAddress) updateData.shipToAddress = prismaData.shipToAddress;
+    if (prismaData.baseAmount !== undefined) updateData.baseAmount = prismaData.baseAmount;
+    if (prismaData.taxAmount !== undefined) updateData.taxAmount = prismaData.taxAmount;
+    if (prismaData.additionalCharges !== undefined) updateData.additionalCharges = prismaData.additionalCharges;
+    if (prismaData.totalAmount !== undefined) updateData.totalAmount = prismaData.totalAmount;
+    if (prismaData.notes !== undefined) updateData.notes = prismaData.notes;
+    if (prismaData.documentUrl !== undefined) updateData.documentUrl = prismaData.documentUrl;
+    if (prismaData.documentHash !== undefined) updateData.documentHash = prismaData.documentHash;
+    if (prismaData.status) updateData.status = prismaData.status;
+    if (prismaData.approvalComments !== undefined) updateData.approvalComments = prismaData.approvalComments;
+    if (prismaData.rejectionReason !== undefined) updateData.rejectionReason = prismaData.rejectionReason;
+
+    // Handle relation IDs using connect
+    if (prismaData.loaId) updateData.loa = { connect: { id: prismaData.loaId } };
+    if (prismaData.vendorId) updateData.vendor = { connect: { id: prismaData.vendorId } };
+    if (prismaData.siteId) updateData.site = { connect: { id: prismaData.siteId } };
+    if (prismaData.createdById) updateData.createdBy = { connect: { id: prismaData.createdById } };
+    if (prismaData.approverId) updateData.approver = { connect: { id: prismaData.approverId } };
+
+    // Handle arrays
+    if (prismaData.approvalHistory) {
+      updateData.approvalHistory = {
+        set: prismaData.approvalHistory
       };
     }
-  
-    return prismaData;
+
+    if (prismaData.tags) {
+      updateData.tags = {
+        set: prismaData.tags
+      };
+    }
+
+    return updateData;
   }
   
   async create(data: {
@@ -83,8 +112,10 @@ export class PrismaPurchaseOrderRepository {
       // taxRate: number;
       totalAmount: number;
     }>;
+    siteId: string;
     baseAmount: number;
     taxAmount: number;
+    additionalCharges: Array<{ description: string; amount: number; }>;
     totalAmount: number;
     requirementDesc: string;
     termsConditions: string;
@@ -100,32 +131,38 @@ export class PrismaPurchaseOrderRepository {
     approvalHistory?: any[];
     tags: string[];
   }): Promise<PurchaseOrder> {
-    const { items, ...poData } = data;
-    const prismaResult = await this.prisma.purchaseOrder.create({
-      data: {
-        ...poData,
-        approvalHistory: poData.approvalHistory || [],
-        items: {
-          create: items.map(item => ({
-            ...item,
-            // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
-          }))
-        }
-      },
-      include: {
-        loa: true,
-        vendor: true,
-        items: {
-          include: {
-            item: true
+    try {
+      const { items, ...poData } = data;
+      const prismaResult = await this.prisma.purchaseOrder.create({
+        data: {
+          ...poData,
+          approvalHistory: poData.approvalHistory || [],
+          items: {
+            create: items.map(item => ({
+              ...item,
+              // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
+            }))
           }
         },
-        createdBy: true,
-        approver: true
-      }
-    });
-  
-    return this.toDomainEntity(prismaResult);
+        include: {
+          loa: true,
+          vendor: true,
+          site: true,
+          items: {
+            include: {
+              item: true
+            }
+          },
+          createdBy: true,
+          approver: true
+        }
+      });
+    
+      return this.toDomainEntity(prismaResult);
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
+      throw new Error('Failed to create purchase order');
+    }
   }
 
   async update(id: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
@@ -138,6 +175,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -168,6 +206,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -191,6 +230,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -210,6 +250,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -229,6 +270,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -247,12 +289,14 @@ export class PrismaPurchaseOrderRepository {
     take?: number;
     status?: POStatus;
     vendorId?: string;
+    siteId?: string;
+    zoneId?: string;
     loaId?: string;
     createdById?: string;
     approverId?: string;
     searchTerm?: string;
   }): Promise<PurchaseOrder[]> {
-    const { skip, take, status, vendorId, loaId, createdById, approverId, searchTerm } = params;
+    const { skip, take, status, vendorId, siteId, zoneId, loaId, createdById, approverId, searchTerm } = params;
 
     const prismaResults = await this.prisma.purchaseOrder.findMany({
       skip,
@@ -261,6 +305,8 @@ export class PrismaPurchaseOrderRepository {
         AND: [
           status ? { status } : {},
           vendorId ? { vendorId } : {},
+          siteId ? { siteId } : {},
+          zoneId ? { site: { zoneId } } : {},
           loaId ? { loaId } : {},
           createdById ? { createdById } : {},
           approverId ? { approverId } : {},
@@ -276,6 +322,7 @@ export class PrismaPurchaseOrderRepository {
       include: {
         loa: true,
         vendor: true,
+        site: true,
         items: {
           include: {
             item: true
@@ -295,18 +342,22 @@ export class PrismaPurchaseOrderRepository {
   async count(params: {
     status?: POStatus;
     vendorId?: string;
+    siteId?: string;
+    zoneId?: string;
     loaId?: string;
     createdById?: string;
     approverId?: string;
     searchTerm?: string;
   }): Promise<number> {
-    const { status, vendorId, loaId, createdById, approverId, searchTerm } = params;
+    const { status, vendorId, siteId, zoneId, loaId, createdById, approverId, searchTerm } = params;
 
     return this.prisma.purchaseOrder.count({
       where: {
         AND: [
           status ? { status } : {},
           vendorId ? { vendorId } : {},
+          siteId ? { siteId } : {},
+          zoneId ? { site: { zoneId } } : {},
           loaId ? { loaId } : {},
           createdById ? { createdById } : {},
           approverId ? { approverId } : {},
@@ -358,7 +409,6 @@ export class PrismaPurchaseOrderRepository {
       });
 
       // Log successful update
-      console.log(`Successfully updated items for PO: ${purchaseOrderId}`, items);
     } catch (error) {
       console.error('Error updating PO items:', error);
       throw error;
@@ -380,6 +430,7 @@ export class PrismaPurchaseOrderRepository {
         item: true,
         purchaseOrder: {
           include: {
+            site: true,
             loa: true,
             vendor: true,
             items: {

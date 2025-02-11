@@ -30,7 +30,10 @@ export function useItems() {
 
   const createItem = useCallback(async (data: ItemFormData) => {
     try {
-      const response = await apiClient.post('/items', data);
+      const response = await apiClient.post('/items', {
+        ...data,
+        unitPrice: 0
+      });
       return response.data.data;
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to create item');
@@ -40,7 +43,10 @@ export function useItems() {
 
   const updateItem = useCallback(async (id: string, data: ItemFormData) => {
     try {
-      const response = await apiClient.put(`/items/${id}`, data);
+      const response = await apiClient.put(`/items/${id}`, {
+        ...data,
+        unitPrice: 0
+      });
       return response.data.data;
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to update item');
@@ -51,7 +57,6 @@ export function useItems() {
   const deleteItem = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      console.log(`Attempting to delete item with ID: ${id}`);
       
       await apiClient.delete(`/items/${id}`);
       // If the delete request doesn't throw an error, consider it successful
@@ -59,11 +64,6 @@ export function useItems() {
       return true;
 
     } catch (error: any) {
-      console.error('Delete API Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
       const errorMessage = error.response?.data?.message || 'Failed to delete item';
       showError(errorMessage);
       return false;

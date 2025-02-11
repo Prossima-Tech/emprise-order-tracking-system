@@ -23,7 +23,7 @@ export async function extractFDRData(imageFile: File): Promise<ExtractedFDRData>
     // Prepare prompt for DeepSeek-R1
     const prompt = `Extract these fields as JSON ONLY from the text:
     {
-      "amount": written in numbers below the text Maturity value in float value,
+      "amount": number,
       "maturityDate": "DD-MM-YYYY",
       "submissionDate": "DD-MM-YYYY"
     }
@@ -33,13 +33,13 @@ export async function extractFDRData(imageFile: File): Promise<ExtractedFDRData>
     const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer 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`,
+        'Authorization': `Bearer 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`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://localhost:3000',
         'X-Title': 'Emprise'
       },
       body: JSON.stringify({
-        model: "qwen/qwen-turbo",
+        model: "mistralai/mistral-small-24b-instruct-2501",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
         response_format: { type: "json_object" }

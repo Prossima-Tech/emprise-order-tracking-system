@@ -19,7 +19,6 @@ import type { Item } from "../types/item";
 const itemSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().min(1, "Description is required"),
-  unitPrice: z.coerce.number().min(0, "Unit price must be positive"),
   uom: z.string().min(1, "Unit of measurement is required"),
   hsnCode: z.string().min(1, "HSN Code is required"),
 });
@@ -39,7 +38,6 @@ export function ItemForm({ initialData, onSubmit, isLoading, mode }: ItemFormPro
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",
-      unitPrice: initialData?.unitPrice ? parseFloat(initialData.unitPrice.toString()) : 0,
       uom: initialData?.uom || "",
       hsnCode: initialData?.hsnCode || "",
     },
@@ -82,20 +80,6 @@ export function ItemForm({ initialData, onSubmit, isLoading, mode }: ItemFormPro
             />
 
             <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="unitPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Unit Price</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="uom"

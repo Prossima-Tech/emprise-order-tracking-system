@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import type { Site } from "../../sites/types/site";
+
+// Additional Charge schema
+const additionalChargeSchema = z.object({
+  description: z.string().min(1, 'Description is required'),
+  amount: z.number().min(0, 'Amount must be non-negative'),
+});
 
 // Item in PO schema
 const poItemSchema = z.object({
@@ -12,6 +19,7 @@ export const purchaseOrderSchema = z.object({
   loaId: z.string().min(1, 'LOA reference is required'),
   vendorId: z.string().min(1, 'Vendor is required'),
   items: z.array(poItemSchema).min(1, 'At least one item is required'),
+  additionalCharges: z.array(additionalChargeSchema).default([]),
   taxAmount: z.number().min(0, 'Tax amount must be non-negative'),
   requirementDesc: z.string()
     .min(10, 'Requirement description must be at least 10 characters')
@@ -29,8 +37,10 @@ export const purchaseOrderSchema = z.object({
   notes: z.string().optional(),
   approverId: z.string().optional(),
   tags: z.array(z.string()).default([]),
+  siteId: z.string().min(1, "Site is required"),
 });
 
+export type AdditionalCharge = z.infer<typeof additionalChargeSchema>;
 export type POItemFormData = z.infer<typeof poItemSchema>;
 export type PurchaseOrderFormData = z.infer<typeof purchaseOrderSchema>;
 
@@ -50,6 +60,7 @@ export interface PurchaseOrder {
   loaId: string;
   vendorId: string;
   items: POItem[];
+  additionalCharges: AdditionalCharge[];
   taxAmount: number;
   totalAmount: number;
   requirementDesc: string;
@@ -60,6 +71,8 @@ export interface PurchaseOrder {
   approverId?: string;
   tags: string[];
   documentUrl: string | null;
+  siteId: string;
+  site?: Site;
   vendor: {
     id: string;
     name: string;

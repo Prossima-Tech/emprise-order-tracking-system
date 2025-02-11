@@ -88,7 +88,6 @@ export function ItemDetail() {
       try {
         setIsLoading(true);
         const data = await getItem(id);
-        console.log('Fetched item:', data); // Debug log
         setItem(data);
       } catch (error) {
         console.error('Error fetching item:', error);
@@ -168,7 +167,6 @@ export function ItemDetail() {
     
     try {
       setIsLoading(true);
-      console.log('Deleting item:', id);
       const success = await deleteItem(id);
       
       if (success) {
@@ -197,6 +195,13 @@ export function ItemDetail() {
       </Alert>
     );
   }
+
+  const formatCurrency = (value: number): string => {
+    return `₹${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
 
   // Calculate key metrics
   const totalOrders = item.vendors.length;
@@ -331,7 +336,7 @@ export function ItemDetail() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₹{averagePrice.toFixed(2)}
+              {formatCurrency(averagePrice)}
             </div>
             <p className="text-xs text-muted-foreground">
               Per {item.uom} across all orders
@@ -387,7 +392,7 @@ export function ItemDetail() {
                     {new Intl.NumberFormat("en-IN", {
                       style: "currency",
                       currency: "INR",
-                    }).format(item.unitPrice)}
+                    }).format(item.vendors[0].unitPrice)}
                   </p>
                 </div>
                 <div>
@@ -441,7 +446,7 @@ export function ItemDetail() {
             <CardContent>
               <DataTable
                 columns={vendorColumns}
-                data={item.vendors}
+                data={item.vendors as ItemVendor[]}
               />
             </CardContent>
           </Card>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../lib/stores/auth-store';
 import { useToast } from '../../../hooks/use-toast-app';
 import apiClient from '../../../lib/utils/api-client';
-import { setAuthToken, setUser } from '../../../lib/utils/auth';
+import { getDefaultRouteForRole, setAuthToken, setUser } from '../../../lib/utils/auth';
 import type { LoginFormData, RegisterFormData } from '../types/auth';
 
 export function useAuth() {
@@ -24,7 +24,9 @@ export function useAuth() {
       setIsAuthenticated(true);
 
       showSuccess('Successfully logged in');
-      navigate('/dashboard');
+      // navigate('/dashboard');
+      const defaultRoute = getDefaultRouteForRole(user.role);
+      navigate(defaultRoute);
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to login');
     } finally {
@@ -44,7 +46,9 @@ export function useAuth() {
       setIsAuthenticated(true);
 
       showSuccess('Account created successfully');
-      navigate('/dashboard');
+      // navigate('/dashboard');
+      const defaultRoute = getDefaultRouteForRole(user.role);
+      navigate(defaultRoute);
     } catch (error: any) {
       showError(error.response?.data?.message || 'Failed to create account');
     } finally {

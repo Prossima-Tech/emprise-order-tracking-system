@@ -15,7 +15,8 @@ export const offerSchema = z.object({
   workItems: z.array(workItemSchema).min(1, "At least one work item is required"),
   termsConditions: z.string(),
   tags: z.array(z.string()),
-  approverId: z.string().min(1, "Approver is required")
+  approverId: z.string().min(1, "Approver is required"),
+  railwayZone: z.string().min(1, "Railway zone is required")
 });
 
 // export type WorkItem = z.infer<typeof workItemSchema>;
@@ -31,6 +32,7 @@ export interface Offer extends OfferFormData {
   createdAt: string;
   updatedAt: string;
   totalAmount: number;
+  railwayZone: string;
 }
 
 export interface WorkItem {
@@ -49,4 +51,5 @@ export interface OfferFormData {
   termsConditions: string;
   tags: string[];
   approverId: string;
+  railwayZone: string;
 }

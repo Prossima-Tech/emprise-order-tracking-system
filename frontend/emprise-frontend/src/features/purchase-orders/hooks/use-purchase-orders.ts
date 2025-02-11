@@ -2,18 +2,18 @@ import { useState } from 'react';
 import { useToast } from '../../../hooks/use-toast-app';
 import apiClient from '../../../lib/utils/api-client';
 import type { PurchaseOrderFormData } from '../types/purchase-order';
+import { getUser } from '../../../lib/utils/auth';
 
 export function usePurchaseOrders() {
   const [loading, setLoading] = useState(false);
   const { showSuccess, showError } = useToast();
+  const getCurrentUser = getUser();
 
   const createPurchaseOrder = async (data: PurchaseOrderFormData) => {
     try {
       setLoading(true);
-      console.log('Creating PO with data:', data); // Debug log
 
       const response = await apiClient.post('/purchase-orders', data);
-      console.log('PO creation response:', response); // Debug log
 
       if (!response.data || response.data.status !== 'success') {
         throw new Error(response.data?.message || 'Failed to create purchase order');
@@ -44,16 +44,31 @@ export function usePurchaseOrders() {
   const submitForApproval = async (id: string) => {
     try {
       setLoading(true);
+
       const response = await apiClient.post(`/purchase-orders/${id}/submit`);
       
+      // Check for business logic errors in success response
+      if (response.data?.data?.isSuccess === false) {
+        throw new Error(response.data.data.error || 'Failed to submit purchase order');
+      }
+      
+      // Check for API errors
       if (!response.data || response.data.status !== 'success') {
         throw new Error(response.data?.message || 'Failed to submit purchase order');
       }
       
       showSuccess('Purchase order submitted for approval');
+      return response.data;
     } catch (error: any) {
-      console.error('Submit for approval error:', error.response || error);
-      showError(error.response?.data?.message || 'Failed to submit purchase order');
+      console.error('Submit for approval error:', error);
+      
+      // Handle specific error messages
+      const errorMessage = error.response?.data?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to submit purchase order';
+                          
+      showError(errorMessage);
       throw error;
     } finally {
       setLoading(false);
@@ -88,7 +103,22 @@ export function usePurchaseOrders() {
         throw new Error(response.data?.message || 'Failed to fetch purchase orders');
       }
       
-      return response.data?.data?.data?.purchaseOrders || [];
+      // Get current user from context or auth state
+      if (!getCurrentUser) {  
+        throw new Error('User not found');
+      }
+      const currentUser = getCurrentUser; // Get user from auth context hook
+      const purchaseOrders = response.data?.data?.data?.purchaseOrders || [];
+      
+      // Filter POs based on user role and ownership
+      const filteredPOs = purchaseOrders.filter((po: any) => {
+        if (currentUser.role === 'ADMIN') {
+          return true; // Admins can see all POs
+        }
+        return po.createdById === currentUser.id; // Regular users can only see their own POs
+      });
+      
+      return filteredPOs;
     } catch (error: any) {
       console.error('Get POs error:', error.response || error);
       showError(error.response?.data?.message || 'Failed to fetch purchase orders');
@@ -120,10 +150,8 @@ export function usePurchaseOrders() {
   const updatePurchaseOrder = async (id: string, data: PurchaseOrderFormData) => {
     try {
       setLoading(true);
-      console.log('Updating PO with data:', data); // Debug log
 
       const response = await apiClient.put(`/purchase-orders/${id}`, data);
-      console.log('PO update response:', response); // Debug log
 
       if (!response.data || response.data.status !== 'success') {
         throw new Error(response.data?.message || 'Failed to update purchase order');
@@ -159,6 +187,15 @@ export function usePurchaseOrders() {
     }
   };
 
+  // Add a helper function to check if user can submit PO
+  const canSubmitPurchaseOrder = (po: any) => {
+    if (!getCurrentUser) {
+      throw new Error('User not found');
+    }
+    const currentUser = getCurrentUser; // You'll need to implement this
+    return currentUser.role === 'ADMIN' || po.createdById === currentUser.id;
+  };
+
   return {
     loading,
     createPurchaseOrder,
@@ -168,5 +205,6 @@ export function usePurchaseOrders() {
     getPurchaseOrder,
     updatePurchaseOrder,
     deletePurchaseOrder,
+    canSubmitPurchaseOrder, // Export the helper function
   };
 }

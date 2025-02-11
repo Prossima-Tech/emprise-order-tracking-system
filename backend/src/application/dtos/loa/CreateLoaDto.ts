@@ -11,4 +11,5 @@ export interface CreateLoaDto {
     documentFile?: Express.Multer.File;
     tags?: string[];
     emdId?: string;
+    siteId: string;
 }

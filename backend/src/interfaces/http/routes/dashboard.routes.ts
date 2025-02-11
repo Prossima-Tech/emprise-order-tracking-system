@@ -9,19 +9,19 @@ export function setupDashboardRoutes(
   const router = Router();
 
   router.get(
-    '/dashboard/stats',
+    '/stats',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
     dashboardController.getDashboardStats
   );
 
   router.get(
-    '/dashboard/activities',
+    '/activities',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
     dashboardController.getRecentActivities
   );
 
   router.get(
-    '/dashboard/trends',
+    '/trends',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
     dashboardController.getProcurementTrends
   );

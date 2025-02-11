@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/emprise
+      - JWT_SECRET=ayush
+      - JWT_EXPIRES_IN=24h
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
+      - AWS_S3_BUCKET=
+      - EMAIL_USER=
+      - EMAIL_FROM=
+      - AZURE_CLIENT_ID=
+      - AZURE_CLIENT_SECRET=
+      - EMAIL_REFRESH_TOKEN=
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=emprise
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

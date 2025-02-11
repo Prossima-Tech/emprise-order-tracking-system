@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Footer } from './Footer';
 
-interface MainLayoutProps {
-  children: React.ReactNode;
-}
-
-export const MainLayout = ({ children }: MainLayoutProps) => {
-  const [collapsed, setCollapsed] = useState(true);
+export const MainLayout = () => {
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,7 +14,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
         <main className="flex-1 overflow-auto bg-gray-50">
           <div className="container mx-auto p-6">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

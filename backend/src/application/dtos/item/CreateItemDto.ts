@@ -3,7 +3,7 @@
 export interface CreateItemDto {
     name: string;
     description?: string;
-    unitPrice: number;
+    unitPrice?: number;
     uom: string;    // Unit of Measurement
     hsnCode?: string;
     // taxRates: TaxRates;

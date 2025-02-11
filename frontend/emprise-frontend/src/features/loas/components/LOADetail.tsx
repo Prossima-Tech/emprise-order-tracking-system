@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Plus,
   Calendar,
+  Trash2, // Added Trash2 icon
 } from "lucide-react";
 import {
   Card,
@@ -35,12 +36,22 @@ import {
 // import { LOAForm } from "./LOAForm";
 import { Badge } from "../../../components/ui/badge";
 
+// Add formatCurrency helper function
+const formatCurrency = (value: number): string => {
+  return `₹${value.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
+
 export function LOADetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loading, getLOAById, deleteLOA } = useLOAs();
+  const { loading, getLOAById, deleteLOA, deleteAmendment } = useLOAs();
   const [loa, setLOA] = useState<LOA | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteAmendmentDialogOpen, setDeleteAmendmentDialogOpen] = useState(false);
+  const [amendmentToDelete, setAmendmentToDelete] = useState<{ id: string; number: string } | null>(null);
 
   useEffect(() => {
     const fetchLOA = async () => {
@@ -103,6 +114,23 @@ export function LOADetail() {
   //   }
   // };
 
+  const handleDeleteAmendment = async () => {
+    if (!amendmentToDelete) return;
+    
+    try {
+      await deleteAmendment(amendmentToDelete.id);
+      // Refresh LOA details after deletion
+      if (id) {
+        const updatedLOA = await getLOAById(id);
+        setLOA(updatedLOA);
+      }
+      setDeleteAmendmentDialogOpen(false);
+      setAmendmentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting amendment:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Section with Buttons */}
@@ -122,18 +150,18 @@ export function LOADetail() {
             <Plus className="h-4 w-4 mr-2" />
             Add Amendment
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             onClick={() => navigate(`/loas/${id}/edit`)}
           >
             Edit LOA
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             variant="destructive"
             onClick={() => setDeleteDialogOpen(true)}
           >
             Delete
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -219,7 +247,20 @@ export function LOADetail() {
         <TabsContent value="details" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>LOA Information</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{loa.loaNumber}</CardTitle>
+                  <CardDescription>
+                    Created on {format(new Date(loa.createdAt), "PPP")}
+                  </CardDescription>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-2xl font-bold">
+                    {formatCurrency(loa.loaValue)}
+                  </span>
+                  <span className="text-sm text-muted-foreground">Total Value</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* LOA Details Grid */}
@@ -372,6 +413,19 @@ export function LOADetail() {
                             Created on {format(new Date(amendment.createdAt), "PPP")}
                           </p>
                         </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setAmendmentToDelete({
+                              id: amendment.id,
+                              number: amendment.amendmentNumber
+                            });
+                            setDeleteAmendmentDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
                       {amendment.tags && amendment.tags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -568,6 +622,37 @@ export function LOADetail() {
                   console.error('Error deleting LOA:', error);
                 }
               }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={deleteAmendmentDialogOpen} 
+        onOpenChange={setDeleteAmendmentDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Amendment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete Amendment {amendmentToDelete?.number}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDeleteAmendmentDialogOpen(false);
+                setAmendmentToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAmendment}
             >
               Delete
             </Button>

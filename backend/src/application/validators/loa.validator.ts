@@ -19,6 +19,10 @@ export class LoaValidator {
       errors.push({ field: 'loaNumber', message: 'LOA number must be between 3 and 50 characters' });
     }
 
+    if (!dto.siteId) {
+      errors.push({ field: 'siteId', message: 'Site is required' });
+    }
+
     // LOA Value validation
     if (!dto.loaValue || dto.loaValue <= 0) {
       errors.push({ field: 'loaValue', message: 'LOA value must be a positive number' });

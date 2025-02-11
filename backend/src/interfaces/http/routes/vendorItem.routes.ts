@@ -77,28 +77,28 @@ export function vendorItemRoutes(controller: VendorItemController) {
 
   // Vendor perspective routes
   router.post('/vendors/:vendorId/items',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.assignItemToVendor
   );
 
   router.get('/vendors/:vendorId/items',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.getVendorItems
   );
 
   router.put('/vendors/:vendorId/items/:itemId',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.updateVendorItemPrice
   );
 
   router.delete('/vendors/:vendorId/items/:itemId',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.removeItemFromVendor
   );
 
   // Item perspective routes
   router.get('/items/:itemId/vendors',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.getItemVendors
   );
 

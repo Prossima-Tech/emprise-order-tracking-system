@@ -26,11 +26,8 @@ export function useLOAs() {
   const getLOAs = async () => {
     try {
       setLoading(true);
-      console.log('Fetching LOAs...');
+
       const response = await apiClient.get('/loas');
-      console.log('LOAs API Response:', response);
-      console.log('LOAs Data:', response.data);
-      
       if (!response.data || !response.data.data) {
         console.warn('Unexpected API response structure:', response);
         return [];
@@ -64,7 +61,6 @@ export function useLOAs() {
   const createLOA = async (data: LOAFormData) => {
     try {
       setLoading(true);
-      console.log('Creating LOA with data:', data);
 
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
@@ -82,14 +78,12 @@ export function useLOAs() {
         }
       });
 
-      console.log('Sending request to create LOA...');
       const response = await apiClient.post('/loas', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      console.log('LOA creation response:', response);
       
       if (!response.data || !response.data.data) {
         throw new Error('Invalid response from server');
@@ -157,7 +151,6 @@ export function useLOAs() {
   const updateLOA = async (id: string, data: LOAFormData) => {
     try {
       setLoading(true);
-      console.log('Updating LOA:', id, data);
 
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
@@ -219,7 +212,8 @@ export function useLOAs() {
     try {
       const response = await apiClient.get('/emds');
       // Filter EMDs that don't have a loaId (not associated with any LOA)
-      const availableEMDs = response.data.data.data.filter((emd: any) => !emd.loaId);
+      const availableEMDs = response.data.data.data.filter((emd: any) => !emd.loa);
+
       return availableEMDs;
     } catch (error) {
       console.error('Error fetching available EMDs:', error);

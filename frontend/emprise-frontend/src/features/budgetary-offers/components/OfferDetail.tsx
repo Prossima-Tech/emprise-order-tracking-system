@@ -100,7 +100,10 @@ export function OfferDetail() {
   };
 
   const formatCurrency = (value: number): string => {
-    return `₹${value.toFixed(2)}`;
+    return `₹${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   const handleDelete = async () => {
@@ -289,7 +292,9 @@ export function OfferDetail() {
                           <h4 className="text-sm font-medium text-muted-foreground">
                             Base Rate
                           </h4>
-                          <p className="mt-1">{formatCurrency(item.baseRate || 0)}</p>
+                          <p className="mt-1">
+                            {formatCurrency(item.baseRate)} per {item.unitOfMeasurement || 'N/A'}
+                          </p>
                         </div>
                         <div>
                           <h4 className="text-sm font-medium text-muted-foreground">

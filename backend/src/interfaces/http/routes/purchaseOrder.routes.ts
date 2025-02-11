@@ -191,29 +191,29 @@ export function purchaseOrderRoutes(controller: PurchaseOrderController) {
   });
 
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     upload.single('document'),
     controller.createPurchaseOrder
   );
 
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     upload.single('document'),
     controller.updatePurchaseOrder
   );
 
   router.delete('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.deletePurchaseOrder
   );
 
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.getPurchaseOrder
   );
 
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.getAllPurchaseOrders
   );
 
@@ -223,17 +223,17 @@ export function purchaseOrderRoutes(controller: PurchaseOrderController) {
   // );
 
   router.post('/:id/generate-pdf',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.generatePDF
   );
 
   router.get('/:id/verify-document',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.verifyDocument
   );
 
   router.post('/:id/submit',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.submitForApproval
   );
 

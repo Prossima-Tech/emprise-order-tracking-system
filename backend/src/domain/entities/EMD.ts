@@ -1,5 +1,4 @@
 import { BudgetaryOffer } from './BudgetaryOffer';
-
 export enum EMDStatus {
   ACTIVE = 'ACTIVE',
   EXPIRED = 'EXPIRED',
@@ -16,6 +15,11 @@ export interface EMD {
   documentUrl: string;
   extractedData?: any;
   status: EMDStatus;
+  loa?: {
+    id: string;
+    loaNumber: string;
+    loaValue: number;
+  };
   offer?: BudgetaryOffer;
   offerId?: string;
   tags: string[];

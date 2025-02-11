@@ -21,10 +21,16 @@ export interface RejectOrderDto {
   reason: string;
 }
 
+export interface AdditionalCharge {
+  description: string;
+  amount: number;
+}
+
 export interface CreatePurchaseOrderDto {
   loaId: string;
   vendorId: string;
   items: PurchaseOrderItemDto[];
+  siteId: string;
   baseAmount?: number;
   taxAmount: number;
   totalAmount?: number;
@@ -35,6 +41,7 @@ export interface CreatePurchaseOrderDto {
   documentFile?: Express.Multer.File;
   tags?: string[];
   approverId?: string;
+  additionalCharges?: AdditionalCharge[];
 }
 
 export interface UpdatePurchaseOrderDto {
@@ -52,6 +59,7 @@ export interface UpdatePurchaseOrderDto {
   regeneratePdf?: boolean;
   approvalNotes?: string;
   rejectionReason?: string;
+  additionalCharges?: AdditionalCharge[];
 }
 
 export interface PurchaseOrderResponseDto {
@@ -67,6 +75,14 @@ export interface PurchaseOrderResponseDto {
     name: string;
     email: string;
   };
+  
+  site: {
+    id: string;
+    name: string;
+    code: string;
+    zoneId: string;
+  };
+
   items: Array<{
     id: string;
     item: {
@@ -111,4 +127,5 @@ export interface PurchaseOrderResponseDto {
   }>;
   createdAt: Date;
   updatedAt: Date;
+  additionalCharges: AdditionalCharge[];
 }

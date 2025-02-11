@@ -7,6 +7,13 @@ export interface LOA {
         start: Date;
         end: Date;
     };
+    site: {
+        id: string;
+        name: string;
+        code: string;
+        zoneId: string;
+    };
+    siteId: string;
     workDescription: string;
     documentUrl: string;
     amendments?: Amendment[];

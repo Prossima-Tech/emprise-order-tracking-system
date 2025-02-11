@@ -33,6 +33,9 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { useLOAs } from '../hooks/use-loas';
+import { useSites } from '../../sites/hooks/use-sites';
+import type { Site } from '../../sites/types/site';
+import { LoadingSpinner } from '../../../components/feedback/LoadingSpinner';
 
 interface LOAFormProps {
   initialData?: Partial<LOAFormData>;
@@ -55,14 +58,18 @@ interface EMD {
 export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
   const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { showError } = useToast();
   const [availableEMDs, setAvailableEMDs] = useState<EMD[]>([]);
   const { getAvailableEMDs } = useLOAs();
+  const [sites, setSites] = useState<Site[]>([]);
+  const { getSites } = useSites();
   
   // Initialize form with React Hook Form and Zod validation
   const form = useForm<LOAFormData>({
     schema: loaSchema,
     defaultValues: {
+      siteId: initialData?.siteId || '',
       loaNumber: initialData?.loaNumber || '',
       loaValue: initialData?.loaValue || 0,
       deliveryPeriod: {
@@ -73,19 +80,28 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       tags: initialData?.tags || [],
     },
   });
-
-  // Fetch available EMDs
+  // Fetch available EMDs and sites on component mount
   useEffect(() => {
-    const fetchEMDs = async () => {
+    const fetchData = async () => {
       try {
-        const emds = await getAvailableEMDs();
-        setAvailableEMDs(emds);
+        setIsLoading(true);
+        const [emdsResponse, sitesResponse] = await Promise.all([
+          getAvailableEMDs(),
+          getSites()
+        ]);
+        
+        setAvailableEMDs(emdsResponse);
+        setSites(sitesResponse?.sites || []);
       } catch (error) {
-        console.error('Error fetching EMDs:', error);
+        console.error('Error fetching data:', error);
+        setAvailableEMDs([]);
+        setSites([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchEMDs();
+    fetchData();
   }, []);
 
   const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -110,7 +126,6 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
   const handleSubmit = async (data: LOAFormData) => {
     try {
       setIsSubmitting(true);
-      console.log('Submitting LOA data:', data);
     
 
       // Create FormData object
@@ -140,9 +155,46 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {/* Site Selection */}
+        <FormField
+          control={form.control}
+          name="siteId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Site</FormLabel>
+              <Select 
+                onValueChange={field.onChange}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a site" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         {/* LOA Number */}
         <FormField
           control={form.control}

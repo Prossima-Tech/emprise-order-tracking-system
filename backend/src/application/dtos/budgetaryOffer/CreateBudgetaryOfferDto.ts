@@ -1,5 +1,5 @@
 export interface CreateBudgetaryOfferDto {
-    tags: any;
+    tags: string[];
     offerDate: string;
     toAuthority: string;
     subject: string;
@@ -12,4 +12,5 @@ export interface CreateBudgetaryOfferDto {
     }[];
     termsConditions: string;
     approverId: string;
+    railwayZone: string;
   }

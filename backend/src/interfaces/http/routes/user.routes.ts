@@ -7,8 +7,8 @@ export const userRoutes = (controller: UserController) => {
   const router = Router();
 
   // Only allow ADMIN users to access user information
-  router.get('/', authMiddleware([UserRole.ADMIN]), controller.getAllUsers);
-  router.get('/:id', authMiddleware([UserRole.ADMIN]), controller.getUserById);
+  router.get('/', authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]), controller.getAllUsers);
+  router.get('/:id', authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]), controller.getUserById);
 
   return router;
 };

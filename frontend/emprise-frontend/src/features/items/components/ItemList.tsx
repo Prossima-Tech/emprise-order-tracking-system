@@ -76,14 +76,14 @@ export function ItemList() {
         </div>
       ),
     },
-    {
-      header: "Base Price",
-      accessor: (row: Item) =>
-        new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-        }).format(row.unitPrice),
-    },
+    // {
+    //   header: "Base Price",
+    //   accessor: (row: Item) =>
+    //     new Intl.NumberFormat("en-IN", {
+    //       style: "currency",
+    //       currency: "INR",
+    //     }).format(row.unitPrice),
+    // },
     {
       header: "HSN Code",
       accessor: "hsnCode",

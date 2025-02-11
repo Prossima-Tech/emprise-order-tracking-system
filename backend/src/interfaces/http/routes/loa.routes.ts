@@ -154,47 +154,47 @@ export function loaRoutes(controller: LoaController) {
 
   // LOA routes
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     upload.single('documentFile'),
     controller.createLoa
   );
 
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     upload.single('documentFile'),
     controller.updateLoa
   );
 
   router.delete('/:id',
-    authMiddleware([UserRole.ADMIN]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.deleteLoa
   );
 
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.getLoa
   );
 
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.getAllLoas
   );
 
   // Amendment routes
   router.post('/:loaId/amendments',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     upload.single('documentFile'),
     controller.createAmendment
   );
 
   router.put('/amendments/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     upload.single('documentFile'),
     controller.updateAmendment
   );
 
   router.delete('/amendments/:id',
-    authMiddleware([UserRole.ADMIN]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.deleteAmendment
   );
 

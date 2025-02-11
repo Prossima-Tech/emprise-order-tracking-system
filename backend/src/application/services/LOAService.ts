@@ -64,24 +64,24 @@ export class LoaService {
             }
 
             // Validate EMD ID if provided
-            if (dto.emdId) {
-                // Check if EMD exists and is ACTIVE
-                const emd = await this.repository.findEMDById(dto.emdId);
+            // if (dto.emdId) {
+            //     // Check if EMD exists and is ACTIVE
+            //     const emd = await this.repository.findEMDById(dto.emdId);
 
-                if (!emd) {
-                    return ResultUtils.fail('EMD not found');
-                }
+            //     if (!emd) {
+            //         return ResultUtils.fail('EMD not found');
+            //     }
 
-                // Check if EMD is already associated with another LOA
-                if (emd.loaId) {
-                    return ResultUtils.fail('EMD is already associated with another LOA');
-                }
+            //     // Check if EMD is already associated with another LOA
+            //     if (emd.loaId) {
+            //         return ResultUtils.fail('EMD is already associated with another LOA');
+            //     }
 
-                // Check if EMD is ACTIVE
-                if (emd.status !== 'ACTIVE') {
-                    return ResultUtils.fail('EMD is not in ACTIVE status');
-                }
-            }
+            //     // Check if EMD is ACTIVE
+            //     if (emd.status !== 'ACTIVE') {
+            //         return ResultUtils.fail('EMD is not in ACTIVE status');
+            //     }
+            // }
 
             let documentUrl = '';
             if (dto.documentFile) {
@@ -102,10 +102,11 @@ export class LoaService {
                     start: new Date(dto.deliveryPeriod.start).toISOString(),
                     end: new Date(dto.deliveryPeriod.end).toISOString()
                 },
+                siteId: dto.siteId,
                 workDescription: dto.workDescription,
                 documentUrl: documentUrl || 'pending',
                 tags,
-                emdId: dto.emdId  // Pass single EMD ID to repository
+                emdId: dto.emdId || "" // Pass single EMD ID to repository
             });
 
             return ResultUtils.ok(loa);

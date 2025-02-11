@@ -12,7 +12,6 @@ export class EMDController {
    */
   static async submitEMD(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log('Received form data:', req.body); // Debug log
 
       const { offerId, amount, dueDate, documentPath } = req.body;
 
@@ -138,7 +137,7 @@ export class EMDController {
 
       // Calculate days remaining/overdue
       const today = new Date();
-      const dueDate = new Date(emdTracking.dueDate);
+      const dueDate = new Date(emdTracking);
       const daysRemaining = Math.ceil(
         (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
       );

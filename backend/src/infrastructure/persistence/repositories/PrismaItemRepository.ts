@@ -26,7 +26,7 @@ export class PrismaItemRepository {
         return {
             name: data.name,
             description: data.description,
-            unitPrice: data.unitPrice,
+            unitPrice: data.unitPrice || 0,
             uom: data.uom,
             hsnCode: data.hsnCode,
             // taxRates: data.taxRates as Prisma.InputJsonValue
@@ -67,7 +67,6 @@ export class PrismaItemRepository {
 
     async create(data: CreateItemDto): Promise<Item> {
         try {
-            console.log(data);
             const prismaItem = await this.prisma.item.create({
                 data: this.transformToCreateInput(data),
                 include: {
