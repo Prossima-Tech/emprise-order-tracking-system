@@ -71,9 +71,16 @@ export class PurchaseOrderService {
         return total + (item.quantity * item.unitPrice);
       }, 0);
 
+      // Calculate additional charges total
+      const additionalChargesTotal = dto.additionalCharges?.reduce((total, charge) => {
+        return total + charge.amount;
+      }, 0) || 0;
+
+      // Calculate final total amount
+      const totalAmount = baseAmount + dto.taxAmount + additionalChargesTotal;
+
       // Create PO
-      console.log("dto", dto);
-      console.log("itemsResult.data", itemsResult.data);
+
       const po = await this.repository.create({
         poNumber,
         loaId: dto.loaId,
@@ -85,9 +92,11 @@ export class PurchaseOrderService {
           totalAmount: item.quantity * item.unitPrice,
           // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
         })),
-        baseAmount: baseAmount, // Use calculated base amount
+        siteId: loa.siteId,
+        baseAmount: baseAmount,
         taxAmount: dto.taxAmount,
-        totalAmount: baseAmount + dto.taxAmount, // Update total amount based on calculated base
+        additionalCharges: dto.additionalCharges || [],
+        totalAmount: totalAmount,
         requirementDesc: dto.requirementDesc,
         termsConditions: dto.termsConditions,
         shipToAddress: dto.shipToAddress,
@@ -141,6 +150,24 @@ export class PurchaseOrderService {
         );
         // Clear the hash since this is a new uploaded document
         documentHash = undefined;
+      }
+
+      // If updating amounts or additional charges, recalculate total
+      if (dto.baseAmount !== undefined || dto.taxAmount !== undefined || dto.additionalCharges !== undefined) {
+        const currentPO = await this.repository.findById(id);
+        if (!currentPO) {
+          return ResultUtils.fail('Purchase order not found');
+        }
+
+        const baseAmount = dto.baseAmount ?? currentPO.baseAmount;
+        const taxAmount = dto.taxAmount ?? currentPO.taxAmount;
+        const additionalCharges = dto.additionalCharges ?? currentPO.additionalCharges;
+        
+        const additionalChargesTotal = additionalCharges.reduce((total, charge) => {
+          return total + charge.amount;
+        }, 0);
+
+        dto.totalAmount = baseAmount + taxAmount + additionalChargesTotal;
       }
 
       const updatedPo = await this.repository.update(id, {
@@ -278,6 +305,7 @@ export class PurchaseOrderService {
         id: po.id,
         poNumber: po.poNumber,
         createdAt: po.createdAt,
+        totalAmount: po.totalAmount,
         loa: {
           loaNumber: po.loa.loaNumber,
           loaValue: po.loa.loaValue
@@ -286,6 +314,7 @@ export class PurchaseOrderService {
           name: po.vendor.name,
           email: po.vendor.email
         },
+        additionalCharges: po.additionalCharges,
         items: po.items.map(item => {
           // Ensure taxRates exists with default values
           // const taxRates = {
@@ -455,6 +484,8 @@ export class PurchaseOrderService {
         loaNumber: po.loa.loaNumber,
         loaValue: po.loa.loaValue
       },
+      additionalCharges: po.additionalCharges,
+      totalAmount: po.totalAmount,
       vendor: {
         name: po.vendor.name,
         email: po.vendor.email
@@ -519,12 +550,6 @@ export class PurchaseOrderService {
         return ResultUtils.fail('Only DRAFT orders can be submitted for approval');
       }
 
-      // Generate PDF first
-      const pdfResult = await this.generatePDF(id);
-      if (!pdfResult.isSuccess || !pdfResult.data) {
-        return ResultUtils.fail('Failed to generate order document');
-      }
-
       const approvalAction: ApprovalAction = {
         actionType: 'SUBMIT',
         userId,
@@ -535,13 +560,10 @@ export class PurchaseOrderService {
 
       const updateData = {
         status: POStatus.PENDING_APPROVAL,
-        documentUrl: pdfResult.data.url,
-        documentHash: pdfResult.data.hash,
         approvalHistory: [...(po.approvalHistory || []), approvalAction]
       };
 
       const updatedPO = await this.repository.update(id, updateData);
-      console.log(updatedPO.approver);
 
       if (updatedPO.approver?.email) {
         try {
@@ -563,12 +585,9 @@ export class PurchaseOrderService {
             'reject'
           );
 
-          // Double check the URL format
           const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
           const approveUrl = `${baseUrl}/api/purchase-orders/email-approve/${approveToken}`;
           const rejectUrl = `${baseUrl}/api/purchase-orders/email-reject/${rejectToken}`;
-
-          console.log('Generated URLs:', { approveUrl, rejectUrl }); // Debug log
 
           await this.emailService.sendPurchaseOrderApproveEmail({
             to: [updatedPO.approver.email],
@@ -604,11 +623,6 @@ export class PurchaseOrderService {
         return ResultUtils.fail('Only PENDING_APPROVAL orders can be approved');
       }
 
-      // const verificationResult = await this.verifyDocument(id);
-      // if (!verificationResult.isSuccess || !verificationResult.data?.isValid) {
-      //   return ResultUtils.fail('Document verification failed. Cannot approve order.');
-      // }
-
       const approvalAction: ApprovalAction = {
         actionType: 'APPROVE',
         userId,
@@ -629,7 +643,19 @@ export class PurchaseOrderService {
 
       const updatedPO = await this.repository.update(id, updateData);
 
-      // Send email notification to creator
+      // Generate PDF after approval
+      const pdfResult = await this.generatePDF(id);
+      if (!pdfResult.isSuccess || !pdfResult.data) {
+        return ResultUtils.fail('Failed to generate approved document');
+      }
+
+      // Update PO with the generated PDF URL and hash
+      await this.repository.update(id, {
+        documentUrl: pdfResult.data.url,
+        documentHash: pdfResult.data.hash
+      });
+
+      // Send email notification to creator with the newly generated PDF
       if (po.createdBy?.email) {
         try {
           const documentData = await this.prepareDocumentData(updatedPO);

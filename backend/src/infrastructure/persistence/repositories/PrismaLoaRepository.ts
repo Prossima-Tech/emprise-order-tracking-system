@@ -10,6 +10,7 @@ export class PrismaLoaRepository {
     amendments: PrismaAmendment[];
     purchaseOrders: any[]; // Replace 'any' with your PO type
     emd?: any; // Add EMD to the mapping
+    site?: any;
   }): LOA {
     // Don't parse the deliveryPeriod as it's already an object
     return {
@@ -32,8 +33,15 @@ export class PrismaLoaRepository {
         updatedAt: amendment.updatedAt,
         loaId: amendment.loaId
       })),
+      site: {
+        id: prismaLoa.site.id,
+        name: prismaLoa.site.name,
+        code: prismaLoa.site.code,
+        zoneId: prismaLoa.site.zoneId,
+      },
+      siteId: prismaLoa.siteId || '',
       purchaseOrders: prismaLoa.purchaseOrders,
-      emd: prismaLoa.emd ,
+      emd: prismaLoa.emd || null,
       createdAt: prismaLoa.createdAt,
       updatedAt: prismaLoa.updatedAt
     };
@@ -65,6 +73,7 @@ export class PrismaLoaRepository {
     documentUrl: string;
     tags: string[];
     emdId?: string; // Single EMD ID
+    siteId: string;
   }): Promise<LOA> {
     try {
       const prismaLoa = await this.prisma.lOA.create({
@@ -80,12 +89,16 @@ export class PrismaLoaRepository {
           tags: data.tags,
           emd: data.emdId ? {
             connect: { id: data.emdId }
-          } : undefined
+          } : undefined,
+          site: {
+            connect: { id: data.siteId }
+          }
         },
         include: {
           amendments: true,
           purchaseOrders: true,
-          emd: true // Include single EMD in the response
+          emd: true, // Include single EMD in the response
+          site: true
         }
       });
 
@@ -143,7 +156,8 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true // Include single EMD
+        emd: true, // Include single EMD
+        site: true
       }
     });
 
@@ -156,7 +170,8 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true // Include single EMD
+        emd: true, // Include single EMD 
+        site: true
       }
     });
 
@@ -167,21 +182,36 @@ export class PrismaLoaRepository {
     skip?: number;
     take?: number;
     searchTerm?: string;
+    siteId?: string;
+    zoneId?: string;
   }): Promise<LOA[]> {
     const prismaLoas = await this.prisma.lOA.findMany({
       skip: params.skip,
       take: params.take,
-      where: params.searchTerm ? {
-        OR: [
-          { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
-          { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
-          { tags: { has: params.searchTerm } }
+      where: {
+        AND: [
+          params.siteId ? { siteId: params.siteId } : {},
+          params.zoneId ? { site: { zoneId: params.zoneId } } : {},
+          params.searchTerm ? {
+            OR: [
+              { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+              { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
+              { tags: { has: params.searchTerm } },
+              { site: {
+                OR: [
+                  { name: { contains: params.searchTerm, mode: 'insensitive' } },
+                  { code: { contains: params.searchTerm, mode: 'insensitive' } }
+                ]
+              }}
+            ]
+          } : {}
         ]
-      } : undefined,
+      },
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true // Include single EMD
+        emd: true, // Include single EMD
+        site: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -191,15 +221,27 @@ export class PrismaLoaRepository {
     return prismaLoas.map(this.mapPrismaLoaToLoa.bind(this));
   }
 
-  async count(params: { searchTerm?: string }): Promise<number> {
+  async count(params: { searchTerm?: string, siteId?: string, zoneId?: string }): Promise<number> {
     return this.prisma.lOA.count({
-      where: params.searchTerm ? {
-        OR: [
-          { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
-          { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
-          { tags: { has: params.searchTerm } }
+      where: {
+        AND: [
+          params.siteId ? { siteId: params.siteId } : {},
+          params.zoneId ? { site: { zoneId: params.zoneId } } : {},
+          params.searchTerm ? {
+            OR: [
+              { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+              { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
+              { tags: { has: params.searchTerm } },
+              { site: {
+                OR: [
+                  { name: { contains: params.searchTerm, mode: 'insensitive' } },
+                  { code: { contains: params.searchTerm, mode: 'insensitive' } }
+                ]
+              }}
+            ]
+          } : {}
         ]
-      } : undefined
+      }
     });
   }
 
@@ -215,7 +257,9 @@ export class PrismaLoaRepository {
         loa: {
           include: {
             amendments: true,
-            purchaseOrders: true
+            purchaseOrders: true,
+            emd: true,
+            site: true
           }
         }
       }
@@ -238,7 +282,9 @@ export class PrismaLoaRepository {
         loa: {
           include: {
             amendments: true,
-            purchaseOrders: true
+            purchaseOrders: true,
+            emd: true,
+            site: true
           }
         }
       }
@@ -254,7 +300,9 @@ export class PrismaLoaRepository {
         loa: {
           include: {
             amendments: true,
-            purchaseOrders: true
+            purchaseOrders: true,
+            emd: true,
+            site: true
           }
         }
       }
@@ -270,7 +318,9 @@ export class PrismaLoaRepository {
         loa: {
           include: {
             amendments: true,
-            purchaseOrders: true
+            purchaseOrders: true,
+            emd: true,
+            site: true
           }
         }
       }

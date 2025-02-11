@@ -349,11 +349,10 @@ export class EmailService {
         <td style="border: 1px solid #ddd; padding: 8px;">${item.item.name}</td>
         <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
         <td style="border: 1px solid #ddd; padding: 8px;">₹${item.unitPrice.toFixed(2)}</td>
-        <td style="border: 1px solid #ddd; padding: 8px;">₹${item.totalAmount.toFixed(2)}</td>
       </tr>
     `).join('');
 
-    const totalAmount = poData.items.reduce((sum, item) => sum + item.totalAmount, 0);
+    const totalAmount = poData.totalAmount;
 
     let statusMessage = '';
     let actionMessage = '';

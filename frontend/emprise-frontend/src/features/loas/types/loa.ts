@@ -14,7 +14,8 @@ export const loaSchema = z.object({
   workDescription: z.string().min(1, 'Work description is required'),
   tags: z.array(z.string()),
   documentFile: z.any().optional(), // File validation handled separately
-  emdId: z.string().optional(), // Add EMD ID field
+  emdId: z.string().optional(), // EMD ID field
+  siteId: z.string().min(1, 'Site is required'), // Add site field
 });
 
 // Schema for creating an amendment
@@ -55,6 +56,12 @@ export interface LOA extends Omit<LOAFormData, 'documentFile'> {
     status: string;
     submissionDate: string;
     maturityDate: string;
+  };
+  site: {
+    id: string;
+    name: string;
+    location: string;
+    status: string;
   };
   createdAt: string;
   updatedAt: string;

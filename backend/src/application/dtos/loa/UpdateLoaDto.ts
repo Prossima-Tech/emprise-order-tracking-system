@@ -8,4 +8,5 @@ export interface UpdateLoaDto {
     documentFile?: Express.Multer.File;
     tags?: string[];
     emdId?: string;
+    siteId?: string;
 }

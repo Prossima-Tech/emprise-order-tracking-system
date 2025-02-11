@@ -8,7 +8,7 @@ export interface EmdResponseDto {
   maturityDate: Date;
   bankName: string;
   documentUrl: string;
-  extractedData?: any;
+  // extractedData?: any;
   status: EMDStatus;
   offer?: {
     id: string;
@@ -16,6 +16,11 @@ export interface EmdResponseDto {
     subject: string;
   };
   offerId?: string;
+  loa?: {
+    id: string;
+    loaNumber: string;
+    loaValue: number;
+  };
   tags: string[];
   createdAt: Date;
   updatedAt: Date;

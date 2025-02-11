@@ -127,13 +127,13 @@ export function VendorItemAssociation({ open, onClose, onSuccess }: VendorItemAs
                 <span className="font-medium">Description: </span>
                 {selectedItem.description}
               </div>
-              <div className="text-sm">
+              {/* <div className="text-sm">
                 <span className="font-medium">Current Market Price: </span>
                 {new Intl.NumberFormat("en-IN", {
                   style: "currency",
                   currency: "INR",
                 }).format(selectedItem.unitPrice)}
-              </div>
+              </div> */}
             </div>
           )}
 

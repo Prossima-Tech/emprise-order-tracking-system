@@ -9,7 +9,7 @@ export interface WorkItem {
 }
 
 export interface BudgetaryOffer {
-  tags: any;
+  tags: string[];
   id?: string;
   offerId: string;
   offerDate: Date;
@@ -26,6 +26,7 @@ export interface BudgetaryOffer {
   approvalComments?: string;
   approvalDate?: Date;
   approvalHistory: ApprovalAction[];
+  railwayZone: string;
 }
 
 export interface ApprovalAction {

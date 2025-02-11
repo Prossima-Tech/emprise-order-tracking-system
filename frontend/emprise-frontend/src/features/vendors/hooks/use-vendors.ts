@@ -9,9 +9,7 @@ export function useVendors() {
 
   const getVendors = useCallback(async () => {
     try {
-      console.log('Fetching vendors...');
       const response = await apiClient.get('/vendors');
-      console.log('Vendors API response:', response.data);
       
       // Check if the response has the expected structure
       if (response.data?.status === 'success' && response.data?.data?.isSuccess) {
@@ -29,9 +27,7 @@ export function useVendors() {
 
   const getVendor = useCallback(async (id: string) => {
     try {
-      console.log(`Fetching vendor with ID: ${id}`);
       const response = await apiClient.get(`/vendors/${id}`);
-      console.log('Vendor details API response:', response.data);
 
       if (response.data?.status === 'success' && response.data?.data?.isSuccess) {
         return response.data.data.data;
@@ -64,15 +60,12 @@ export function useVendors() {
         }
       };
 
-      console.log('Attempting to create vendor with data:', vendorData);
       
       const response = await apiClient.post('/vendors', vendorData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      console.log('API Response:', response);
 
       if (response.data?.status === 'success') {
         showSuccess('Vendor created successfully');
@@ -96,7 +89,6 @@ export function useVendors() {
 
   const updateVendor = useCallback(async (id: string, data: VendorFormData) => {
     try {
-      console.log('Updating vendor with data:', data);
       const response = await apiClient.put(`/vendors/${id}`, {
         name: data.name,
         email: data.email,
@@ -110,8 +102,6 @@ export function useVendors() {
           branchName: data.bankDetails.branchName,
         }
       });
-
-      console.log('Vendor update response:', response.data);
 
       if (response.data?.status === 'success') {
         showSuccess('Vendor updated successfully');
@@ -129,9 +119,7 @@ export function useVendors() {
   const updateVendorStatus = useCallback(async (id: string, status: Vendor['status']) => {
     try {
       setLoading(true);
-      console.log(`Updating vendor ${id} status to:`, status);
       const response = await apiClient.patch(`/vendors/${id}/status`, { status });
-      console.log('Update vendor status API response:', response.data);
 
       if (response.data?.status === 'success' && response.data?.data?.isSuccess) {
         showSuccess('Vendor status updated successfully');

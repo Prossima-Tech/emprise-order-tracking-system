@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import apiClient from "../../../lib/utils/api-client";
+import { RAILWAY_ZONES } from '../../../lib/constants/railway-zones';
 
 interface OfferFormProps {
   initialData?: Partial<OfferFormData>;
@@ -50,6 +51,13 @@ interface User {
   email: string;
   role: 'ADMIN' | 'MANAGER' | 'STAFF';
 }
+
+const formatCurrency = (value: number): string => {
+  return `₹${value.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
 
 export function OfferForm({ initialData, onSubmit, onCancel }: OfferFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +103,7 @@ export function OfferForm({ initialData, onSubmit, onCancel }: OfferFormProps) {
       termsConditions: "",
       tags: [],
       approverId: "",
+      railwayZone: "",
     },
   });
 
@@ -171,6 +180,34 @@ export function OfferForm({ initialData, onSubmit, onCancel }: OfferFormProps) {
                   />
                 </PopoverContent>
               </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+
+        {/* Railway Zone */}
+        <FormField
+          control={form.control}
+          name="railwayZone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Railway Zone</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a railway zone..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {RAILWAY_ZONES.map((zone) => (
+                    <SelectItem key={zone.id} value={zone.code}>
+                      {zone.name} ({zone.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -331,8 +368,7 @@ export function OfferForm({ initialData, onSubmit, onCancel }: OfferFormProps) {
                   {/* Item Total */}
                   <div className="col-span-2 flex justify-between items-center border-t pt-4 mt-2">
                     <div className="text-sm text-muted-foreground">
-                      Item Total: ₹
-                      {calculateItemTotal(form.watch(`workItems.${index}`)).toFixed(2)}
+                      Item Total: {formatCurrency(calculateItemTotal(form.watch(`workItems.${index}`)))}
                     </div>
                     <Button
                       type="button"
@@ -451,7 +487,7 @@ export function OfferForm({ initialData, onSubmit, onCancel }: OfferFormProps) {
           <div className="flex justify-between items-center">
             <span className="font-medium">Grand Total:</span>
             <span className="text-lg font-bold">
-              ₹{calculateTotal(form.watch('workItems')).toFixed(2)}
+              {formatCurrency(calculateTotal(form.watch('workItems')))}
             </span>
           </div>
         </div>

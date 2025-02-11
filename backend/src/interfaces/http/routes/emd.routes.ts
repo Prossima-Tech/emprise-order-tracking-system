@@ -191,14 +191,14 @@ export function emdRoutes(controller: EmdController) {
 
   // Create new EMD
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER]),
     upload.single('document'),
     controller.createEMD
   );
 
   // Update existing EMD
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER]),
     upload.single('document'),
     controller.updateEMD
   );
@@ -211,13 +211,13 @@ export function emdRoutes(controller: EmdController) {
 
   // Get single EMD
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER]),
     controller.getEMD
   );
 
   // Get all EMDs with filters and pagination
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER]),
     controller.getAllEMDs
   );
 

@@ -28,7 +28,7 @@ export function RegisterForm() {
       password: '',
       name: '',
       department: '',
-      role: 'USER',
+      role: 'PO_SPECIALIST',
     },
   });
 
@@ -112,8 +112,8 @@ export function RegisterForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="USER">User</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="PO_SPECIALIST">PO Specialist</SelectItem>
+                  <SelectItem value="BO_SPECIALIST">BO Specialist</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

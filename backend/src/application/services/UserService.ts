@@ -7,7 +7,6 @@ export class UserService {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      console.log('getAllUsers');
       return await this.userRepository.findAll();
     } catch (error) {
       throw new Error('Error fetching users');

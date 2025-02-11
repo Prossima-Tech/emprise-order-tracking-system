@@ -5,9 +5,11 @@ import {
     FileCheck, 
     ShoppingCart, 
     Package, 
-    Users 
+    Users,
+    Building
   } from 'lucide-react';
 import { ROUTES } from './routes';
+
   
   export const MENU_ITEMS = [
     {
@@ -44,6 +46,11 @@ import { ROUTES } from './routes';
       title: 'Vendors',
       path: ROUTES.VENDORS,
       icon: Users,
+    },
+    {
+      title: 'Sites',
+      path: ROUTES.SITES,
+      icon: Building,
     },
   ] as const;
   

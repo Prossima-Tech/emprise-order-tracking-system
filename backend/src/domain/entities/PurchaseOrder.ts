@@ -1,8 +1,10 @@
 import { ApprovalAction, POStatus } from "./constants";
 import { LOA } from "./LOA";
 import { PurchaseOrderItem } from "./PurchaseOrderItem";
+import { Site } from "./Site";
 import { User } from "./User";
 import { Vendor } from "./Vendor";
+import { AdditionalCharge } from "../../application/dtos/purchaseOrder/PurchaseOrderDto";
 
 export interface PurchaseOrder {
   id: string;
@@ -12,11 +14,19 @@ export interface PurchaseOrder {
   vendor: Vendor;
   vendorId: string;
   items: PurchaseOrderItem[];
+  site: {
+    id: string;
+    name: string;
+    code: string;
+    zoneId: string;
+  };
+  siteId: string;
   requirementDesc: string;
   termsConditions: string;
   shipToAddress: string;
   baseAmount: number;
   taxAmount: number;
+  additionalCharges: AdditionalCharge[];
   totalAmount: number;
   notes?: string;
   documentUrl?: string;
@@ -67,6 +77,7 @@ export interface PDFGenerationData {
     name: string;
     email: string;
   };
+  totalAmount: number;
   items: PDFItemData[];
   requirementDesc: string;
   termsConditions: string;
@@ -79,6 +90,7 @@ export interface PDFGenerationData {
     role: string;
   };
   tags: string[];
+  additionalCharges: AdditionalCharge[];
   approvalStatus?: {
     status: POStatus;
     approvalNotes?: string;

@@ -46,7 +46,10 @@ const statusOptions = [
 
 export function LOAList() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState({
+    loaNumber: "",
+    siteName: "",
+  });
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [loas, setLOAs] = useState<LOA[]>([]);
   const { loading, getLOAs, deleteLOA } = useLOAs();
@@ -87,6 +90,17 @@ export function LOAList() {
     {
       header: "LOA Number",
       accessor: "loaNumber",
+    },
+    {
+      header: "Site",
+      accessor: (row: LOA) => (
+        <div className="flex flex-col">
+          <span>{row.site?.name}</span>
+          <span className="text-sm text-muted-foreground">
+            {row.site?.location}
+          </span>
+        </div>
+      ),
     },
     {
       header: "Value",
@@ -149,16 +163,17 @@ export function LOAList() {
     const loasArray = Array.isArray(loas) ? loas : [];
     
     return loasArray.filter((loa) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        loa.loaNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        loa.workDescription.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLOANumber = searchQuery.loaNumber === "" ||
+        loa.loaNumber.toLowerCase().includes(searchQuery.loaNumber.toLowerCase());
+
+      const matchesSiteName = searchQuery.siteName === "" ||
+        loa.site?.name.toLowerCase().includes(searchQuery.siteName.toLowerCase());
 
       const matchesStatus = statusFilter === "ALL" || loa.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      return matchesLOANumber && matchesSiteName && matchesStatus;
     });
-  }, [loas, searchTerm, statusFilter]);
+  }, [loas, searchQuery, statusFilter]);
 
   if (error) {
     return (
@@ -179,12 +194,26 @@ export function LOAList() {
     <div className="space-y-6">
       {/* Filter Section */}
       <Card className="p-4">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div>
             <Input
-              placeholder="Search by LOA number or description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by LOA number..."
+              value={searchQuery.loaNumber}
+              onChange={(e) => setSearchQuery(prev => ({
+                ...prev,
+                loaNumber: e.target.value
+              }))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <Input
+              placeholder="Search by site name..."
+              value={searchQuery.siteName}
+              onChange={(e) => setSearchQuery(prev => ({
+                ...prev,
+                siteName: e.target.value
+              }))}
               className="w-full"
             />
           </div>

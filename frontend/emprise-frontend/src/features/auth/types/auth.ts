@@ -8,7 +8,7 @@ export const loginSchema = z.object({
 export const registerSchema = loginSchema.extend({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   department: z.string().min(2, 'Department must be at least 2 characters'),
-  role: z.enum(['ADMIN', 'USER']),
+  role: z.enum([ 'PO_SPECIALIST', 'BO_SPECIALIST']),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

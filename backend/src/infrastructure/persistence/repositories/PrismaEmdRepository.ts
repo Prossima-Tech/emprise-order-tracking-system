@@ -4,7 +4,14 @@ import { EMD, EMDStatus } from '../../../domain/entities/EMD';
 import { BudgetaryOffer } from '../../../domain/entities/BudgetaryOffer';
 
 type PrismaEMDWithRelations = Prisma.EMDGetPayload<{
-  include: { offer: true }
+  include: { 
+    offer: true,
+    loa: {
+      include: {
+        site: true
+      }
+    }
+    }
 }>;
 
 export class PrismaEmdRepository {
@@ -25,6 +32,11 @@ export class PrismaEmdRepository {
       status: prismaEMD.status as EMDStatus,
       offer: prismaEMD.offer as unknown as BudgetaryOffer | undefined,
       offerId: prismaEMD.offerId || undefined,
+      loa: prismaEMD.loa ? {
+        id: prismaEMD.loa.id,
+        loaNumber: prismaEMD.loa.loaNumber,
+        loaValue: prismaEMD.loa.loaValue,
+      } : undefined,
       tags: prismaEMD.tags,
       createdAt: prismaEMD.createdAt,
       updatedAt: prismaEMD.updatedAt
@@ -57,7 +69,12 @@ export class PrismaEmdRepository {
         tags: data.tags
       },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       }
     });
 
@@ -80,7 +97,12 @@ export class PrismaEmdRepository {
         tags: data.tags
       },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       }
     });
 
@@ -91,7 +113,12 @@ export class PrismaEmdRepository {
     const prismaEMD = await this.prisma.eMD.delete({
       where: { id },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       }
     });
 
@@ -102,7 +129,12 @@ export class PrismaEmdRepository {
     const prismaEMD = await this.prisma.eMD.findUnique({
       where: { id },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       }
     });
 
@@ -128,13 +160,19 @@ export class PrismaEmdRepository {
           searchTerm ? {
             OR: [
               { bankName: { contains: searchTerm, mode: 'insensitive' } },
-              { tags: { has: searchTerm } }
+              { tags: { has: searchTerm } },
+              { loa: { loaNumber: { contains: searchTerm, mode: 'insensitive' } } }
             ]
           } : {}
         ]
       },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -176,7 +214,12 @@ export class PrismaEmdRepository {
         ]
       },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       },
       orderBy: {
         maturityDate: 'asc'
@@ -190,8 +233,6 @@ export class PrismaEmdRepository {
     const today = new Date();
     const thresholdDate = new Date(today);
     thresholdDate.setDate(today.getDate() + daysThreshold);
-    console.log(thresholdDate);
-    console.log(daysThreshold)
 
     const prismaEMDs = await this.prisma.eMD.findMany({
       where: {
@@ -201,7 +242,12 @@ export class PrismaEmdRepository {
         ]
       },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       },
       orderBy: {
         maturityDate: 'asc'
@@ -216,7 +262,12 @@ export class PrismaEmdRepository {
       where: { id },
       data: { status: status as unknown as PrismaEMDStatus },
       include: {
-        offer: true
+        offer: true,
+        loa: {
+          include: {
+            site: true
+          }
+        }
       }
     });
 

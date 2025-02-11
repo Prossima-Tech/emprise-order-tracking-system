@@ -9,7 +9,7 @@ import { config } from './config';
 import { EmailService } from './infrastructure/services/EmailService';
 import { DocumentVerifierService } from './infrastructure/services/DocumentVerificationService';
 import { POPDFService } from './infrastructure/services/POPdfService';
-
+import { TokenService } from './infrastructure/services/TokenService';
 export function setupServices() {
   const prisma = new PrismaClient();
   
@@ -30,7 +30,7 @@ export function setupServices() {
   const budgetaryOfferValidator = new BudgetaryOfferValidator();
   const poPdfService = new POPDFService(s3Service);
   const documentVerifier = new DocumentVerifierService(s3Service);
-
+  const tokenService = new TokenService(config.jwt.secret);
 
   const emailService = new EmailService({
     user: config.email.user,
@@ -49,7 +49,8 @@ export function setupServices() {
     budgetaryOfferValidator,
     pdfService,
     documentVerifier,
-    emailService
+    emailService,
+    tokenService
   );
 
   return {

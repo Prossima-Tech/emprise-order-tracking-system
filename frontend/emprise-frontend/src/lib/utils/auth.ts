@@ -1,11 +1,14 @@
 import { jwtDecode } from 'jwt-decode';
 import { TOKEN_KEY, USER_KEY } from '../config/constants';
+import { ROUTES } from '../config/routes';
+
+export type UserRole = 'ADMIN' | 'PO_SPECIALIST' | 'BO_SPECIALIST';
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
 }
 
 export const setAuthToken = (token: string) => {
@@ -40,4 +43,17 @@ export const isAuthenticated = () => {
 export const logout = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+};
+
+export const getDefaultRouteForRole = (role: UserRole): string => {
+  switch (role) {
+    case 'PO_SPECIALIST':
+      return ROUTES.PURCHASE_ORDERS;
+    case 'BO_SPECIALIST':
+      return ROUTES.OFFERS;
+    case 'ADMIN':
+      return ROUTES.DASHBOARD;
+    default:
+      return ROUTES.DASHBOARD;
+  }
 };

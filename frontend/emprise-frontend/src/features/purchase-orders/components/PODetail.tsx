@@ -81,14 +81,26 @@ export function PODetail() {
       return acc + (item.quantity * item.unitPrice);
     }, 0);
 
+    const additionalChargesTotal = order.additionalCharges.reduce((acc, charge) => {
+      return acc + charge.amount;
+    }, 0);
+
     return {
       subtotal,
       taxAmount: order.taxAmount,
-      total: subtotal + order.taxAmount
+      additionalCharges: additionalChargesTotal,
+      total: subtotal + order.taxAmount + additionalChargesTotal
     };
   };
 
   const totals = calculateTotals(order);
+
+  const formatCurrency = (value: number): string => {
+    return `₹${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
 
   // Handle status changes
   const handleStatusChange = async (action: "submit" | "complete") => {
@@ -228,12 +240,7 @@ export function PODetail() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Intl.NumberFormat("en-IN", {
-                style: "currency",
-                currency: "INR",
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(totals.total)}
+              {formatCurrency(totals.total)}
             </div>
             <p className="text-xs text-muted-foreground">
               Including {order.items.length} items
@@ -284,19 +291,16 @@ export function PODetail() {
                             <div className="text-sm text-muted-foreground">
                               Unit Price
                             </div>
-                            <div>₹{item.unitPrice.toLocaleString()}</div>
+                            <div>
+                              {formatCurrency(item.unitPrice)}
+                            </div>
                           </div>
                           <div>
                             <div className="text-sm text-muted-foreground">
                               Total
                             </div>
                             <div>
-                              {new Intl.NumberFormat("en-IN", {
-                                style: "currency",
-                                currency: "INR",
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }).format(item.quantity * item.unitPrice)}
+                              {formatCurrency(item.quantity * item.unitPrice)}
                             </div>
                           </div>
                           {/* <div>
@@ -326,15 +330,15 @@ export function PODetail() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>₹{totals.subtotal.toFixed(2)}</span>
+                      <span>{formatCurrency(totals.subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Tax Amount</span>
-                      <span>₹{totals.taxAmount.toFixed(2)}</span>
+                      <span>{formatCurrency(totals.taxAmount)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold pt-2 border-t">
                       <span>Total</span>
-                      <span>₹{totals.total.toFixed(2)}</span>
+                      <span>{formatCurrency(totals.total)}</span>
                     </div>
                   </div>
                 </div>
@@ -382,6 +386,93 @@ export function PODetail() {
                 </div>
               )}
 
+              {/* Order Totals Section with Additional Charges */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-medium mb-4">Order Summary</h3>
+                
+                <table className="w-full">
+                  <tbody>
+                    <tr className="text-sm">
+                      <td className="text-muted-foreground py-2">Subtotal(Items)</td>
+                      <td className="text-right">{formatCurrency(totals.subtotal)}</td>
+                    </tr>
+
+                    {order.additionalCharges.length > 0 && (
+                      <>
+                        <tr>
+                          <td colSpan={2} className="pt-4 pb-2">
+                            <h4 className="text-sm text-muted-foreground">Additional Charges:</h4>
+                          </td>
+                        </tr>
+                        {order.additionalCharges.map((charge, index) => (
+                          <tr key={index} className="text-sm">
+                            <td className="text-muted-foreground py-1 pl-4">{charge.description}</td>
+                            <td className="text-right">{formatCurrency(charge.amount)}</td>
+                          </tr>
+                        ))}
+                        <tr className="text-sm font-medium">
+                          <td className="text-muted-foreground py-2 pl-4">Total Additional Charges</td>
+                          <td className="text-right">{formatCurrency(totals.additionalCharges)}</td>
+                        </tr>
+                      </>
+                    )}
+
+                    <tr className="text-sm">
+                      <td className="text-muted-foreground py-2">Tax Amount</td>
+                      <td className="text-right">{formatCurrency(totals.taxAmount)}</td>
+                    </tr>
+
+                    <tr className="text-lg font-medium border-t">
+                      <td className="pt-4">Total Amount</td>
+                      <td className="text-right pt-4">{formatCurrency(totals.total)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Vendor Information Section */}
+              <div className="border-t pt-4">
+                <div className="flex items-start space-x-4">
+                  <Building className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <h3 className="font-medium">Vendor Information</h3>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Name:</span>{" "}
+                        {order.vendor.name}
+                      </p>
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Email:</span>{" "}
+                        {order.vendor.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Site Information */}
+              {order.site && (
+                <div className="border-t pt-4">
+                  <div className="flex items-start space-x-4">
+                    <Package className="h-5 w-5 text-muted-foreground mt-1" />
+                    <div>
+                      <h3 className="font-medium">Site Information</h3>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Name:</span>{" "}
+                          {order.site.name}
+                        </p>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Code:</span>{" "}
+                          {order.site.code}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+
               {/* Creation and Update Information */}
               <div className="border-t pt-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -403,6 +494,7 @@ export function PODetail() {
                   </div>
                 </div>
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>

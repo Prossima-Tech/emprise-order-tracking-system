@@ -31,6 +31,7 @@ import { Card } from "../../../components/ui/card";
 import { useOffers } from "../hooks/use-offers";
 import type { Offer } from "../types/Offer";
 import { LoadingSpinner } from "../../../components/feedback/LoadingSpinner";
+import { RAILWAY_ZONES } from '../../../lib/constants/railway-zones';
 
 // const statusOptions = [
 //   { label: "All Status", value: "" },
@@ -48,6 +49,7 @@ export function OfferList() {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const { loading, getOffers } = useOffers();
+  const [zoneFilter, setZoneFilter] = useState<string>("ALL");
 
   useEffect(() => {
     const fetchOffers = async () => {
@@ -102,6 +104,13 @@ export function OfferList() {
     {
       header: "Status",
       accessor: (row: Offer) => <StatusBadge status={row.status} />,
+    },
+    {
+      header: "Railway Zone",
+      accessor: (row: Offer) => {
+        const zone = RAILWAY_ZONES.find(z => z.code === row.railwayZone);
+        return zone ? `${zone.name} (${zone.code})` : row.railwayZone;
+      },
     },
     {
       header: "Actions",
@@ -162,7 +171,10 @@ export function OfferList() {
       const matchesStatus =
         statusFilter === "ALL" || offer.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesZone =
+        zoneFilter === "ALL" || offer.railwayZone === zoneFilter;
+
+      return matchesSearch && matchesStatus && matchesZone;
     });
   };
 
@@ -177,6 +189,22 @@ export function OfferList() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
             />
+            <Select
+              value={zoneFilter}
+              onValueChange={(value) => setZoneFilter(value)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by zone..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Zones</SelectItem>
+                {RAILWAY_ZONES.map((zone) => (
+                  <SelectItem key={zone.id} value={zone.code}>
+                    {zone.name} ({zone.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select
               value={statusFilter}
               onValueChange={(value) => setStatusFilter(value)}

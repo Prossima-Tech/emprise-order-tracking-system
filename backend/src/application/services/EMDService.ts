@@ -270,7 +270,6 @@ export class EmdService {
       maturityDate: emd.maturityDate,
       bankName: emd.bankName,
       documentUrl: emd.documentUrl,
-      extractedData: emd.extractedData,
       status: emd.status,
       offer: emd.offer ? {
         id: emd.offer.id!,
@@ -278,6 +277,11 @@ export class EmdService {
         subject: emd.offer.subject
       } : undefined,
       offerId: emd.offerId,
+      loa: emd.loa ? {
+        id: emd.loa.id,
+        loaNumber: emd.loa.loaNumber,
+        loaValue: emd.loa.loaValue,
+      } : undefined,
       tags: emd.tags,
       createdAt: emd.createdAt,
       updatedAt: emd.updatedAt

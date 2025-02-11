@@ -91,6 +91,19 @@ export class BudgetaryOfferValidator {
       });
     }
 
+    // Railway Zone Validation
+    if (!dto.railwayZone) {
+      errors.push({
+        field: 'railwayZone',
+        message: 'Railway zone is required'
+      });
+    } else if (!this.isValidRailwayZone(dto.railwayZone)) {
+      errors.push({
+        field: 'railwayZone',
+        message: 'Invalid railway zone format'
+      });
+    }
+
     return errors.length === 0 
       ? ResultUtils.ok([])
       : ResultUtils.ok(errors);
@@ -209,5 +222,16 @@ export class BudgetaryOfferValidator {
   private isValidTags(tags: any): boolean {
     if (!Array.isArray(tags)) return false;
     return tags.every(tag => typeof tag === 'string' && tag.trim().length > 0);
+  }
+
+  private isValidRailwayZone(zone: string): boolean {
+    // Add valid railway zones - modify this list as needed
+    const validZones = [
+      'NR', 'NCR', 'NER', 'NFR', 'NWR',
+      'SR', 'SCR', 'SER', 'SWR', 'SECR',
+      'ER', 'ECR', 'ECoR', 'WR', 'WCR',
+      'CR', 'METRO'
+    ];
+    return validZones.includes(zone.toUpperCase());
   }
 }

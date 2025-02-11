@@ -35,7 +35,7 @@ import { TokenService } from './infrastructure/services/TokenService';
 import { UserService } from './application/services/UserService';
 import { DashboardService } from './application/services/DashboardService';
 import { DashboardController } from './interfaces/http/controllers/DashboardController';
-
+import { SiteController } from './interfaces/http/controllers/SiteController';
 // Import controllers
 import { AuthController } from './interfaces/http/controllers/AuthController';
 import { BudgetaryOfferController } from './interfaces/http/controllers/BudgetaryOfferController';
@@ -56,7 +56,7 @@ import { itemRoutes } from './interfaces/http/routes/item.routes';
 import { purchaseOrderRoutes } from './interfaces/http/routes/purchaseOrder.routes';
 import { userRoutes } from './interfaces/http/routes/user.routes';
 import { setupDashboardRoutes } from './interfaces/http/routes/dashboard.routes';
-
+import { siteRoutes } from './interfaces/http/routes/site.routes';
 import { authMiddleware } from './interfaces/http/middlewares/auth.middleware';
 import { UserRole } from './domain/entities/User';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
@@ -69,6 +69,8 @@ import path from 'path';
 import { VendorItemService } from './application/services/VendorItemService';
 import { VendorItemController } from './interfaces/http/controllers/VendorItemController';
 import { vendorItemRoutes } from './interfaces/http/routes/vendorItem.routes';
+import { PrismaSiteRepository } from './infrastructure/persistence/repositories/PrismaSiteRepository';
+import { SiteService } from './application/services/SiteService';
 
 async function startServer() {
   const app = express();
@@ -95,7 +97,7 @@ async function startServer() {
   const itemRepository = new PrismaItemRepository(prisma);
   const purchaseOrderRepository = new PrismaPurchaseOrderRepository(prisma);
   const vendorItemRepository = new PrismaVendorItemRepository(prisma);
-
+  const siteRepository = new PrismaSiteRepository(prisma);
 
   const s3Service = new S3Service({
     region: config.aws.region,
@@ -149,6 +151,7 @@ async function startServer() {
     tokenService
   );
   const userService = new UserService(userRepository);
+  const siteService = new SiteService(siteRepository);
   const userController = new UserController(userService);
 
   // Initialize controllers
@@ -160,6 +163,7 @@ async function startServer() {
   const itemController = new ItemController(itemService);
   const purchaseOrderController = new PurchaseOrderController(purchaseOrderService);
   const vendorItemController = new VendorItemController(vendorItemService);
+  const siteController = new SiteController(siteService);
 
   // Initialize Dashboard services and controller
   const dashboardService = new DashboardService(prisma);
@@ -220,8 +224,13 @@ async function startServer() {
 
   // Add dashboard routes
   app.use(
-    '/api',
+    '/api/dashboard',
     setupDashboardRoutes(dashboardController)
+  );
+
+  app.use(
+    '/api/sites',
+    siteRoutes(siteController)
   );
 
   // Create uploads directory if it doesn't exist
@@ -247,6 +256,8 @@ async function startServer() {
     console.log('- /api/purchase-orders');
     console.log('- /api/users');
     console.log('- /api-docs');
+    console.log('- /api/dashboard');
+    console.log('- /api/sites');
   });
 
   // Cleanup uploads directory periodically (every 24 hours)

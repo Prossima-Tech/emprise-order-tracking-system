@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+// Database configuration
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -8,50 +8,56 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// User and Authentication
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String
-  name          String
-  role          UserRole
-  department    String?
-  createdOffers BudgetaryOffer[] @relation("CreatedBy")
+  id             String           @id @default(uuid())
+  email          String           @unique
+  password       String
+  name           String
+  role           UserRole
+  department     String?
+  createdOffers  BudgetaryOffer[] @relation("CreatedBy")
   approvedOffers BudgetaryOffer[] @relation("ApprovedBy")
-  createdPOs    PurchaseOrder[]  @relation("POCreatedBy")
-  approvedPOs   PurchaseOrder[]  @relation("POApprovedBy")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdPOs     PurchaseOrder[]  @relation("POCreatedBy")
+  approvedPOs    PurchaseOrder[]  @relation("POApprovedBy")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 enum UserRole {
   ADMIN
   MANAGER
   STAFF
+  USER
+  BO_SPECIALIST
+  PO_SPECIALIST
 }
 
+// Budgetary Offer Management
 model BudgetaryOffer {
-  id                String    @id @default(uuid())
-  offerId          String    @unique  // BO/2024/0001
+  id               String       @id @default(uuid())
+  offerId          String       @unique // BO/2024/0001
   offerDate        DateTime
   toAuthority      String
   subject          String
-  workItems        Json      // Array of work items
-  termsConditions  String    @db.Text
-  documentUrl      String?   // S3 URL
-  documentHash     String?   // For digital signature verification
+  workItems        Json         // Array of work items
+  termsConditions  String       @db.Text
+  documentUrl      String?      // S3 URL
+  documentHash     String?      // For digital signature verification
   status           OfferStatus
-  createdBy        User      @relation("CreatedBy", fields: [createdById], references: [id])
+  createdBy        User         @relation("CreatedBy", fields: [createdById], references: [id])
   createdById      String
-  approver         User?     @relation("ApprovedBy", fields: [approverId], references: [id])
+  approver         User?        @relation("ApprovedBy", fields: [approverId], references: [id])
   approverId       String?
-  approvalComments  String?   @db.Text
+  approvalComments String?      @db.Text
   approvalDate     DateTime?
   approvalHistory  Json[]
-  emds             EMD[]     // Add reverse relation
+  emds             EMD[]        // Add reverse relation
   tags             String[]
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
   emailLogs        EmailLog[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  railwayZone      String?      @default("CR")
 }
 
 enum OfferStatus {
@@ -61,6 +67,7 @@ enum OfferStatus {
   REJECTED
 }
 
+// Email Tracking
 model EmailLog {
   id              String         @id @default(uuid())
   budgetaryOffer  BudgetaryOffer @relation(fields: [budgetaryOfferId], references: [id])
@@ -69,11 +76,11 @@ model EmailLog {
   cc              String[]
   bcc             String[]
   subject         String
-  content         String        @db.Text
+  content         String         @db.Text
   messageId       String?
   status          EmailStatus
-  error           String?       @db.Text
-  sentAt          DateTime      @default(now())
+  error           String?        @db.Text
+  sentAt          DateTime       @default(now())
 
   @@index([budgetaryOfferId])
 }
@@ -83,6 +90,7 @@ enum EmailStatus {
   FAILED
 }
 
+// EMD Management
 model EMD {
   id              String          @id @default(uuid())
   amount          Float
@@ -94,9 +102,9 @@ model EMD {
   extractedData   Json?           // OCR extracted data
   status          EMDStatus
   offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])
-  offerId         String?         // Make it optional as EMD might be created before offer
+  offerId         String?         // Optional as EMD might be created before offer
   loa             LOA?            @relation(fields: [loaId], references: [id])
-  loaId           String?         @unique  // Add @unique to ensure one-to-one relationship
+  loaId           String?         @unique // One-to-one relationship
   tags            String[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -110,19 +118,49 @@ enum EMDStatus {
   RELEASED
 }
 
+enum SiteStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_MAINTENANCE
+}
+
+model Site {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  code            String           @unique  // For easy reference like MUM001, DEL002
+  zoneId          String           // References railway zone like "CR", "WR"
+  location        String?           // Specific location details
+  address         String           @db.Text
+  contactPerson   String?
+  contactPhone    String?
+  contactEmail    String?
+  status          SiteStatus       @default(ACTIVE)
+  loas            LOA[]            // Sites where work is being executed
+  purchaseOrders  PurchaseOrder[]  // POs related to this site
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([zoneId])
+}
+
+// LOA Management
 model LOA {
-  id              String    @id @default(uuid())
-  loaNumber       String    @unique
+  id              String           @id @default(uuid())
+  loaNumber       String           @unique
   loaValue        Float
-  deliveryPeriod  Json      // { start: Date, end: Date }
+  site            Site?            @relation(fields: [siteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  siteId          String?          // Optional field
+  deliveryPeriod  Json             // { start: Date, end: Date }
   workDescription String
-  documentUrl     String    // S3 URL of LOA document
+  documentUrl     String           // S3 URL of LOA document
   amendments      Amendment[]
   purchaseOrders  PurchaseOrder[]
   tags            String[]
-  emd             EMD?      @relation
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  emd             EMD?             @relation
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@index([siteId])
 }
 
 model Amendment {
@@ -136,19 +174,23 @@ model Amendment {
   updatedAt       DateTime  @updatedAt
 }
 
+// Purchase Order Management
 model PurchaseOrder {
   id                String             @id @default(uuid())
   poNumber          String             @unique
+  site              Site               @relation(fields: [siteId], references: [id])
+  siteId            String
   loa               LOA                @relation(fields: [loaId], references: [id])
   loaId             String
   vendor            Vendor             @relation(fields: [vendorId], references: [id])
   vendorId          String
-  items             PurchaseOrderItem[] 
+  items             PurchaseOrderItem[]
   requirementDesc   String
   termsConditions   String             @db.Text
   shipToAddress     String
   baseAmount        Float              @default(0)
   taxAmount         Float              @default(0)
+  additionalCharges Json[]             // Add this field for storing additional charges
   totalAmount       Float              @default(0)
   notes             String?
   documentUrl       String?
@@ -158,12 +200,16 @@ model PurchaseOrder {
   createdById       String
   approver          User?              @relation("POApprovedBy", fields: [approverId], references: [id])
   approverId        String?
-  approvalComments     String?   @db.Text
-  rejectionReason   String?   @db.Text
-  approvalHistory   Json[]    // Array of approval actions with comments
+  approvalComments  String?            @db.Text
+  rejectionReason   String?            @db.Text
+  approvalHistory   Json[]
   tags              String[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
+  @@index([siteId])
+  @@index([loaId])
+  @@index([vendorId])
 }
 
 model PurchaseOrderItem {
@@ -173,8 +219,8 @@ model PurchaseOrderItem {
   item            Item          @relation(fields: [itemId], references: [id])
   itemId          String
   quantity        Float
-  unitPrice       Float?         // Price at time of purchase
-  totalAmount     Float?         // Calculated total including tax
+  unitPrice       Float?        // Price at time of purchase
+  totalAmount     Float?        // Calculated total including tax
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -189,41 +235,42 @@ enum POStatus {
   REJECTED
 }
 
+// Vendor and Item Management
 model Vendor {
-  id            String    @id @default(uuid())
-  name          String
-  email         String    @unique
-  mobile        String
-  gstin         String?
-  address       String
-  bankDetails   Json
-  items         VendorItem[]
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  mobile         String
+  gstin          String?
+  address        String
+  bankDetails    Json
+  items          VendorItem[]
   purchaseOrders PurchaseOrder[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model Item {
-  id          String    @id @default(uuid())
+  id          String             @id @default(uuid())
   name        String
   description String?
-  unitPrice   Float
-  uom         String    // Unit of Measurement
+  unitPrice   Float?
+  uom         String             // Unit of Measurement
   hsnCode     String?
   vendors     VendorItem[]
-  poItems     PurchaseOrderItem[] // Add this relation
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  poItems     PurchaseOrderItem[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 model VendorItem {
-  vendor      Vendor    @relation(fields: [vendorId], references: [id])
-  vendorId    String
-  item        Item      @relation(fields: [itemId], references: [id])
-  itemId      String
-  unitPrice   Float     // Vendor specific price
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  vendor    Vendor    @relation(fields: [vendorId], references: [id])
+  vendorId  String
+  item      Item      @relation(fields: [itemId], references: [id])
+  itemId    String
+  unitPrice Float     // Vendor specific price
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@id([vendorId, itemId])
 }

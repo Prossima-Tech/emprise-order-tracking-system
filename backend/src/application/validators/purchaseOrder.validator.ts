@@ -36,6 +36,10 @@ export class PurchaseOrderValidator {
       });
     }
 
+    if (!dto.siteId) {
+      errors.push({ field: 'siteId', message: 'Site is required' });
+    }
+    
     // Validate Requirement Description
     if (!dto.requirementDesc?.trim()) {
       errors.push({ field: 'requirementDesc', message: 'Requirement description is required' });
@@ -60,6 +64,28 @@ export class PurchaseOrderValidator {
     // Validate Tags
     if (dto.tags && !Array.isArray(dto.tags)) {
       errors.push({ field: 'tags', message: 'Tags must be an array' });
+    }
+
+    // Validate Additional Charges if provided
+    if (dto.additionalCharges) {
+      if (!Array.isArray(dto.additionalCharges)) {
+        errors.push({ field: 'additionalCharges', message: 'Additional charges must be an array' });
+      } else {
+        dto.additionalCharges.forEach((charge, index) => {
+          if (!charge.description?.trim()) {
+            errors.push({ 
+              field: `additionalCharges[${index}].description`, 
+              message: 'Description is required for additional charge' 
+            });
+          }
+          if (typeof charge.amount !== 'number' || charge.amount < 0) {
+            errors.push({ 
+              field: `additionalCharges[${index}].amount`, 
+              message: 'Amount must be a non-negative number' 
+            });
+          }
+        });
+      }
     }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);
@@ -103,6 +129,28 @@ export class PurchaseOrderValidator {
     // Validate Tags if provided
     if (dto.tags && !Array.isArray(dto.tags)) {
       errors.push({ field: 'tags', message: 'Tags must be an array' });
+    }
+
+    // Validate Additional Charges if provided
+    if (dto.additionalCharges !== undefined) {
+      if (!Array.isArray(dto.additionalCharges)) {
+        errors.push({ field: 'additionalCharges', message: 'Additional charges must be an array' });
+      } else {
+        dto.additionalCharges.forEach((charge, index) => {
+          if (!charge.description?.trim()) {
+            errors.push({ 
+              field: `additionalCharges[${index}].description`, 
+              message: 'Description is required for additional charge' 
+            });
+          }
+          if (typeof charge.amount !== 'number' || charge.amount < 0) {
+            errors.push({ 
+              field: `additionalCharges[${index}].amount`, 
+              message: 'Amount must be a non-negative number' 
+            });
+          }
+        });
+      }
     }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);

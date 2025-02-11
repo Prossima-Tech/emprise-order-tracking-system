@@ -15,4 +15,5 @@ export class UpdateBudgetaryOfferDto {
   }>;
   termsConditions?: string;
   approverId?: string;
+  railwayZone?: string;
 }

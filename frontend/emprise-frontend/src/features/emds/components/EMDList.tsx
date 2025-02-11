@@ -72,7 +72,6 @@ export function EMDList() {
       try {
         setLoading(true);
         const response = await apiClient.get("/emds");
-        console.log(response.data.data.data);
         setEMDs(response.data.data.data);
       } catch (error) {
         console.error("Failed to fetch EMDs:", error);

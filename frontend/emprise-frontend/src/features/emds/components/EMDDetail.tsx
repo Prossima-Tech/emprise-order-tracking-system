@@ -61,11 +61,11 @@ export function EMDDetail() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
+  const formatCurrency = (value: number): string => {
+    return `₹${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
   };
 
   const handleDelete = async () => {
@@ -150,10 +150,10 @@ export function EMDDetail() {
           )}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="destructive">
+              {/* <Button variant="destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete EMD
-              </Button>
+              </Button> */}
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -224,7 +224,9 @@ export function EMDDetail() {
               <h3 className="text-sm font-medium text-muted-foreground">
                 Amount
               </h3>
-              <p className="mt-1">{formatCurrency(emd.amount)}</p>
+              <div className="text-sm text-muted-foreground">
+                {formatCurrency(emd.amount)}
+              </div>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground">

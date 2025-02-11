@@ -40,7 +40,8 @@ export class LoaController {
         workDescription: req.body.workDescription,
         documentFile: req.file,
         tags: tags,
-        emdId: emdId
+        emdId: emdId,
+        siteId: req.body.siteId
       });
 
       if (!result.isSuccess) {

@@ -136,6 +136,10 @@ export function POList() {
       accessor: (row: PurchaseOrder) => `PO-${row.id.slice(0, 8).toUpperCase()}`,
     },
     {
+      header: "Site",
+      accessor: (row: PurchaseOrder) => row.site?.name || 'N/A',
+    },
+    {
       header: "Vendor",
       accessor: (row: PurchaseOrder) => row.vendor.name,
     },
@@ -177,7 +181,7 @@ export function POList() {
     {
       header: "Actions",
       accessor: (row: PurchaseOrder) => (
-        <div className="flex justify-end">
+        <div className="flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -224,6 +228,7 @@ export function POList() {
 
       const matchesSearch =
         searchTerm === "" ||
+        order.site?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.vendor?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.loa?.loaNumber?.toLowerCase().includes(searchTerm.toLowerCase());
 

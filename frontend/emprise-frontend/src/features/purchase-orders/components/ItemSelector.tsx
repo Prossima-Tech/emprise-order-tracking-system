@@ -16,6 +16,13 @@ import { Button } from "../../../components/ui/button";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import apiClient from "../../../lib/utils/api-client";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "../../../components/ui/select";
 
 interface VendorItem {
   vendor: {
@@ -59,11 +66,12 @@ interface PriceHistoryResponse {
 
 interface ItemSelectorProps {
   vendorId: string;
-  value?: string;
+  value: string;
   onChange: (itemId: string, unitPrice: number) => void;
+  excludeItems?: string[];
 }
 
-export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
+export function ItemSelector({ vendorId, value, onChange, excludeItems = [] }: ItemSelectorProps) {
   const [open, setOpen] = useState(false);
   const [vendorItems, setVendorItems] = useState<VendorItem[]>([]);
   const [priceHistory, setPriceHistory] = useState<Map<string, PriceHistoryData>>(new Map());
@@ -81,9 +89,16 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
       try {
         setLoading(true);
         const response = await apiClient.get(`/vendors/${vendorId}/items`);
-        const itemsData = response.data?.data?.data?.items || [];
-        console.log("itemsData in item selector", itemsData);
-        setVendorItems(Array.isArray(itemsData) ? itemsData : []);
+        
+        // Access the items array from the correct path in the response
+        const items = response?.data?.data?.data?.items || [];
+        
+        // Filter out excluded items
+        const availableItems = items.filter(
+          (item: VendorItem) => !excludeItems.includes(item.item.id)
+        );
+        
+        setVendorItems(availableItems);
       } catch (error) {
         console.error('Error fetching items:', error);
         setVendorItems([]);
@@ -93,13 +108,20 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
     };
 
     fetchItems();
-  }, [vendorId]);
+  }, [vendorId, excludeItems]);
 
   const selectedItem = vendorItems.find(vi => vi.item.id === value);
   const filteredItems = vendorItems.filter(vi => 
     vi.item.name.toLowerCase().includes(search.toLowerCase()) ||
     vi.item.description.toLowerCase().includes(search.toLowerCase())
   );
+
+  const formatCurrency = (value: number): string => {
+    return `₹${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
+  };
 
   const fetchPriceHistory = async (itemId: string) => {
     try {
@@ -117,7 +139,6 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
   };
 
   useEffect(() => {
-    console.log('Current price history:', priceHistory);
   }, [priceHistory]);
 
   const handleSelect = async (itemId: string) => {
@@ -155,7 +176,7 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
             <span className="flex items-center gap-2 truncate">
               <span>{selectedItem.item.name}</span>
               <span className="text-muted-foreground">
-                • ₹{selectedItem.unitPrice}/{selectedItem.item.uom}
+                • {formatCurrency(selectedItem.unitPrice)}/{selectedItem.item.uom}
               </span>
             </span>
           ) : (
@@ -202,7 +223,7 @@ export function ItemSelector({ vendorId, value, onChange }: ItemSelectorProps) {
                     <div className="flex flex-col">
                       <span className="font-medium">{vi.item.name}</span>
                       <span className="text-sm text-muted-foreground">
-                        {vi.item.description} • ₹{vi.unitPrice}/{vi.item.uom}
+                        {vi.item.description} • {formatCurrency(vi.unitPrice)}/{vi.item.uom}
                       </span>
                     </div>
                   </div>

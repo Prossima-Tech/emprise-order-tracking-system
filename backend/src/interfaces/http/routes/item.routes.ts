@@ -67,32 +67,32 @@ export function itemRoutes(controller: ItemController) {
   const router = Router();
 
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.createItem
   );
 
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.updateItem
   );
 
   router.delete('/:id',
-    authMiddleware([UserRole.ADMIN]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.deleteItem
   );
 
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.getItem
   );
 
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.getAllItems
   );
 
   router.get('/:id/price-history',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.PO_SPECIALIST]),
     controller.getPriceHistory
   );
 

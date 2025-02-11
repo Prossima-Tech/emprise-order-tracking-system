@@ -235,57 +235,57 @@ export function budgetaryOfferRoutes(controller: BudgetaryOfferController) {
 
   // Create new offer
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.createOffer
   );
 
   // Update offer
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.updateOffer
   );
 
   // Delete offer
   router.delete('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.deleteOffer
   );
 
   // Get single offer
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.getOffer
   );
 
   // Get all offers with pagination and filters
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.getOffers
   );
 
   router.post('/:id/generate-pdf',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.generatePDF
   );
 
   router.get('/:id/verify',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.verifyDocument
   );
 
   router.post('/:id/send-email',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.sendEmail
   );
 
   router.get('/:id/email-logs',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.getEmailLogs
   );
 
   // Submit for approval
   router.post('/:id/submit',
-    authMiddleware([UserRole.STAFF, UserRole.ADMIN]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.BO_SPECIALIST]),
     controller.submitForApproval
   );
 

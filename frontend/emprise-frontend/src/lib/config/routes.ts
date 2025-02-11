@@ -9,5 +9,6 @@ export const ROUTES = {
     PURCHASE_ORDERS: '/purchase-orders',
     ITEMS: '/items',
     VENDORS: '/vendors',
+    SITES: '/sites',
   } as const;
   

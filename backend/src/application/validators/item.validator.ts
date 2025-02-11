@@ -24,9 +24,9 @@ export class ItemValidator {
     }
 
     // Unit Price validation
-    if (dto.unitPrice === undefined || dto.unitPrice <= 0) {
-      errors.push({ field: 'unitPrice', message: 'Unit price must be a positive number' });
-    }
+    // if (dto.unitPrice === undefined || dto.unitPrice <= 0) {
+    //   errors.push({ field: 'unitPrice', message: 'Unit price must be a positive number' });
+    // }
 
     // Unit of Measurement validation
     if (!dto.uom?.trim()) {

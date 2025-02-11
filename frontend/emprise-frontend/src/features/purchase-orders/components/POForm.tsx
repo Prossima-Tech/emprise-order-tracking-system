@@ -36,6 +36,8 @@ import { Badge } from "../../../components/ui/badge";
 import { useLOAs } from "../../loas/hooks/use-loas";
 import { useVendors } from "../../vendors/hooks/use-vendors";
 import { VendorSelector } from "./VendorSelector";
+import { useSites } from "../../sites/hooks/use-sites";
+import type { Site } from "../../sites/types/site";
 
 interface POFormProps {
   mode: 'create' | 'edit';
@@ -57,8 +59,22 @@ interface User {
   role: 'ADMIN' | 'MANAGER' | 'STAFF';
 }
 
+interface LOA {
+  id: string;
+  loaNumber: string;
+  siteId: string;
+  loaValue: number;
+}
+
+const formatCurrency = (value: number): string => {
+  return `₹${value.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
+
 export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
-  const [loas, setLoas] = useState<any[]>([]);
+  const [loas, setLoas] = useState<LOA[]>([]);
   const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -72,13 +88,16 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
   );
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { getLOAs} = useLOAs();
+  const { getLOAs } = useLOAs();
   const { getVendors } = useVendors();
   const { updatePurchaseOrder } = usePurchaseOrders();
+  const { getSites } = useSites();
+  const [sites, setSites] = useState<Site[]>([]);
 
   const form = useForm<PurchaseOrderFormData>({
     resolver: zodResolver(purchaseOrderSchema),
     defaultValues: mode === 'edit' && initialData ? {
+      siteId: initialData.site?.id || '',
       loaId: initialData.loa.id,
       vendorId: initialData.vendor.id,
       items: initialData.items.map(item => ({
@@ -95,11 +114,12 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
       approverId: initialData.approverId || '',
       expectedDeliveryDate: initialData.expectedDeliveryDate || '',
     } : {
+      siteId: '',
       loaId: '',
       vendorId: '',
-      items: [{ 
-        itemId: '', 
-        quantity: 1, 
+      items: [{
+        itemId: '',
+        quantity: 1,
         unitPrice: 0,
       }],
       taxAmount: 0,
@@ -119,28 +139,40 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
     name: "items",
   });
 
+  const { fields: additionalChargeFields, append: appendCharge, remove: removeCharge } = useFieldArray({
+    control: form.control,
+    name: "additionalCharges"
+  });
+
   const watchItems = form.watch("items");
   const selectedVendor = form.watch("vendorId");
   const watchVendorId = form.watch("vendorId");
   const watchTaxAmount = form.watch("taxAmount");
+  const watchAdditionalCharges = form.watch("additionalCharges");
 
   const calculateTotals = () => {
     const subtotal = watchItems.reduce(
       (acc, item) => acc + (item.quantity * item.unitPrice),
       0
     );
-    
+
     let taxAmount = 0;
     if (taxType === 'percentage') {
       taxAmount = (subtotal * (watchTaxAmount || 0)) / 100;
     } else {
       taxAmount = watchTaxAmount || 0;
     }
-    
+
+    const additionalChargesTotal = watchAdditionalCharges?.reduce(
+      (acc, charge) => acc + (charge.amount || 0),
+      0
+    ) || 0;
+
     return {
       subtotal,
       tax: taxAmount,
-      total: subtotal + taxAmount,
+      additionalCharges: additionalChargesTotal,
+      total: subtotal + taxAmount + additionalChargesTotal,
     };
   };
 
@@ -155,52 +187,49 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
   };
 
   useEffect(() => {
-    const fetchOptions = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const [loasResponse, vendorsResponse] = await Promise.all([
+        const [loasResponse, vendorsResponse, sitesResponse, approversResponse] = await Promise.all([
           getLOAs(),
           getVendors(),
+          getSites(),
+          apiClient.get('/users')
         ]);
+
         setLoas(loasResponse);
         setVendors(vendorsResponse || []);
+        setSites(sitesResponse?.sites || []);
+
+        const adminUsers = approversResponse.data.filter((user: User) => user.role === 'ADMIN');
+        setApprovers(adminUsers);
+
       } catch (error) {
         setLoas([]);
         setVendors([]);
+        setSites([]);
+        toast({
+          title: "Error",
+          description: "Failed to fetch required data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOptions();
-  }, []);
-
-  useEffect(() => {
-    const fetchApprovers = async () => {
-      try {
-        const response = await apiClient.get('/users');
-        const adminUsers = response.data.filter((user: User) => user.role === 'ADMIN');
-        setApprovers(adminUsers);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch approvers",
-          variant: "destructive",
-        });
-      }
-    };
-    fetchApprovers();
+    fetchData();
   }, []);
 
   const handleSubmit = async (data: PurchaseOrderFormData) => {
     try {
       setSubmitting(true);
-      
+
       // Convert tax percentage to amount if needed
-      const taxAmount = taxType === 'percentage' 
+      const taxAmount = taxType === 'percentage'
         ? (calculateTotals().subtotal * (data.taxAmount || 0)) / 100
         : data.taxAmount;
-      
+
       if (mode === 'edit' && initialData?.id) {
         const updatedData = {
           ...data,
@@ -211,7 +240,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             unitPrice: item.unitPrice,
           }))
         };
-        
+
         await updatePurchaseOrder(initialData.id, updatedData);
         toast({
           title: "Success",
@@ -228,7 +257,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             unitPrice: item.unitPrice,
           }))
         };
-        
+
         await onSubmit(formattedData);
       }
     } catch (error) {
@@ -246,9 +275,9 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
   useEffect(() => {
     if (watchVendorId) {
       if (mode !== 'edit') {
-        form.setValue("items", [{ 
-          itemId: "", 
-          quantity: 1, 
+        form.setValue("items", [{
+          itemId: "",
+          quantity: 1,
           unitPrice: 0,
         }], {
           shouldValidate: true,
@@ -256,6 +285,16 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
       }
     }
   }, [watchVendorId, mode]);
+
+  useEffect(() => {
+    const selectedLoaId = form.watch("loaId");
+    if (selectedLoaId) {
+      const selectedLoa = loas.find(loa => loa.id === selectedLoaId);
+      if (selectedLoa?.siteId) {
+        form.setValue("siteId", selectedLoa.siteId, { shouldValidate: true });
+      }
+    }
+  }, [form.watch("loaId")]);
 
   const handleAddTag = (tag: string) => {
     if (tag && !selectedTags.includes(tag)) {
@@ -272,6 +311,11 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
     form.setValue('tags', updatedTags);
   };
 
+  // Get all selected item IDs
+  const selectedItemIds = watchItems
+    .map(item => item.itemId)
+    .filter(id => id !== ""); // Filter out empty strings
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -279,6 +323,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+
         {/* LOA Selection */}
         <FormField
           control={form.control}
@@ -286,8 +331,10 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>LOA Reference</FormLabel>
-              <Select 
-                onValueChange={field.onChange}
+              <Select
+                onValueChange={(value) => {
+                  field.onChange(value);
+                }}
                 value={field.value}
               >
                 <FormControl>
@@ -298,7 +345,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
                 <SelectContent>
                   {loas.map((loa) => (
                     <SelectItem key={loa.id} value={loa.id}>
-                      {loa.loaNumber} (Available: ₹{(loa.loaValue || 0).toLocaleString()})
+                      {loa.loaNumber} (Available: {formatCurrency(loa.loaValue || 0)})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -307,6 +354,40 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Site Selection */}
+        <FormField
+          control={form.control}
+          name="siteId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Site</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={true}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Site will be set based on LOA" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Site is automatically set based on the selected LOA
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
 
         {/* Vendor Selection */}
         <FormField
@@ -332,107 +413,127 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">Line Items</h3>
-            <Button
-              type="button"
-              onClick={() => append({ 
-                itemId: "", 
-                quantity: 1, 
-                unitPrice: 0,
-              })}
-              disabled={!selectedVendor}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
+            {selectedVendor && fields.length > 0 && (
+              <Button
+                type="button"
+                onClick={() => append({
+                  itemId: "",
+                  quantity: 1,
+                  unitPrice: 0,
+                })}
+                disabled={!selectedVendor}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Item
+              </Button>
+            )}
           </div>
 
-          {fields.map((field, index) => (
-            <Card key={field.id}>
-              <CardContent className="pt-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.itemId`}
-                    render={({ field: itemField }) => (
-                      <FormItem>
-                        <FormLabel>Item</FormLabel>
-                        <FormControl>
-                          <ItemSelector
-                            vendorId={selectedVendor}
-                            value={itemField.value}
-                            onChange={(itemId, unitPrice) => 
-                              handleItemSelect(index, itemId, unitPrice)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.quantity`}
-                      render={({ field: quantityField }) => (
-                        <FormItem>
-                          <FormLabel>Quantity</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              {...quantityField}
-                              onChange={(e) => 
-                                quantityField.onChange(parseInt(e.target.value))
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`items.${index}.unitPrice`}
-                      render={({ field: priceField }) => (
-                        <FormItem>
-                          <FormLabel>Unit Price (₹)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              {...priceField}
-                              onChange={(e) => priceField.onChange(parseFloat(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Item Total and Remove Button */}
-                  <div className="col-span-2 flex justify-between items-center border-t pt-4 mt-2">
-                    <div className="text-sm space-y-1">
-                      <div>
-                        Subtotal: ₹{(watchItems[index].quantity * watchItems[index].unitPrice).toFixed(2)}
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      disabled={fields.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+          {!selectedVendor ? (
+            <Card>
+              <CardContent className="py-4 text-center text-muted-foreground">
+                Please select a vendor first to add items
+              </CardContent>
+            </Card>
+          ) : fields.length === 0 ? (
+            <Card>
+              <CardContent className="py-4 text-center text-muted-foreground">
+                <div className="space-y-2">
+                  <p>No items available for this vendor</p>
+                  <p className="text-sm">All items have been added to the purchase order</p>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            fields.map((field, index) => (
+              <Card key={field.id}>
+                <CardContent className="pt-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.itemId`}
+                      render={({ field: itemField }) => (
+                        <FormItem>
+                          <FormLabel>Item</FormLabel>
+                          <FormControl>
+                            <ItemSelector
+                              vendorId={selectedVendor}
+                              value={itemField.value}
+                              onChange={(itemId, unitPrice) =>
+                                handleItemSelect(index, itemId, unitPrice)
+                              }
+                              excludeItems={selectedItemIds.filter(id => id !== itemField.value)} // Exclude other selected items
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.quantity`}
+                        render={({ field: quantityField }) => (
+                          <FormItem>
+                            <FormLabel>Quantity</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="1"
+                                {...quantityField}
+                                onChange={(e) =>
+                                  quantityField.onChange(parseInt(e.target.value))
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.unitPrice`}
+                        render={({ field: priceField }) => (
+                          <FormItem>
+                            <FormLabel>Unit Price (₹)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                {...priceField}
+                                onChange={(e) => priceField.onChange(parseFloat(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Item Total and Remove Button */}
+                    <div className="col-span-2 flex justify-between items-center border-t pt-4 mt-2">
+                      <div className="text-sm space-y-1">
+                        <div>
+                          Subtotal: {formatCurrency(watchItems[index].quantity * watchItems[index].unitPrice)}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        disabled={fields.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {/* Tax Type Selection and Amount */}
@@ -481,23 +582,72 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           />
         </div>
 
-        {/* Expected Delivery Date */}
-        {/* <FormField
-          control={form.control}
-          name="expectedDeliveryDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Expected Delivery Date</FormLabel>
-              <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
+        {/* Additional Charges Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Additional Charges</h3>
+            <Button
+              type="button"
+              onClick={() => appendCharge({ description: '', amount: 0 })}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Charge
+            </Button>
+          </div>
+
+          {additionalChargeFields.map((field, index) => (
+            <Card key={field.id}>
+              <CardContent className="pt-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name={`additionalCharges.${index}.description`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Freight Charges" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`additionalCharges.${index}.amount`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Amount (₹)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => removeCharge(index)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Remove Charge
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         {/* Order Totals */}
         <Card>
@@ -505,17 +655,23 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
-                <span>₹{totals.subtotal.toFixed(2)}</span>
+                <span>{formatCurrency(totals.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>
                   Tax {taxType === 'percentage' ? `(${watchTaxAmount || 0}%)` : 'Amount'}:
                 </span>
-                <span>₹{totals.tax.toFixed(2)}</span>
+                <span>{formatCurrency(totals.tax)}</span>
               </div>
+              {totals.additionalCharges > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Additional Charges:</span>
+                  <span>{formatCurrency(totals.additionalCharges)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-medium text-lg border-t pt-2">
                 <span>Total:</span>
-                <span>₹{totals.total.toFixed(2)}</span>
+                <span>{formatCurrency(totals.total)}</span>
               </div>
             </div>
           </CardContent>
@@ -667,15 +823,15 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
 
         {/* Form Actions */}
         <div className="flex justify-end space-x-4">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={onCancel}
             disabled={submitting}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             type="submit"
             disabled={loading || submitting}
           >

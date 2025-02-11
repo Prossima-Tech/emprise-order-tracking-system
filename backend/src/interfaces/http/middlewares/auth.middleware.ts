@@ -17,14 +17,12 @@ export function authMiddleware(requiredRoles: UserRole[] = []) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const token = req.headers.authorization?.split(' ')[1];
-      console.log(token);
 
       if (!token) {
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
 
-      console.log(!token);
       // Verify token
       const decoded = jwt.verify(token, config.jwt.secret) as TokenPayload;
       

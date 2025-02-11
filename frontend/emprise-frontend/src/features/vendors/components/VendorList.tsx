@@ -37,11 +37,11 @@ export function VendorList() {
       try {
         setLoading(true);
         setError(null);
-        console.log('Starting vendors fetch...');
+
         const data = await getVendors();
         
         if (mounted) {
-          console.log('Received vendors data:', data);
+
           if (Array.isArray(data)) {
             setVendors(data);
           } else {

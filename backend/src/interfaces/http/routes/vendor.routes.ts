@@ -68,29 +68,29 @@ export function vendorRoutes(controller: VendorController) {
   const router = Router();
 
   router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     // validateRequest(createVendorSchema),
     controller.createVendor
   );
 
   router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     // validateRequest(updateVendorSchema),
     controller.updateVendor
   );
 
   router.delete('/:id',
-    authMiddleware([UserRole.ADMIN]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.deleteVendor
   );
 
   router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.getVendor
   );
 
   router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.PO_SPECIALIST, UserRole.BO_SPECIALIST]),
     controller.getAllVendors
   );
 
