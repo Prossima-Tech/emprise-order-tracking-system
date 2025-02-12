@@ -1,13 +1,8 @@
-// infrastructure/services/POPdfService.ts
-import PDFDocument from 'pdfkit';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { S3Service } from './S3Service';
 import { createHash } from 'crypto';
 import { JSDOM } from 'jsdom';
-
-interface Column {
-  width: number;
-  align: 'left' | 'center' | 'right';
-}
 
 export interface PDFItemData {
   item: {
@@ -16,18 +11,6 @@ export interface PDFItemData {
   };
   quantity: number;
   unitPrice: number;
-  // taxRates: {
-  //   igst: number;
-  //   sgst: number;
-  //   ugst: number;
-  // };
-  // taxAmounts: {
-  //   igst: number;
-  //   sgst: number;
-  //   ugst: number;
-  // };
-  // baseAmount: number;
-  // totalAmount: number;
 }
 
 export interface PDFGenerationData {
@@ -57,281 +40,266 @@ export interface PDFGenerationData {
 }
 
 export class POPDFService {
-  private doc!: PDFKit.PDFDocument;
-  private readonly margin = 35; // Reduced margin
-  private currentY = this.margin;
-  private readonly pageHeight = 792;
-  private readonly tableWidth = 525; // Increased width to use more space
-  private readonly columnWidth = 175; // Adjusted column width
+  private readonly PAGE_MARGIN = 20;
+  private readonly CONTENT_MARGIN = 5;
 
   constructor(private s3Service: S3Service) {}
-
-  private drawTableRow(cells: string[], columns: Column[], isHeader = false): number {
-    let x = this.margin;
-    let maxHeight = 0;
-
-    cells.forEach((cell, i) => {
-      const cellWidth = columns[i].width;
-      const cellHeight = this.doc.heightOfString(cell, {
-        width: cellWidth - 8, // Reduced padding
-        align: columns[i].align
-      });
-      maxHeight = Math.max(maxHeight, cellHeight);
-    });
-
-    maxHeight += 12; // Increased padding for more space below upper line
-
-    cells.forEach((cell, i) => {
-      const column = columns[i];
-      this.doc.text(cell, x + 4, this.currentY + 6, { // Added more top padding
-        width: column.width - 8,
-        align: column.align
-      });
-
-      if (i < cells.length - 1) {
-        this.doc.moveTo(x + column.width, this.currentY)
-          .lineTo(x + column.width, this.currentY + maxHeight)
-          .stroke();
-      }
-
-      x += column.width;
-    });
-
-    this.currentY += maxHeight;
-    return maxHeight;
-  }
-
-  public async generatePurchaseOrderPDF(data: PDFGenerationData): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      this.doc = new PDFDocument({ margin: this.margin, size: 'A4', bufferPages: true });
-      const chunks: Buffer[] = [];
-
-      this.doc.on('data', chunks.push.bind(chunks));
-      this.doc.on('end', () => resolve(Buffer.concat(chunks)));
-      this.doc.on('error', reject);
-
-      try {
-        this.createMainTableStructure(data);
-        this.doc.end();
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  private createMainTableStructure(data: PDFGenerationData): void {
-    this.doc.rect(this.margin, this.currentY, this.tableWidth, 710).stroke(); // Increased height
-
-    this.addHeaderSection(data);
-    this.addHorizontalLine();
-
-    this.addThreeColumnSection(data);
-    this.addHorizontalLine();
-
-    this.addRequirementDescription(data);
-    this.addHorizontalLine();
-
-    this.addItemsTable(data);
-    this.addHorizontalLine();
-    this.currentY += 8; // Extra line after items table
-
-    this.addFinancialSummary(data);
-    this.addHorizontalLine();
-
-    this.addTermsConditions(data);
-    this.addSignature(data);
-  }
-
-  private addHeaderSection(data: PDFGenerationData): void {
-    this.currentY += 8; // Reduced spacing
-    this.doc.fontSize(16).font('Helvetica-Bold')
-      .text('EMPRISE MARKETING', this.margin + 10, this.currentY, { width: this.tableWidth - 20, align: 'center' });
+  private formatCurrency(amount: number): string {
+    // Convert to string and split on decimal point
+    const [integerPart, decimalPart = '00'] = amount.toFixed(2).split('.');
     
-    this.currentY += 20; // Reduced spacing
-    this.doc.fontSize(9)
-      .text('B-1/31, Sector H, Aliganj, Lucknow - 226024 (India)', this.margin + 10, this.currentY, { align: 'center' })
-      .text('Tel: (0522) 4017682 | Email: emprisemarketing@hotmail.com', this.margin + 10, this.currentY + 10, { align: 'center' })
-      .text('GSTIN: 09AABCE1234F1Z5', this.margin + 10, this.currentY + 20, { align: 'center' });
+    // Add commas for thousands separator according to Indian numbering system
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     
-    this.currentY += 40; // Reduced spacing
-  }
-
-  private addThreeColumnSection(data: PDFGenerationData): void {
-    const formattedDate = this.formatDate(data.createdAt);
-    const col1X = this.margin;
-    const col2X = this.margin + this.columnWidth;
-    const col3X = this.margin + (this.columnWidth * 2);
-    const sectionHeight = 70; // Reduced height
-
-    this.doc.moveTo(col2X, this.currentY).lineTo(col2X, this.currentY + sectionHeight).stroke();
-    this.doc.moveTo(col3X, this.currentY).lineTo(col3X, this.currentY + sectionHeight).stroke();
-
-    this.doc.fontSize(10)
-      .text('To:', col1X + 8, this.currentY)
-      .text(data.vendor.name, col1X + 25, this.currentY)
-      .text(data.vendor.email, col1X + 25, this.currentY + 12);
-
-    this.doc.text('Bill To:', col2X + 8, this.currentY)
-      .text('Emprise Marketing', col2X + 25, this.currentY)
-      .text('B-1/31, Sector H, Aliganj', col2X + 25, this.currentY + 12)
-      .text('Lucknow - 226024, India', col2X + 25, this.currentY + 24);
-
-    this.doc.font('Helvetica-Bold')
-      .text('P.O. No:', col3X + 8, this.currentY)
-      .text(data.poNumber, col3X + 55, this.currentY)
-      .text('P.O. Date:', col3X + 8, this.currentY + 12)
-      .text(formattedDate, col3X + 55, this.currentY + 12);
-
-    this.currentY += sectionHeight;
-    this.checkPageBreak(180);
-  }
-
-  private addRequirementDescription(data: PDFGenerationData): void {
-    this.currentY += 8;
-    this.doc.fontSize(10).font('Helvetica-Bold')
-      .text('Requirement Description:', this.margin + 8, this.currentY);
+    // Ensure decimal part is exactly 2 digits
+    // const paddedDecimal = decimalPart.padEnd(2, '0');
     
-    this.doc.fontSize(9).font('Helvetica')
-      .text(data.requirementDesc, this.margin + 8, this.currentY + 16, {
-        width: this.tableWidth - 16,
-        align: 'left'
-      });
-
-    this.currentY += 50; // Reduced spacing
+    // Combine with currency symbol and proper spacing
+    return `₹${formattedInteger}.${decimalPart}`; // Removed extra space after ₹
   }
 
-  private addItemsTable(data: PDFGenerationData): void {
-    const columns = [
-      { width: 30, align: 'center' },
-      { width: 290, align: 'left' }, // Increased description width
-      { width: 55, align: 'center' },
-      { width: 85, align: 'center' },
-      { width: 65, align: 'center' }
-    ];
-
-    this.currentY += 8;
-    this.doc.fontSize(10).font('Helvetica-Bold');
-    this.drawTableRow(['Sr.', 'Particulars', 'Qty', 'Unit Rate', 'Value'], columns as Column[], true);
-
-    this.doc.fontSize(9).font('Helvetica');
-    data.items.forEach((item, index) => {
-      const rowHeight = this.drawTableRow([
-        (index + 1).toString(),
-        item.item.name + (item.item.description ? `\n${item.item.description}` : ''),
-        item.quantity.toLocaleString('en-IN'),
-        `₹${item.unitPrice.toLocaleString('en-IN')}`,
-        // `₹${item.totalAmount.toLocaleString('en-IN')}`
-      ], columns as Column[]);
-
-      this.doc.rect(this.margin, this.currentY - rowHeight, this.tableWidth, rowHeight).stroke();
-    });
-
-    this.currentY += 16;
-  }
-
-  private addFinancialSummary(data: PDFGenerationData): void {
-    this.checkPageBreak(90);
-    
-    const totals = data.items.reduce((acc, item) => ({
-      base: acc.base || 0,
-      total: acc.total || 0
-    }), { base: 0, total: 0 });
-
-    const summaryX = this.margin + 260;
-    const valueX = this.margin + 460;
-
-    this.doc.fontSize(10)
-      .font('Helvetica')
-      .text('Total (Basic Price):', summaryX, this.currentY + 8)
-      // .text(`₹${totals.base.toLocaleString('en-IN')}`, valueX, this.currentY + 8)
-      .moveDown(0.4)
-      .font('Helvetica-Bold')
-      .text('Grand Total (Inclusive of GST@18%):', summaryX, this.currentY + 20)
-      // .text(`₹${totals.total.toLocaleString('en-IN')}`, valueX, this.currentY + 20);
-
-    this.currentY += 35;
-  }
-
-  private addTermsConditions(data: PDFGenerationData): void {
-    this.doc.fontSize(9).font('Helvetica-Bold')
-      .text('Terms & Conditions:', this.margin + 8, this.currentY + 8);
-    
-    const dom = new JSDOM(data.termsConditions);
-    let yPos = this.currentY + 20;
-    
-    dom.window.document.querySelectorAll('li').forEach((item, index) => {
-      if(yPos > this.pageHeight - 90) {
-        this.doc.addPage();
-        yPos = this.margin;
-      }
-      
-      this.doc.font('Helvetica').fontSize(9)
-        .text(` ${index + 1}. ${item.textContent?.trim()}`, this.margin + 12, yPos);
-      yPos += 12; // Reduced line spacing
-    });
-
-    this.currentY = yPos + 16;
-  }
-
-  private addSignature(data: PDFGenerationData): void {
-    this.checkPageBreak(90);
-
-    const signatureY = this.currentY + 16;
-    const signatureMargin = this.margin + 25; // Added left margin for signature section
-    
-    this.doc.fontSize(10).font('Helvetica-Bold')
-      .text('FOR EMPRISE MARKETING', signatureMargin, signatureY)
-      .moveDown(1.5)
-      .text(data.createdBy.name, signatureMargin, signatureY + 35)
-      .font('Helvetica')
-      .text('Authorised Signatory', signatureMargin, signatureY + 48);
-
-    const shipToX = this.margin + 310;
-    this.doc.fontSize(10).font('Helvetica-Bold')
-      .text('Ship To:', shipToX, signatureY)
-      .font('Helvetica')
-      .text(data.shipToAddress, shipToX + 16, signatureY + 12, {
-        width: 180,
-        align: 'left'
-      });
-
-    this.currentY += 90;
-  }
-
-  private addHorizontalLine(): void {
-    this.doc.moveTo(this.margin, this.currentY)
-      .lineTo(this.margin + this.tableWidth, this.currentY)
-      .stroke();
-    this.currentY += 8; // Reduced spacing
-  }
-
-  private checkPageBreak(requiredHeight: number): void {
-    if(this.currentY + requiredHeight > this.pageHeight) {
-      this.doc.addPage();
-      this.currentY = this.margin;
-    }
+  private formatNumber(num: number): string {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
   }
 
   private formatDate(date: Date): string {
     return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'long', year: 'numeric'
-    }).replace(/(\d+)/, (_, d) => `${d}[${this.getOrdinal(parseInt(d))}]`);
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
   }
 
-  private getOrdinal(n: number): string {
-    const suffixes = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0];
+  private parseHTML(htmlString: string): string {
+    const dom = new JSDOM(htmlString);
+    return dom.window.document.body.textContent || '';
   }
 
-  private generateDocumentHash(buffer: Buffer): string {
-    return createHash('sha256').update(buffer).digest('hex');
+  private drawBorderedSection(doc: jsPDF, x: number, y: number, width: number, height: number) {
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.1);
+    doc.rect(x, y, width, height);
   }
 
-  async generateAndUploadPurchaseOrder(data: PDFGenerationData): Promise<{ url: string; hash: string }> {
+  public async generatePurchaseOrderPDF(data: PDFGenerationData): Promise<Buffer> {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const contentWidth = pageWidth - (2 * this.PAGE_MARGIN);
+    
+    // Page border with rounded corners
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.1);
+    doc.roundedRect(
+      this.PAGE_MARGIN - 5, 
+      this.PAGE_MARGIN - 5, 
+      pageWidth - 2 * (this.PAGE_MARGIN - 5), 
+      doc.internal.pageSize.height - 2 * (this.PAGE_MARGIN - 5), 
+      3, 
+      3
+    );
+
+    // Header section
+    const headerY = this.PAGE_MARGIN;
+    this.drawBorderedSection(
+      doc, 
+      this.PAGE_MARGIN, 
+      headerY, 
+      contentWidth, 
+      35
+    );
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EMPRISE MARKETING', pageWidth / 2, headerY + 10, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('B-1/31, Sector H, Aliganj, Lucknow - 226024 (India)', pageWidth / 2, headerY + 18, { align: 'center' });
+    doc.text('Tel: (0522) 4017682 | Email: emprisemarketing@hotmail.com', pageWidth / 2, headerY + 24, { align: 'center' });
+    doc.text('GSTIN: 09AABCE1234F1Z5', pageWidth / 2, headerY + 30, { align: 'center' });
+
+    // Details section with three columns
+    const detailsY = headerY + 40;
+    const columnWidth = (contentWidth - 2 * this.CONTENT_MARGIN) / 3;
+    
+    // Draw three columns
+    this.drawBorderedSection(doc, this.PAGE_MARGIN, detailsY, columnWidth, 30);
+    this.drawBorderedSection(doc, this.PAGE_MARGIN + columnWidth + this.CONTENT_MARGIN, detailsY, columnWidth, 30);
+    this.drawBorderedSection(doc, this.PAGE_MARGIN + 2 * (columnWidth + this.CONTENT_MARGIN), detailsY, columnWidth, 30);
+
+    // Column contents
+    doc.setFontSize(10);
+    
+    // To (Vendor)
+    doc.setFont('helvetica', 'bold');
+    doc.text('To:', this.PAGE_MARGIN + 3, detailsY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text([
+      data.vendor.name,
+      data.vendor.email
+    ], this.PAGE_MARGIN + 3, detailsY + 14);
+
+    // Bill To
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bill To:', this.PAGE_MARGIN + columnWidth + this.CONTENT_MARGIN + 3, detailsY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text([
+      'Emprise Marketing',
+      'B-1/31, Sector H, Aliganj',
+      'Lucknow - 226024, India'
+    ], this.PAGE_MARGIN + columnWidth + this.CONTENT_MARGIN + 3, detailsY + 14);
+
+    // PO Details
+    const poDetailsX = this.PAGE_MARGIN + 2 * (columnWidth + this.CONTENT_MARGIN) + 3;
+    doc.setFont('helvetica', 'bold');
+    doc.text([
+      'P.O. Number:',
+      'Date:',
+      'LOA Number:'
+    ], poDetailsX, detailsY + 7);
+    
+    doc.setFont('helvetica', 'normal');
+    const detailsAlignX = poDetailsX + columnWidth - 5;
+    doc.text([
+      data.poNumber,
+      this.formatDate(data.createdAt),
+      data.loa.loaNumber
+    ], detailsAlignX, detailsY + 7, { align: 'right' });
+
+    // Requirement Description
+    const reqY = detailsY + 35;
+    this.drawBorderedSection(doc, this.PAGE_MARGIN, reqY, contentWidth, 30);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Requirement Description:', this.PAGE_MARGIN + 3, reqY + 7);
+    doc.setFont('helvetica', 'normal');
+    const splitDesc = doc.splitTextToSize(data.requirementDesc, contentWidth - 10);
+    doc.text(splitDesc, this.PAGE_MARGIN + 3, reqY + 14);
+
+    // Items Table
+    const tableY = reqY + 35;
+    const tableHeaders = [['Sr.', 'Particulars', 'Qty', 'Unit Rate', 'Amount']];
+    const tableBody = data.items.map((item, index) => [
+      (index + 1).toString(),
+      {
+        content: item.item.name + (item.item.description ? `\n${item.item.description}` : ''),
+        styles: { cellWidth: 'wrap' }
+      },
+      this.formatNumber(item.quantity),
+      this.formatCurrency(item.unitPrice),
+      this.formatCurrency(item.quantity * item.unitPrice)
+    ]);
+
+    autoTable(doc, {
+      head: tableHeaders,
+      body: tableBody as any,
+      startY: tableY,
+      theme: 'grid',
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+        lineWidth: 0.1,
+        font: 'helvetica'
+      },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        lineWidth: 0.1
+      },
+      columnStyles: {
+        0: { cellWidth: 15, halign: 'center' },
+        1: { cellWidth: 85 },
+        2: { cellWidth: 30, halign: 'right' }, // Increased width
+        3: { cellWidth: 30, halign: 'right' }, // Increased width
+        4: { cellWidth: 30, halign: 'right' }  // Increased width
+      },
+      margin: { left: this.PAGE_MARGIN, right: this.PAGE_MARGIN }
+    });
+
+    // Calculate totals
+    const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const gstAmount = totalAmount * 0.18;
+    const grandTotal = totalAmount + gstAmount;
+
+    // Totals section
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    const totalsWidth = 95; // Increased width
+    const totalsX = pageWidth - this.PAGE_MARGIN - totalsWidth;
+    
+    this.drawBorderedSection(doc, totalsX, finalY, totalsWidth, 25);
+    
+    const amountLabels = ['Base Amount:', 'GST (18%):', 'Total Amount:'];
+    const amountValues = [
+      this.formatCurrency(totalAmount),
+      this.formatCurrency(gstAmount),
+      this.formatCurrency(grandTotal)
+    ];
+
+    doc.setFontSize(9);
+    amountLabels.forEach((label, index) => {
+      doc.setFont('helvetica', index === 2 ? 'bold' : 'normal');
+      doc.text(label, totalsX + 2, finalY + 7 + (index * 7));
+      doc.text(amountValues[index], totalsX + totalsWidth - 2, finalY + 7 + (index * 7), { align: 'right' });
+    });
+
+    // Terms and Conditions
+    const termsY = finalY + 35;
+    this.drawBorderedSection(doc, this.PAGE_MARGIN, termsY, contentWidth, 40);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Terms & Conditions:', this.PAGE_MARGIN + 3, termsY + 7);
+    doc.setFont('helvetica', 'normal');
+    const parsedTerms = this.parseHTML(data.termsConditions);
+    const terms = doc.splitTextToSize(parsedTerms, contentWidth - 10);
+    doc.text(terms, this.PAGE_MARGIN + 3, termsY + 14);
+
+    // Signature and Ship To sections
+    const bottomY = termsY + 45;
+    const halfWidth = (contentWidth - this.CONTENT_MARGIN) / 2;
+
+    // Signature section
+    this.drawBorderedSection(doc, this.PAGE_MARGIN, bottomY, halfWidth, 35);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FOR EMPRISE MARKETING', this.PAGE_MARGIN + 3, bottomY + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.createdBy.name, this.PAGE_MARGIN + 3, bottomY + 20);
+    doc.text('Authorised Signatory', this.PAGE_MARGIN + 3, bottomY + 27);
+
+    // Ship To section
+    this.drawBorderedSection(
+      doc, 
+      this.PAGE_MARGIN + halfWidth + this.CONTENT_MARGIN, 
+      bottomY, 
+      halfWidth, 
+      35
+    );
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ship To:', this.PAGE_MARGIN + halfWidth + this.CONTENT_MARGIN + 3, bottomY + 7);
+    doc.setFont('helvetica', 'normal');
+    const shipTo = doc.splitTextToSize(data.shipToAddress, halfWidth - 10);
+    doc.text(shipTo, this.PAGE_MARGIN + halfWidth + this.CONTENT_MARGIN + 3, bottomY + 14);
+
+    // Page number
+    doc.setFontSize(8);
+    doc.text(
+      `Page 1 of 1`,
+      pageWidth - this.PAGE_MARGIN,
+      doc.internal.pageSize.height - this.PAGE_MARGIN,
+      { align: 'right' }
+    );
+
+    return Buffer.from(doc.output('arraybuffer'));
+  }
+
+  public async generateAndUploadPurchaseOrder(data: PDFGenerationData): Promise<{ url: string; hash: string }> {
     try {
       const pdfBuffer = await this.generatePurchaseOrderPDF(data);
-      const hash = this.generateDocumentHash(pdfBuffer);
+      const hash = createHash('sha256').update(pdfBuffer).digest('hex');
       const fileName = `purchase-orders/${data.poNumber}_${Date.now()}.pdf`;
       const url = await this.s3Service.uploadFile(fileName, pdfBuffer, 'application/pdf');
       return { url, hash };
@@ -340,8 +308,4 @@ export class POPDFService {
       throw new Error('Failed to generate and upload purchase order PDF');
     }
   }
-}
-
-function sum(arr: number[]): number {
-  return arr.reduce((a, b) => a + b, 0);
 }
