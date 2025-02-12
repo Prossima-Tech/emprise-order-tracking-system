@@ -78,7 +78,12 @@ async function startServer() {
 
   // Global middleware
   app.use(express.json());
-  app.use(cors());
+  app.use(cors({
+    origin: ['http://client.prossimatech.com', 'http://ec2-54-157-42-190.compute-1.amazonaws.com'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
   app.use(helmet());
 
   // Initialize services
@@ -173,7 +178,7 @@ async function startServer() {
   }
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
-  
+
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
   app.use('/api/auth', authRoutes(authController));
