@@ -172,8 +172,6 @@ async function startServer() {
     throw new Error('Email configuration is not properly configured');
   }
 
-  // Set up routes
-
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
   
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
