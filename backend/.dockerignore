@@ -4,4 +4,3 @@ dist
 .git
 .gitignore
 docker-compose.yml
-Dockerfile
