@@ -57,8 +57,6 @@ import { purchaseOrderRoutes } from './interfaces/http/routes/purchaseOrder.rout
 import { userRoutes } from './interfaces/http/routes/user.routes';
 import { setupDashboardRoutes } from './interfaces/http/routes/dashboard.routes';
 import { siteRoutes } from './interfaces/http/routes/site.routes';
-import { authMiddleware } from './interfaces/http/middlewares/auth.middleware';
-import { UserRole } from './domain/entities/User';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
 import { mkdirSync } from 'fs';
 import { unlinkSync, readdirSync, statSync } from 'fs';
