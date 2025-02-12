@@ -1,10 +1,7 @@
 // shared/middleware/errorHandler.ts
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
-// import { ZodError } from 'zod';
 import { AppError } from '../errors/AppError';
 import multer from 'multer';
-import { PrismaClient } from '@prisma/client';
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
