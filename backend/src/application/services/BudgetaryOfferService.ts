@@ -421,7 +421,7 @@ export class BudgetaryOfferService {
       ]);
 
       return ResultUtils.ok({
-        offers: rawOffers.map(offer => this.convertToBudgetaryOffer(offer)),
+        offers: rawOffers.map((offer: any) => this.convertToBudgetaryOffer(offer)),
         total
       });
     } catch (error) {
@@ -599,7 +599,7 @@ export class BudgetaryOfferService {
       );
 
       // Create approval URLs
-      const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+      const baseUrl = process.env.BASE_URL || 'https://client.prossimatech.com';
       const approveUrl = `${baseUrl}/api/budgetary-offers/email-approve/${approveToken}`;
       const rejectUrl = `${baseUrl}/api/budgetary-offers/email-reject/${rejectToken}`;
 

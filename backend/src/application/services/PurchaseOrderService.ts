@@ -585,7 +585,7 @@ export class PurchaseOrderService {
             'reject'
           );
 
-          const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+          const baseUrl = process.env.BASE_URL || 'https://client.prossimatech.com';
           const approveUrl = `${baseUrl}/api/purchase-orders/email-approve/${approveToken}`;
           const rejectUrl = `${baseUrl}/api/purchase-orders/email-reject/${rejectToken}`;
 
