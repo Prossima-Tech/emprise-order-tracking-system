@@ -79,7 +79,7 @@ async function startServer() {
   // Global middleware
   app.use(express.json());
   app.use(cors({
-    origin: ['http://client.prossimatech.com', 'https://client.prossimatech.com', 'https://emprise.prossimatech.com', 'https://www.emprise.prossimatech.com', 'http://ec2-54-157-42-190.compute-1.amazonaws.com', 'https://ec2-54-157-42-190.compute-1.amazonaws.com', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ['https://emprise.prossimatech.com', 'https://www.emprise.prossimatech.com', 'http://localhost:3000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
