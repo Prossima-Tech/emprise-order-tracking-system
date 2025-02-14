@@ -32,7 +32,7 @@ export const Header = ({ collapsed, setCollapsed }: { collapsed: boolean; setCol
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </Button>
         <a href="/" className="mr-6 flex items-center space-x-2">
-          <span className="font-bold">Procurement System</span>
+          <span className="font-bold">Emprise Marketing</span>
         </a>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
