@@ -434,7 +434,6 @@ export class EmailService {
           <p><strong>Vendor:</strong> ${poData.vendor.name}</p>
           <p><strong>Created By:</strong> ${poData.createdBy.name}</p>
           <p><strong>Department:</strong> ${poData.createdBy.department}</p>
-          <p><strong>LOA Number:</strong> ${poData.loa.loaNumber}</p>
           <p><strong>Total Amount:</strong> ₹${totalAmount.toFixed(2)}</p>
         </div>
 
