@@ -45,60 +45,45 @@ export interface PurchaseOrder {
 }
 
 export interface PDFItemData {
+  id: string;
   item: {
+    id: string;
     name: string;
-    description?: string;
+    description: string;
+    unitPrice: number;
+    uom: string;
+    hsnCode: string;
   };
   quantity: number;
   unitPrice: number;
-  // taxRates: {
-  //   igst: number;
-  //   sgst: number;
-  //   ugst: number;
-  // };
-  // taxAmounts: {
-  //   igst: number;
-  //   sgst: number;
-  //   ugst: number;
-  // };
-  // baseAmount: number;
-  // totalAmount: number;
+  totalAmount: number;
 }
 
 export interface PDFGenerationData {
   id: string;
   poNumber: string;
   createdAt: Date;
-  loa: {
-    loaNumber: string;
-    loaValue: number;
-  };
+  totalAmount: number;
   vendor: {
     name: string;
     email: string;
+    mobile: string;
+    gstin: string;
+    address: string;
   };
-  totalAmount: number;
+  additionalCharges: Array<{
+    description: string;
+    amount: number;
+  }>;
   items: PDFItemData[];
   requirementDesc: string;
   termsConditions: string;
   shipToAddress: string;
-  notes?: string;
-  status: string;
+  notes: string;
+  baseAmount: number;
+  taxAmount: number;
   createdBy: {
     name: string;
     department: string;
-    role: string;
-  };
-  tags: string[];
-  additionalCharges: AdditionalCharge[];
-  approvalStatus?: {
-    status: POStatus;
-    approvalNotes?: string;
-    rejectionReason?: string;
-    approvedBy?: {
-      name: string;
-      department: string;
-      role: string;
-    };
   };
 }

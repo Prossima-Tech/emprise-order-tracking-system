@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Purchase Order #{{poNumber}}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        body {
+            font-family: Times New Roman, serif;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+            line-height: 1.2;
+        }
+
+        .page-container {
+            border: 1px solid #000;
+            border-radius: 2mm;
+            padding: 6mm;
+            min-height: 267mm;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .header-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 2mm;
+            margin-bottom: 2mm;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2mm;
+        }
+
+        .process-info {
+            font-size: 8pt;
+            border: 1px solid #000;
+            padding: 1.5mm;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: bold;
+            padding: 1.5mm 0;
+        }
+
+        .section-info {
+            text-align: right;
+            font-size: 8pt;
+            border: 1px solid #000;
+            padding: 1.5mm;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2mm;
+            margin-bottom: 2mm;
+        }
+
+        .box {
+            border: 1px solid #000;
+            padding: 1.5mm;
+        }
+
+        .details-box {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .details-box>div {
+            margin-bottom: 1mm;
+        }
+
+        .table-container {
+            margin: 2mm 0;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            page-break-inside: auto;
+        }
+
+        .items-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 1.2mm;
+            text-align: left;
+            font-size: 9pt;
+        }
+
+        .items-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .right-align {
+            text-align: right;
+        }
+
+        .center-align {
+            text-align: center;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .totals-section {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2mm;
+            margin: 2mm 0;
+            page-break-inside: avoid;
+        }
+
+        .terms-section {
+            border: 1px solid #000;
+            padding: 1.5mm;
+            margin-bottom: 2mm;
+        }
+
+        .footer-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2mm;
+            page-break-inside: avoid;
+        }
+
+        .signature-box,
+        .ship-to-box {
+            border: 1px solid #000;
+            padding: 1.5mm;
+            min-height: 18mm;
+        }
+
+        .notes-box {
+            border: 1px solid #000;
+            padding: 1.5mm;
+            margin-top: 2mm;
+        }
+
+        .item-description {
+            font-size: 8pt;
+            color: #444;
+            margin-top: 0.8mm;
+        }
+
+        .amounts-table {
+            width: 100%;
+        }
+
+        .amounts-table td {
+            padding: 1.2mm;
+        }
+
+        .amounts-table td:first-child {
+            width: 60%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="process-info">
+                Process Manual<br>
+                Process Code: PUR
+            </div>
+            <div class="title">PURCHASE ORDER</div>
+            <div class="section-info">
+                Section No. : 00<br>
+                Revision No. : 00
+            </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="details-grid">
+            <div class="box">
+                <div class="bold">To,</div>
+                M/s. {{vendor.name}}
+                {{#if vendor.address}}
+                <div style="white-space: pre-line;">{{vendor.address}}</div>
+                {{/if}}
+                {{#if vendor.gstin}}<div>GSTIN: {{vendor.gstin}}</div>{{/if}}
+            </div>
+            <div class="box">
+                <div class="bold">Bill To,</div>
+                M/s. Emprise Marketing<br>
+                B-1/31 Sector-H, Aliganj<br>
+                Lucknow - 226024<br>
+                Uttar Pradesh<br>
+                GSTIN: 09AAAFE7632G1ZI
+            </div>
+            <div class="box details-box">
+                <div>
+                    <span class="bold">P.O. No.: </span>{{poNumber}}
+                </div>
+                <div>
+                    <span class="bold">Date: </span>{{formatDate createdAt}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Title Section -->
+        <div style="margin-bottom: 2mm; font-weight: bold; font-size: 11pt;">
+            {{requirementDesc}}
+        </div>
+
+        <!-- Items Table -->
+        <div class="table-container">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">Sr.No.</th>
+                        <th style="width: 35%">Particulars</th>
+                        <th style="width: 12%">Unit Rate</th>
+                        <th style="width: 10%">Qty</th>
+                        <th style="width: 8%">UOM</th>
+                        <th style="width: 15%">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each items}}
+                    <tr>
+                        <td class="center-align">{{add @index 1}}</td>
+                        <td>
+                            {{item.name}}
+                            {{#if item.description}}
+                            <div class="item-description">{{item.description}}</div>
+                            {{/if}}
+                        </td>
+                        <td class="right-align">₹{{formatNumber unitPrice}}</td>
+                        <td class="right-align">{{formatNumber quantity}}</td>
+                        <td class="center-align">{{item.uom}}</td>
+                        <td class="right-align">₹{{formatNumber totalAmount}}</td>
+                    </tr>
+                    {{/each}}
+                    {{#if additionalCharges}}
+                    {{#each additionalCharges}}
+                    <tr>
+                        <td class="center-align">{{add ../items.length (add @index 1)}}</td>
+                        <td>{{description}}</td>
+                        <td class="right-align">-</td>
+                        <td class="right-align">-</td>
+                        <td class="center-align">-</td>
+                        <td class="right-align">₹{{formatNumber amount}}</td>
+                    </tr>
+                    {{/each}}
+                    {{/if}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals Section -->
+        <div class="totals-section">
+            <div style="font-size: 9pt;">
+                <div class="bold">Amount in words:</div>
+                {{numberToWords totalAmount}}
+            </div>
+            <div style="border: 1px solid #000; padding: 1.5mm;">
+                <table class="amounts-table">
+                    <tr>
+                        <td>Base Amount:</td>
+                        <td class="right-align">{{formatCurrency baseAmount}}</td>
+                    </tr>
+                    <tr>
+                        <td>GST (18%):</td>
+                        <td class="right-align">{{formatCurrency taxAmount}}</td>
+                    </tr>
+                    <tr class="bold">
+                        <td>Total Amount:</td>
+                        <td class="right-align">{{formatCurrency totalAmount}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Terms Section -->
+        <div class="terms-section">
+            <div class="bold">Terms and Conditions</div>
+            {{{termsConditions}}}
+        </div>
+
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <div class="signature-box">
+                <div class="bold">FOR EMPRISE MARKETING</div>
+                <br>
+                {{createdBy.name}}<br>
+                {{createdBy.department}}<br>
+                Authorised Signatory
+            </div>
+            <div class="ship-to-box">
+                <div class="bold">Ship To</div>
+                {{shipToAddress}}
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="notes-box">
+            <div class="bold">Notes</div>
+            <ol style="margin: 0.8mm 0 0 2mm; padding-left: 6mm;">
+                <li>Please send shipment with OEM WTC and GC.</li>
+                <li>Invoices should be raised at Lucknow Address only.</li>
+                <li>GST No. should be mentioned on each invoice.</li>
+                {{#if notes}}
+                <li>{{notes}}</li>
+                {{/if}}
+            </ol>
+        </div>
+    </div>
+</body>
+
+</html>
