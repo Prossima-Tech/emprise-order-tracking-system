@@ -306,57 +306,38 @@ export class PurchaseOrderService {
         poNumber: po.poNumber,
         createdAt: po.createdAt,
         totalAmount: po.totalAmount,
-        loa: {
-          loaNumber: po.loa.loaNumber,
-          loaValue: po.loa.loaValue
-        },
         vendor: {
           name: po.vendor.name,
-          email: po.vendor.email
+          email: po.vendor.email,
+          address: po.vendor.address,
+          gstin: po.vendor.gstin || '',
+          mobile: po.vendor.mobile || ''
         },
         additionalCharges: po.additionalCharges,
-        items: po.items.map(item => {
-          // Ensure taxRates exists with default values
-          // const taxRates = {
-          //   igst: item.taxRates?.igst ?? 0,
-          //   sgst: item.taxRates?.sgst ?? 0,
-          //   ugst: item.taxRates?.ugst ?? 0
-          // };
-
-          // Calculate base amount
-          // const baseAmount = item.quantity * item.unitPrice;
-
-          // // Calculate tax amounts
-          // const taxAmounts = {
-          //   igst: baseAmount * (taxRates.igst / 100),
-          //   sgst: baseAmount * (taxRates.sgst / 100),
-          //   ugst: baseAmount * (taxRates.ugst / 100)
-          // };
-
-          return {
-            item: {
-              name: item.item.name,
-              description: item.item.description
-            },
-            quantity: item.quantity,
+        items: po.items.map(item => ({
+          id: item.id,
+          item: {
+            id: item.item.id,
+            name: item.item.name || '',
+            description: item.item.description || '',
             unitPrice: item.unitPrice,
-            // taxRates,
-            // taxAmounts,
-            // baseAmount,
-            // totalAmount: baseAmount
-          };
-        }),
+            uom: item.item.uom || '',
+            hsnCode: item.item.hsnCode || ''
+          },
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalAmount: item.totalAmount
+        })),
         requirementDesc: po.requirementDesc,
         termsConditions: po.termsConditions,
         shipToAddress: po.shipToAddress,
-        notes: po.notes,
-        status: po.status,
+        notes: po.notes || '',
+        baseAmount: po.baseAmount,
+        taxAmount: po.taxAmount,
         createdBy: {
           name: po.createdBy.name,
           department: po.createdBy.department || 'N/A',
-          role: po.createdBy.role
-        },
-        tags: po.tags || []
+        }
       };
 
       const { url, hash } = await this.pdfService.generateAndUploadPurchaseOrder(documentData);
@@ -480,58 +461,39 @@ export class PurchaseOrderService {
       id: po.id,
       poNumber: po.poNumber,
       createdAt: po.createdAt,
-      loa: {
-        loaNumber: po.loa.loaNumber,
-        loaValue: po.loa.loaValue
-      },
-      additionalCharges: po.additionalCharges,
       totalAmount: po.totalAmount,
       vendor: {
         name: po.vendor.name,
-        email: po.vendor.email
+        email: po.vendor.email,
+        address: po.vendor.address,
+        gstin: po.vendor.gstin || '',
+        mobile: po.vendor.mobile || ''
       },
-      items: po.items.map(item => {
-        // Extract tax rates
-        // const taxRates = {
-        //   igst: item.item.taxRates?.igst || 0,
-        //   sgst: item.item.taxRates?.sgst || 0,
-        //   ugst: item.item.taxRates?.ugst || 0
-        // };
-
-        // Calculate base amount
-        const baseAmount = item.quantity * item.unitPrice;
-
-        // Calculate tax amounts
-        // const taxAmounts = {
-        //   igst: baseAmount * (taxRates.igst / 100),
-        //   sgst: baseAmount * (taxRates.sgst / 100),
-        //   ugst: baseAmount * (taxRates.ugst / 100)
-        // };
-
-        return {
-          item: {
-            name: item.item.name,
-            description: item.item.description
-          },
-          quantity: item.quantity,
+      additionalCharges: po.additionalCharges,
+      items: po.items.map(item => ({
+        id: item.id,
+        item: {
+          id: item.item.id,
+          name: item.item.name,
+          description: item.item.description || '',
           unitPrice: item.unitPrice,
-          // taxRates,
-          // taxAmounts,
-          baseAmount,
-          totalAmount: item.totalAmount
-        };
-      }),
+          uom: item.item.uom,
+          hsnCode: item.item.hsnCode || ''
+        },
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalAmount: item.totalAmount
+      })),
       requirementDesc: po.requirementDesc,
       termsConditions: po.termsConditions,
       shipToAddress: po.shipToAddress,
-      notes: po.notes,
-      status: po.status,
+      notes: po.notes || '',
+      baseAmount: po.baseAmount,
+      taxAmount: po.taxAmount,
       createdBy: {
         name: po.createdBy.name,
         department: po.createdBy.department || 'N/A',
-        role: po.createdBy.role
-      },
-      tags: po.tags || []
+      }
     };
   }
 
