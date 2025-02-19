@@ -1,7 +1,7 @@
 // infrastructure/services/EmailService.ts
 import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
-import { PDFService, DocumentData } from './PDFService';
+import { BudgetaryOfferData, PDFService, WorkItem } from './PDFService';
 import { POPDFService } from './POPdfService';
 import { PDFGenerationData } from '../../domain/entities/PurchaseOrder';
 
@@ -11,7 +11,7 @@ interface SendBudgetaryOfferEmailParams {
   bcc?: string[];
   subject: string;
   html: string;
-  offerData: DocumentData;
+  offerData: BudgetaryOfferData;
   type: 'SUBMIT' | 'APPROVE' | 'REJECT';
   approveUrl?: string;
   rejectUrl?: string;
@@ -99,10 +99,10 @@ export class EmailService {
     bcc?: string[];
     subject: string;
     html: string;
-    offerData: DocumentData;
+    offerData: BudgetaryOfferData;
   }): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
-      const pdfBuffer = await this.pdfService.generatePDF(params.offerData);
+      const pdfBuffer = await this.pdfService.generateBudgetaryOfferPDF(params.offerData);
       const base64File = pdfBuffer.toString('base64');
 
       const message = {
@@ -124,7 +124,7 @@ export class EmailService {
           attachments: [
             {
               '@odata.type': '#microsoft.graph.fileAttachment',
-              name: `BudgetaryOffer_${params.offerData.documentId}.pdf`,
+              name: `BudgetaryOffer_${params.offerData.id}.pdf`,
               contentType: 'application/pdf',
               contentBytes: base64File
             }
@@ -151,13 +151,13 @@ export class EmailService {
   }
 
   private generateBOEmailContent(
-    offerData: DocumentData,
+    offerData: BudgetaryOfferData,
     type: 'SUBMIT' | 'APPROVE' | 'REJECT',
     approveUrl?: string,
     rejectUrl?: string,
     comments?: string
   ): string {
-    const itemsTable = offerData.workItems.map(item => `
+    const itemsTable = offerData.workItems.map((item: WorkItem) => `
     <tr>
       <td style="border: 1px solid #ddd; padding: 8px;">${item.description}</td>
       <td style="border: 1px solid #ddd; padding: 8px;">${item.quantity}</td>
@@ -166,7 +166,7 @@ export class EmailService {
     </tr>
   `).join('');
 
-    const totalAmount = offerData.workItems.reduce((sum, item) => sum + (item.baseRate * item.quantity), 0);
+    const totalAmount = offerData.workItems.reduce((sum: number, item: WorkItem) => sum + (item.baseRate * item.quantity), 0);
 
     let statusMessage = '';
     let actionMessage = '';
@@ -240,11 +240,11 @@ export class EmailService {
 
     return `
     <div style="font-family: Arial, sans-serif; color: #333;">
-      <h2>Budgetary Offer ${statusMessage} - ${offerData.documentId}</h2>
+      <h2>Budgetary Offer ${statusMessage} - ${offerData.id}</h2>
       
       ${actionButtons}
       <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
-        <p><strong>Offer ID:</strong> ${offerData.documentId}</p>
+        <p><strong>Offer ID:</strong> ${offerData.id}</p>
         <p><strong>Date:</strong> ${new Date(offerData.offerDate).toLocaleDateString()}</p>
         <p><strong>To Authority:</strong> ${offerData.toAuthority}</p>
         <p><strong>Subject:</strong> ${offerData.subject}</p>
@@ -284,7 +284,7 @@ export class EmailService {
 
   async sendBudgetaryOfferApproveEmail(params: SendBudgetaryOfferEmailParams): Promise<{ success: boolean; error?: string; messageId?: string }> {
     try {
-      const pdfBuffer = await this.pdfService.generatePDF(params.offerData);
+      const pdfBuffer = await this.pdfService.generateBudgetaryOfferPDF(params.offerData);
       const base64File = pdfBuffer.toString('base64');
 
       const message = {
@@ -312,7 +312,7 @@ export class EmailService {
           attachments: [
             {
               '@odata.type': '#microsoft.graph.fileAttachment',
-              name: `BudgetaryOffer_${params.offerData.documentId}.pdf`,
+              name: `BudgetaryOffer_${params.offerData.id}.pdf`,
               contentType: 'application/pdf',
               contentBytes: base64File
             }

@@ -4,7 +4,7 @@ import { UpdateBudgetaryOfferDto } from '../dtos/budgetaryOffer/UpdateBudgetaryO
 import { Result, ResultUtils } from '../../shared/types/common.types';
 import { BudgetaryOffer, ApprovalAction, WorkItem } from '../../domain/entities/BudgetaryOffer';
 import { BudgetaryOfferValidator } from '../validators/budgetaryOffer.validator';
-import { PDFService } from '../../infrastructure/services/PDFService';
+import { BudgetaryOfferData, PDFService } from '../../infrastructure/services/PDFService';
 import { DocumentVerifierService } from '../../infrastructure/services/DocumentVerificationService';
 import { EmailService } from '../../infrastructure/services/EmailService';
 import { EmailLog, EmailStatus } from '../../domain/entities/EmailLog';
@@ -13,7 +13,7 @@ import { UserRole } from '../../domain/entities/User';
 
 interface DocumentData {
   id: string;
-  documentId: string;
+  offerId: string;
   offerDate: Date;
   toAuthority: string;
   subject: string;
@@ -90,7 +90,7 @@ export class BudgetaryOfferService {
       // Prepare document data
       const documentData = {
         id: offer.id,
-        documentId: offer.offerId,
+        offerId: offer.offerId,
         offerDate: offer.offerDate,
         toAuthority: offer.toAuthority,
         subject: offer.subject,
@@ -99,6 +99,7 @@ export class BudgetaryOfferService {
           : offer.workItems,
         termsConditions: offer.termsConditions,
         status: offer.status,
+        railwayZone: offer.railwayZone || '',
         createdBy: {
           name: offer.createdBy.name,
           department: offer.createdBy.department || 'N/A',
@@ -114,7 +115,7 @@ export class BudgetaryOfferService {
         bcc: params.bcc,
         subject: params.subject,
         html: params.content,
-        offerData: documentData
+        offerData: documentData as BudgetaryOfferData
       });
 
       if (!emailResult.success) {
@@ -443,7 +444,7 @@ export class BudgetaryOfferService {
 
       const documentData = {
         id: offer.id,
-        documentId: offer.offerId,
+        offerId: offer.offerId,
         offerDate: offer.offerDate,
         toAuthority: offer.toAuthority,
         subject: offer.subject,
@@ -452,6 +453,7 @@ export class BudgetaryOfferService {
           : offer.workItems,
         termsConditions: offer.termsConditions,
         status: offer.status,
+        railwayZone: offer.railwayZone || '',
         createdBy: {
           name: offer.createdBy.name,
           department: offer.createdBy.department || 'N/A',
@@ -621,9 +623,9 @@ export class BudgetaryOfferService {
       // Send email notification to approver
       if (offerResult.approver?.email) {
         try {
-          const documentData: DocumentData = {
+          const documentData: BudgetaryOfferData = {
             id: updatedOffer.id,
-            documentId: updatedOffer.offerId,
+            offerId: updatedOffer.offerId,
             offerDate: updatedOffer.offerDate,
             toAuthority: updatedOffer.toAuthority,
             subject: updatedOffer.subject,
@@ -637,7 +639,8 @@ export class BudgetaryOfferService {
               department: offerResult.createdBy?.department || 'N/A',
               role: (offerResult.createdBy?.role as UserRole) || UserRole.STAFF
             },
-            tags: updatedOffer.tags || []
+            tags: updatedOffer.tags || [],
+            railwayZone: updatedOffer.railwayZone || ''
           };
 
           await this.emailService.sendBudgetaryOfferApproveEmail({
