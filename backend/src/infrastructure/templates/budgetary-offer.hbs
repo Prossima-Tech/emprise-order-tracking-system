@@ -67,6 +67,7 @@
         }
         .amount-cell {
             text-align: right;
+            white-space: nowrap;
         }
         .terms-section {
             margin-bottom: 5mm;
@@ -147,17 +148,17 @@
                 <tr>
                     <td style="text-align: center">{{add @index 1}}</td>
                     <td>{{description}}</td>
-                    <td class="amount-cell">{{formatCurrency baseRate}}</td>
+                    <td class="amount-cell">₹{{formatCurrency baseRate}}</td>
                 </tr>
                 <tr>
                     <td></td>
                     <td>GST@{{taxRate}}%</td>
-                    <td class="amount-cell">{{calculateGST baseRate taxRate}}</td>
+                    <td class="amount-cell">₹{{calculateGST baseRate taxRate}}</td>
                 </tr>
                 <tr>
                     <td></td>
                     <td>Total GST@{{taxRate}}% Inclusive Cost</td>
-                    <td class="amount-cell">{{calculateTotal baseRate taxRate}}</td>
+                    <td class="amount-cell">₹{{calculateTotal baseRate taxRate}}</td>
                 </tr>
                 {{/each}}
             </tbody>
