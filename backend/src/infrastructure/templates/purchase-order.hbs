@@ -108,6 +108,7 @@
 
         .right-align {
             text-align: right;
+            white-space: nowrap;
         }
 
         .center-align {
@@ -275,15 +276,15 @@
                 <table class="amounts-table">
                     <tr>
                         <td>Base Amount:</td>
-                        <td class="right-align">{{formatCurrency baseAmount}}</td>
+                        <td class="right-align">₹{{formatCurrency baseAmount}}</td>
                     </tr>
                     <tr>
                         <td>GST (18%):</td>
-                        <td class="right-align">{{formatCurrency taxAmount}}</td>
+                        <td class="right-align">₹{{formatCurrency taxAmount}}</td>
                     </tr>
                     <tr class="bold">
                         <td>Total Amount:</td>
-                        <td class="right-align">{{formatCurrency totalAmount}}</td>
+                        <td class="right-align">₹{{formatCurrency totalAmount}}</td>
                     </tr>
                 </table>
             </div>
