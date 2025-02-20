@@ -6,6 +6,7 @@
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "copy-templates": "mkdir -p dist/src/infrastructure/templates && cp -r src/infrastructure/templates dist/src/infrastructure",
+    "postinstall": "npx puppeteer browsers install chrome@133.0.6943.98",
     "build": "tsc && npm run copy-templates",
     "test": "jest",
     "lint": "eslint . --ext .ts",
