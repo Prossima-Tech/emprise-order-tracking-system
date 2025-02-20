@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
+    "copy-templates": "mkdir -p dist/src/infrastructure/templates && cp -r src/infrastructure/templates dist/src/infrastructure",
+    "build": "tsc && npm run copy-templates",
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "prisma:generate": "prisma generate",

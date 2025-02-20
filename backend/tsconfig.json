@@ -11,5 +11,8 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["**/*", "scripts"],
+  "copy": [
+    "src/infrastructure/templates/**/*.hbs"
+  ],
   "exclude": ["node_modules"]
 }
