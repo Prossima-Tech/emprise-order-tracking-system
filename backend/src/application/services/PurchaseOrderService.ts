@@ -512,7 +512,68 @@ export class PurchaseOrderService {
         return ResultUtils.fail('Only DRAFT orders can be submitted for approval');
       }
 
-      const approvalAction: ApprovalAction = {
+      // Check if creator is admin
+      if (!po.createdBy) {
+        return ResultUtils.fail('Creator information not found');
+      }
+
+      // Handle admin auto-approval
+      if (po.createdBy.role === 'ADMIN') {
+        const approvalAction = {
+          actionType: 'AUTO_APPROVED',
+          userId,
+          timestamp: new Date().toISOString(),
+          previousStatus: POStatus.DRAFT,
+          newStatus: POStatus.APPROVED,
+          comments: 'Auto-approved by admin'
+        };
+
+        const currentHistory = (po.approvalHistory || []) as any[];
+
+        const updatedPO = await this.repository.update(id, {
+          status: POStatus.APPROVED,
+          // approvalDate: new Date(),
+          approvalComments: 'Auto-approved by admin',
+          approvalHistory: [...currentHistory, approvalAction] as any
+        });
+
+        // Generate PDF after admin auto-approval
+        const pdfResult = await this.generatePDF(id);
+        if (!pdfResult.isSuccess || !pdfResult.data) {
+          return ResultUtils.fail('Failed to generate approved document');
+        }
+
+        // Update PO with the generated PDF URL and hash
+        await this.repository.update(id, {
+          documentUrl: pdfResult.data.url,
+          documentHash: pdfResult.data.hash
+        });
+
+        return ResultUtils.ok(updatedPO);
+      }
+
+      // Regular submission process for non-admin users
+      const approveToken = this.tokenService.generateApprovalToken(
+        id,
+        po.approverId!,
+        po.approver?.role || 'ADMIN',
+        po.approver?.email || '',
+        'approve'
+      );
+
+      const rejectToken = this.tokenService.generateApprovalToken(
+        id,
+        po.approverId!,
+        po.approver?.role || 'ADMIN',
+        po.approver?.email || '',
+        'reject'
+      );
+
+      const baseUrl = process.env.BASE_URL || 'https://client.prossimatech.com';
+      const approveUrl = `${baseUrl}/api/purchase-orders/email-approve/${approveToken}`;
+      const rejectUrl = `${baseUrl}/api/purchase-orders/email-reject/${rejectToken}`;
+
+      const approvalAction = {
         actionType: 'SUBMIT',
         userId,
         timestamp: new Date().toISOString(),
@@ -520,36 +581,17 @@ export class PurchaseOrderService {
         newStatus: POStatus.PENDING_APPROVAL
       };
 
-      const updateData = {
+      const currentHistory = (po.approvalHistory || []) as any[];
+
+      const updatedPO = await this.repository.update(id, {
         status: POStatus.PENDING_APPROVAL,
-        approvalHistory: [...(po.approvalHistory || []), approvalAction]
-      };
+        approvalHistory: [...currentHistory, approvalAction] as any
+      });
 
-      const updatedPO = await this.repository.update(id, updateData);
-
+      // Send email notification to approver only for non-admin submissions
       if (updatedPO.approver?.email) {
         try {
           const documentData = await this.prepareDocumentData(updatedPO);
-
-          const approveToken = this.tokenService.generateApprovalToken(
-            updatedPO.id,
-            updatedPO.approverId!,
-            updatedPO.approver.role,
-            updatedPO.approver.email,
-            'approve'
-          );
-
-          const rejectToken = this.tokenService.generateApprovalToken(
-            updatedPO.id,
-            updatedPO.approverId!,
-            updatedPO.approver.role,
-            updatedPO.approver.email,
-            'reject'
-          );
-
-          const baseUrl = process.env.BASE_URL || 'https://client.prossimatech.com';
-          const approveUrl = `${baseUrl}/api/purchase-orders/email-approve/${approveToken}`;
-          const rejectUrl = `${baseUrl}/api/purchase-orders/email-reject/${rejectToken}`;
 
           await this.emailService.sendPurchaseOrderApproveEmail({
             to: [updatedPO.approver.email],

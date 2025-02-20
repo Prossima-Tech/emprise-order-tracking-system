@@ -101,46 +101,27 @@ export class PrismaPurchaseOrderRepository {
     return updateData;
   }
   
-  async create(data: {
-    poNumber: string;
-    loaId: string;
-    vendorId: string;
-    items: Array<{
-      itemId: string;
-      quantity: number;
-      unitPrice: number;
-      // taxRate: number;
-      totalAmount: number;
-    }>;
-    siteId: string;
-    baseAmount: number;
-    taxAmount: number;
-    additionalCharges: Array<{ description: string; amount: number; }>;
-    totalAmount: number;
-    requirementDesc: string;
-    termsConditions: string;
-    shipToAddress: string;
-    notes?: string;
-    documentUrl?: string;
-    documentHash?: string;
-    status: POStatus;
-    createdById: string;
-    approverId?: string;
-    approvalComments?: string;
-    rejectionReason?: string;
-    approvalHistory?: any[];
-    tags: string[];
-  }): Promise<PurchaseOrder> {
+  async create(data: any): Promise<PurchaseOrder> {
     try {
       const { items, ...poData } = data;
+      
+      // Remove approverId if it's empty/undefined
+      const createData = { ...poData };
+      if (!createData.approverId) {
+        delete createData.approverId;
+      }
+
       const prismaResult = await this.prisma.purchaseOrder.create({
         data: {
-          ...poData,
-          approvalHistory: poData.approvalHistory || [],
+          ...createData,
           items: {
-            create: items.map(item => ({
-              ...item,
-              // taxRate: item.taxRates?.igst + item.taxRates?.sgst + item.taxRates?.ugst
+            create: items.map((item: any) => ({
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalAmount: item.quantity * item.unitPrice,
+              item: {
+                connect: { id: item.itemId }
+              }
             }))
           }
         },
@@ -157,11 +138,11 @@ export class PrismaPurchaseOrderRepository {
           approver: true
         }
       });
-    
+
       return this.toDomainEntity(prismaResult);
     } catch (error) {
       console.error('Error creating purchase order:', error);
-      throw new Error('Failed to create purchase order');
+      throw error;
     }
   }
 
@@ -182,7 +163,6 @@ export class PrismaPurchaseOrderRepository {
           }
         },
         createdBy: true,
-        approver: true
       }
     });
 

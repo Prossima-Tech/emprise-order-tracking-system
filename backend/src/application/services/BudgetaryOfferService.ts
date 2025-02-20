@@ -583,6 +583,47 @@ export class BudgetaryOfferService {
         return ResultUtils.fail('Only DRAFT offers can be submitted for approval');
       }
 
+      // Check creator's role directly from the offer's createdBy relation
+      if (!offerResult.createdBy) {
+        return ResultUtils.fail('Creator information not found');
+      }
+
+      // Handle admin auto-approval
+      if (offerResult.createdBy.role === 'ADMIN') {
+        const approvalAction = {
+          actionType: 'AUTO_APPROVED',
+          userId,
+          timestamp: new Date().toISOString(),
+          previousStatus: 'DRAFT',
+          newStatus: 'APPROVED',
+          comments: 'Auto-approved by admin'
+        };
+
+        const currentHistory = (offerResult.approvalHistory || []) as any[];
+
+        const updatedOffer = await this.repository.update(id, {
+          status: 'APPROVED',
+          approvalDate: new Date(),
+          approvalComments: 'Auto-approved by admin',
+          approvalHistory: [...currentHistory, approvalAction] as any
+        });
+
+        // Generate PDF after admin auto-approval
+        const pdfResult = await this.generatePDF(id);
+        if (!pdfResult.isSuccess || !pdfResult.data) {
+          return ResultUtils.fail('Failed to generate approved document');
+        }
+
+        // Update offer with the generated PDF URL and hash
+        await this.repository.update(id, {
+          documentUrl: pdfResult.data.url,
+          documentHash: pdfResult.data.hash
+        });
+
+        return ResultUtils.ok(this.convertToBudgetaryOffer(updatedOffer));
+      }
+
+      // Regular submission process for non-admin users
       // Generate approval tokens
       const approveToken = this.tokenService.generateApprovalToken(
         id,
@@ -620,7 +661,7 @@ export class BudgetaryOfferService {
         approvalHistory: [...currentHistory, approvalAction] as any
       });
 
-      // Send email notification to approver
+      // Send email notification to approver only for non-admin submissions
       if (offerResult.approver?.email) {
         try {
           const documentData: BudgetaryOfferData = {
