@@ -140,7 +140,7 @@
                 <tr>
                     <th style="width: 10%">Sr. No</th>
                     <th style="width: 50%">Description of Work</th>
-                    <th style="width: 20%">Basic Rate/{{workItems.0.unitOfMeasurement}}</th>
+                    <th style="width: 20%">Basic Rate</th>
                 </tr>
             </thead>
             <tbody>
@@ -148,7 +148,7 @@
                 <tr>
                     <td style="text-align: center">{{add @index 1}}</td>
                     <td>{{description}}</td>
-                    <td class="amount-cell">₹{{formatCurrency baseRate}}</td>
+                    <td class="amount-cell">{{formatCurrency baseRate}}/{{unitOfMeasurement}}</td>
                 </tr>
                 <tr>
                     <td></td>

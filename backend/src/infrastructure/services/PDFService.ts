@@ -96,12 +96,12 @@ export class PDFService {
   }
 
   private formatCurrency(amount: number): string {
-    if (amount === null || amount === undefined) return 'Rs. 0.00';
+    if (amount === null || amount === undefined) return '0.00';
     try {
-      return `Rs. ${this.formatIndianNumber(amount)}`;
+      return `${this.formatIndianNumber(amount)}`;
     } catch (error) {
       console.error('Error formatting currency:', error);
-      return 'Rs. 0.00';
+      return '0.00';
     }
   }
 
