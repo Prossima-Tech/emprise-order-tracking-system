@@ -138,8 +138,19 @@ export class PDFService {
   private async generatePDF(html: string): Promise<Buffer> {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-software-rasterizer',
+          '--disable-dev-shm-usage',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process'
+      ],
+      executablePath: '/usr/bin/google-chrome'
+  });
 
     try {
       const page = await browser.newPage();
