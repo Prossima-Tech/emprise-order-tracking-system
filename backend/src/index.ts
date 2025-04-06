@@ -36,6 +36,7 @@ import { UserService } from './application/services/UserService';
 import { DashboardService } from './application/services/DashboardService';
 import { DashboardController } from './interfaces/http/controllers/DashboardController';
 import { SiteController } from './interfaces/http/controllers/SiteController';
+import { RailwayZoneService } from './application/services/RailwayZoneService';
 // Import controllers
 import { AuthController } from './interfaces/http/controllers/AuthController';
 import { BudgetaryOfferController } from './interfaces/http/controllers/BudgetaryOfferController';
@@ -45,6 +46,7 @@ import { VendorController } from './interfaces/http/controllers/VendorController
 import { ItemController } from './interfaces/http/controllers/ItemController';
 import { PurchaseOrderController } from './interfaces/http/controllers/PurchaseOrderController';
 import { UserController } from './interfaces/http/controllers/UserController';
+import { RailwayZoneController } from './interfaces/http/controllers/RailwayZoneController';
 
 // Import routes
 import { authRoutes } from './interfaces/http/routes/auth.routes';
@@ -57,6 +59,7 @@ import { purchaseOrderRoutes } from './interfaces/http/routes/purchaseOrder.rout
 import { userRoutes } from './interfaces/http/routes/user.routes';
 import { setupDashboardRoutes } from './interfaces/http/routes/dashboard.routes';
 import { siteRoutes } from './interfaces/http/routes/site.routes';
+import { railwayZoneRoutes } from './interfaces/http/routes/railwayZone.routes';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
 import { mkdirSync } from 'fs';
 import { unlinkSync, readdirSync, statSync } from 'fs';
@@ -78,12 +81,7 @@ async function startServer() {
 
   // Global middleware
   app.use(express.json());
-  app.use(cors({
-    origin: ['https://emprise.prossimatech.com', 'https://www.emprise.prossimatech.com', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+  app.use(cors());
   app.use(helmet());
 
   // Initialize services
@@ -156,6 +154,7 @@ async function startServer() {
   const userService = new UserService(userRepository);
   const siteService = new SiteService(siteRepository);
   const userController = new UserController(userService);
+  const railwayZoneService = new RailwayZoneService();
 
   // Initialize controllers
   const authController = new AuthController(authService);
@@ -167,6 +166,7 @@ async function startServer() {
   const purchaseOrderController = new PurchaseOrderController(purchaseOrderService);
   const vendorItemController = new VendorItemController(vendorItemService);
   const siteController = new SiteController(siteService);
+  const railwayZoneController = new RailwayZoneController(railwayZoneService);
 
   // Initialize Dashboard services and controller
   const dashboardService = new DashboardService(prisma);
@@ -234,6 +234,11 @@ async function startServer() {
     siteRoutes(siteController)
   );
 
+  app.use(
+    '/api/railway-zones',
+    railwayZoneRoutes(railwayZoneController)
+  );
+
   // Create uploads directory if it doesn't exist
   mkdirSync('uploads', { recursive: true });
 
@@ -259,6 +264,7 @@ async function startServer() {
     console.log('- /api-docs');
     console.log('- /api/dashboard');
     console.log('- /api/sites');
+    console.log('- /api/railway-zones');
   });
 
   // Cleanup uploads directory periodically (every 24 hours)

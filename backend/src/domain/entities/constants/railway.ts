@@ -5,7 +5,7 @@ export type RailwayZone = {
     headquarters: string;
   };
   
-  export const RAILWAY_ZONES: RailwayZone[] = [
+  export let RAILWAY_ZONES: RailwayZone[] = [
     {
       id: "CR",
       name: "Central Railway",

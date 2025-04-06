@@ -1,6 +1,7 @@
 import { Result, ResultUtils } from '../../shared/types/common.types';
 import { CreateBudgetaryOfferDto } from '../dtos/budgetaryOffer/CreateBudgetaryOfferDto';
 import { BudgetaryOffer, WorkItem } from '../../domain/entities/BudgetaryOffer';
+import { getAllZoneIds } from '../../domain/entities/constants/railway';
 
 interface ValidationError {
   field: string;
@@ -225,13 +226,8 @@ export class BudgetaryOfferValidator {
   }
 
   private isValidRailwayZone(zone: string): boolean {
-    // Add valid railway zones - modify this list as needed
-    const validZones = [
-      'NR', 'NCR', 'NER', 'NFR', 'NWR',
-      'SR', 'SCR', 'SER', 'SWR', 'SECR',
-      'ER', 'ECR', 'ECoR', 'WR', 'WCR',
-      'CR', 'METRO'
-    ];
+    // Use getAllZoneIds helper from railway.ts
+    const validZones = getAllZoneIds();
     return validZones.includes(zone.toUpperCase());
   }
 }
