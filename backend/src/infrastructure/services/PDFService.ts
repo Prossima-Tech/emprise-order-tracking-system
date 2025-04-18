@@ -25,7 +25,7 @@ export interface BudgetaryOfferData {
   workItems: WorkItem[];
   termsConditions: string;
   status: string;
-  railwayZone: string;
+  customerId: string;
   createdBy: {
     name: string;
     department?: string;
@@ -113,8 +113,8 @@ export class PDFService {
       formattedTotal: this.formatCurrency(item.baseRate + (item.baseRate * item.taxRate) / 100)
     }));
 
-    const zoneDetails = getZoneById(data.railwayZone);
-
+    const zoneDetails = getZoneById(data.customerId);
+    
     return {  
       ...data,
       workItems,
@@ -145,8 +145,7 @@ export class PDFService {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage'
-        ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser'
+        ]
       });
 
       const page = await browser.newPage();

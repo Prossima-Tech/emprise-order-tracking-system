@@ -92,16 +92,11 @@ export class BudgetaryOfferValidator {
       });
     }
 
-    // Railway Zone Validation
-    if (!dto.railwayZone) {
+    // Customer Validation
+    if (!dto.customerId) {
       errors.push({
-        field: 'railwayZone',
-        message: 'Railway zone is required'
-      });
-    } else if (!this.isValidRailwayZone(dto.railwayZone)) {
-      errors.push({
-        field: 'railwayZone',
-        message: 'Invalid railway zone format'
+        field: 'customerId',
+        message: 'Customer is required'
       });
     }
 
@@ -223,11 +218,5 @@ export class BudgetaryOfferValidator {
   private isValidTags(tags: any): boolean {
     if (!Array.isArray(tags)) return false;
     return tags.every(tag => typeof tag === 'string' && tag.trim().length > 0);
-  }
-
-  private isValidRailwayZone(zone: string): boolean {
-    // Use getAllZoneIds helper from railway.ts
-    const validZones = getAllZoneIds();
-    return validZones.includes(zone.toUpperCase());
   }
 }

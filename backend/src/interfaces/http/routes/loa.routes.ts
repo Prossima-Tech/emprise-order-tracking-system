@@ -48,6 +48,24 @@ import { UserRole } from '../../../domain/entities/User';
  *                 type: array
  *                 items:
  *                   type: string
+ *               hasEmd:
+ *                 type: boolean
+ *               emdAmount:
+ *                 type: number
+ *               hasSecurityDeposit:
+ *                 type: boolean
+ *               securityDepositAmount:
+ *                 type: number
+ *               securityDepositFile:
+ *                 type: string
+ *                 format: binary
+ *               hasPerformanceGuarantee:
+ *                 type: boolean
+ *               performanceGuaranteeAmount:
+ *                 type: number
+ *               performanceGuaranteeFile:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       201:
  *         description: LOA created successfully
@@ -132,6 +150,44 @@ import { UserRole } from '../../../domain/entities/User';
  *         required: true
  *         schema:
  *           type: string
+ *
+ * /loas/{id}/status:
+ *   put:
+ *     tags: [LOA]
+ *     summary: Update LOA status
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, ACTIVE, COMPLETED, CANCELLED, DELAYED]
+ *                 description: The new status of the LOA
+ *               reason:
+ *                 type: string
+ *                 description: Optional reason for status change
+ *     responses:
+ *       200:
+ *         description: LOA status updated successfully
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: LOA not found
+ *       500:
+ *         description: Server error
  */
 
 // Configure multer for file upload
@@ -149,54 +205,84 @@ const upload = multer({
   },
 });
 
+// Setup routes
 export function loaRoutes(controller: LoaController) {
   const router = Router();
-
-  // LOA routes
-  router.post('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    upload.single('documentFile'),
+  
+  // Create LOA
+  router.post(
+    '/',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    upload.fields([
+      { name: 'documentFile', maxCount: 1 },
+      { name: 'securityDepositFile', maxCount: 1 },
+      { name: 'performanceGuaranteeFile', maxCount: 1 }
+    ]),
     controller.createLoa
   );
 
-  router.put('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    upload.single('documentFile'),
-    controller.updateLoa
-  );
-
-  router.delete('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    controller.deleteLoa
-  );
-
-  router.get('/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    controller.getLoa
-  );
-
-  router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+  // Get all LOAs
+  router.get(
+    '/',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER]),
     controller.getAllLoas
   );
 
-  // Amendment routes
-  router.post('/:loaId/amendments',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+  // Get LOA by ID
+  router.get(
+    '/:id',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER]),
+    controller.getLoa
+  );
+
+  // Update LOA
+  router.put(
+    '/:id',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    upload.fields([
+      { name: 'documentFile', maxCount: 1 },
+      { name: 'securityDepositFile', maxCount: 1 },
+      { name: 'performanceGuaranteeFile', maxCount: 1 }
+    ]),
+    controller.updateLoa
+  );
+
+  // Delete LOA
+  router.delete(
+    '/:id',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    controller.deleteLoa
+  );
+
+  // Create amendment
+  router.post(
+    '/:loaId/amendments',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     upload.single('documentFile'),
     controller.createAmendment
   );
 
-  router.put('/amendments/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+  // Update amendment
+  router.put(
+    '/amendments/:id',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     upload.single('documentFile'),
     controller.updateAmendment
   );
 
-  router.delete('/amendments/:id',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+  // Delete amendment
+  router.delete(
+    '/amendments/:id',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
     controller.deleteAmendment
   );
 
+  // Update LOA status
+  router.put(
+    '/:id/status',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    controller.updateStatus
+  );
+  
   return router;
 }

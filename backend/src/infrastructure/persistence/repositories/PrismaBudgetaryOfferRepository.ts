@@ -15,7 +15,7 @@ export class PrismaBudgetaryOfferRepository {
         subject: data.subject,
         workItems: JSON.parse(JSON.stringify(data.workItems)),
         termsConditions: data.termsConditions,
-        railwayZone: data.railwayZone,
+        customerId: data.customerId,
         status: data.status,
         tags: data.tags || [],
         documentUrl: data.documentUrl,

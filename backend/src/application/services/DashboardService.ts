@@ -15,10 +15,9 @@ export class DashboardService {
     const [
       currentMonthOffers,
       currentMonthPOs,
-      activeEMDs,
-      activeEMDsValue,
       offerStatusCounts,
-      emdMaturity
+      totalOffers,
+      totalPOs
     ] = await Promise.all([
       // Count current month offers
       this.prisma.budgetaryOffer.count({
@@ -38,34 +37,15 @@ export class DashboardService {
           }
         }
       }),
-      // Count active EMDs
-      this.prisma.eMD.count({
-        where: {
-          status: 'ACTIVE'
-        }
-      }),
-      // Get sum of active EMDs value
-      this.prisma.eMD.aggregate({
-        where: {
-          status: 'ACTIVE'
-        },
-        _sum: {
-          amount: true
-        }
-      }),
       // Get offer status distribution
       this.prisma.budgetaryOffer.groupBy({
         by: ['status'],
         _count: true
       }),
-      // Get EMD maturity timeline
-      this.prisma.eMD.groupBy({
-        by: ['maturityDate'],
-        _count: true,
-        where: {
-          status: 'ACTIVE'
-        }
-      })
+      // Get total offers (all time)
+      this.prisma.budgetaryOffer.count(),
+      // Get total POs (all time)
+      this.prisma.purchaseOrder.count()
     ]);
 
     // Get previous month stats for trend calculation
@@ -88,67 +68,84 @@ export class DashboardService {
       })
     ]);
 
-    // console.log("activeEMDsValue", activeEMDsValue);
     // Calculate trends (percentage change)
     const offersTrend = previousMonthOffers === 0 ? 100 : 
       ((currentMonthOffers - previousMonthOffers) / previousMonthOffers) * 100;
     const ordersTrend = previousMonthPOs === 0 ? 100 : 
       ((currentMonthPOs - previousMonthPOs) / previousMonthPOs) * 100;
 
+    // Get average processing time for POs (in days)
+    const processingTimeResult = await this.prisma.$queryRaw<{ avgProcessingTime: number }[]>`
+      SELECT AVG(EXTRACT(EPOCH FROM ("updatedAt" - "createdAt")) / 86400) as avgProcessingTime
+      FROM "PurchaseOrder"
+      WHERE status = 'APPROVED'
+    `;
+    
+    const avgProcessingTime = processingTimeResult[0]?.avgProcessingTime || 0;
+
     return {
-      totalOffers: currentMonthOffers,
-      totalOrders: currentMonthPOs,
-      activeEmds: activeEMDs,
-      activeEmdsValue: activeEMDsValue._sum.amount || 0,
+      totalOffers,
+      totalOrders: totalPOs,
       offersTrend: Math.round(offersTrend),
       ordersTrend: Math.round(ordersTrend),
+      processingTime: Math.round(avgProcessingTime * 10) / 10, // Round to 1 decimal place
+      processingTimeTrend: -12, // Hardcoded for now, would need historical data to calculate
       offerStatus: offerStatusCounts.map(status => ({
         name: status.status,
         value: status._count,
         color: this.getStatusColor(status.status)
-      })),
-      emdMaturity: this.processEMDMaturity(emdMaturity)
+      }))
     };
   }
 
   async getRecentActivities() {
     const activities = await Promise.all([
-      // Get recent offers
+      // Get recent offers with more details
       this.prisma.budgetaryOffer.findMany({
-        take: 5,
+        take: 8,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           offerId: true,
+          subject: true,
           status: true,
           createdAt: true,
-
+          createdBy: {
+            select: {
+              name: true
+            }
+          }
         }
       }),
-      // Get recent POs
+      // Get recent POs with more details
       this.prisma.purchaseOrder.findMany({
-        take: 5,
+        take: 8,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           poNumber: true,
           status: true,
-          createdAt: true
-        }
-      }),
-      // Get recent EMDs
-      this.prisma.eMD.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          status: true,
           createdAt: true,
-          amount: true
+          totalAmount: true,
+          vendor: {
+            select: {
+              name: true
+            }
+          },
+          site: {
+            select: {
+              name: true
+            }
+          },
+          createdBy: {
+            select: {
+              name: true
+            }
+          }
         }
       })
     ]);
-
+    
     return this.processActivities(activities);
   }
 
@@ -204,55 +201,71 @@ export class DashboardService {
     return colors[status as keyof typeof colors] || '#9CA3AF';
   }
 
-  private processEMDMaturity(maturityData: any[]) {
-    const ranges = [
-      { label: '0-30 days', max: 30 },
-      { label: '31-60 days', max: 60 },
-      { label: '61-90 days', max: 90 }
-    ];
-
-    return ranges.map(range => ({
-      range: range.label,
-      count: maturityData.filter(d => {
-        const daysToMaturity = Math.ceil(
-          (new Date(d.maturityDate).getTime() - new Date().getTime()) / 
-          (1000 * 60 * 60 * 24)
-        );
-        return daysToMaturity <= range.max && daysToMaturity > (range.max - 30);
-      }).length
-    }));
-  }
-
-  private processActivities([offers, pos, emds]: any[]) {
+  private processActivities([offers, pos]: any[]) {
     const activities = [
       ...offers.map((offer: any) => ({
         id: offer.id,
         type: 'offer',
-        title: `Budgetary Offer ${offer.offerNumber}`,
-        description: `Status: ${offer.status}`,
+        title: `Budgetary Offer ${offer.offerId}`,
+        description: offer.subject ? 
+          `${offer.subject.substring(0, 40)}${offer.subject.length > 40 ? '...' : ''}` : 
+          `Created by ${offer.createdBy?.name || 'Unknown'}`,
         timestamp: offer.createdAt,
-        status: offer.status
+        status: offer.status,
+        createdBy: offer.createdBy?.name
       })),
       ...pos.map((po: any) => ({
         id: po.id,
         type: 'po',
         title: `Purchase Order ${po.poNumber}`,
-        description: `Status: ${po.status}`,
+        description: po.vendor ? 
+          `${po.totalAmount ? this.formatCurrency(po.totalAmount) : ''} - ${po.vendor.name}${po.site ? ` - ${po.site.name}` : ''}` : 
+          `Created by ${po.createdBy?.name || 'Unknown'}`,
         timestamp: po.createdAt,
-        status: po.status
-      })),
-      ...emds.map((emd: any) => ({
-        id: emd.id,
-        type: 'emd',
-        title: `EMD ${emd.emdNumber}`,
-        description: `Status: ${emd.status}`,
-        timestamp: emd.createdAt,
-        status: emd.status
+        status: po.status,
+        createdBy: po.createdBy?.name,
+        amount: po.totalAmount
       }))
     ];
 
+    // Sort by most recent first
     return activities.sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    ).slice(0, 10);
+    );
+  }
+  
+  // Format currency for display
+  private formatCurrency(value: number): string {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(value);
+  }
+
+  async getOffersByStatus() {
+    // Get all possible statuses from the enum to ensure we include zeros
+    const allStatuses = Object.values(await this.prisma.$queryRaw<{status: string}[]>`
+      SELECT unnest(enum_range(NULL::"OfferStatus")) as status
+    `).map(s => s.status);
+    
+    // Get counts for each status
+    const statusCounts = await this.prisma.budgetaryOffer.groupBy({
+      by: ['status'],
+      _count: true
+    });
+    
+    // Create a map of status to count
+    const countMap = statusCounts.reduce((acc, curr) => {
+      acc[curr.status] = curr._count;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Map all statuses including those with zero count
+    return allStatuses.map(status => ({
+      name: status,
+      value: countMap[status] || 0,
+      color: this.getStatusColor(status)
+    }));
   }
 }

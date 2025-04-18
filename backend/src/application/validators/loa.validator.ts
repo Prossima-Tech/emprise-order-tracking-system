@@ -2,6 +2,7 @@
 import { Result, ResultUtils } from '../../shared/types/common.types';
 import { CreateLoaDto } from '../dtos/loa/CreateLoaDto';
 import { CreateAmendmentDto  } from '../dtos/loa/CreateAmendmentDto';
+import { UpdateStatusDto } from '../dtos/loa/UpdateStatusDto';
 
 interface ValidationError {
   field: string;
@@ -32,17 +33,21 @@ export class LoaValidator {
     if (!dto.deliveryPeriod) {
       errors.push({ field: 'deliveryPeriod', message: 'Delivery period is required' });
     } else {
-      const startDate = new Date(dto.deliveryPeriod.start);
-      const endDate = new Date(dto.deliveryPeriod.end);
-      
-      if (isNaN(startDate.getTime())) {
-        errors.push({ field: 'deliveryPeriod.start', message: 'Invalid start date' });
-      }
-      if (isNaN(endDate.getTime())) {
-        errors.push({ field: 'deliveryPeriod.end', message: 'Invalid end date' });
-      }
-      if (startDate >= endDate) {
-        errors.push({ field: 'deliveryPeriod', message: 'Start date must be before end date' });
+      try {
+        const startDate = new Date(dto.deliveryPeriod.start);
+        const endDate = new Date(dto.deliveryPeriod.end);
+        
+        if (isNaN(startDate.getTime())) {
+          errors.push({ field: 'deliveryPeriod.start', message: 'Invalid start date' });
+        }
+        if (isNaN(endDate.getTime())) {
+          errors.push({ field: 'deliveryPeriod.end', message: 'Invalid end date' });
+        }
+        if (startDate >= endDate) {
+          errors.push({ field: 'deliveryPeriod', message: 'Start date must be before end date' });
+        }
+      } catch (error) {
+        errors.push({ field: 'deliveryPeriod', message: 'Invalid delivery period format' });
       }
     }
 
@@ -53,9 +58,24 @@ export class LoaValidator {
       errors.push({ field: 'workDescription', message: 'Work description must be between 10 and 1000 characters' });
     }
 
-    // Tags validation
+    // Tags validation - simplified
     if (dto.tags && !Array.isArray(dto.tags)) {
       errors.push({ field: 'tags', message: 'Tags must be an array' });
+    }
+
+    // EMD validation - simplified
+    if (dto.hasEmd === true && dto.emdAmount !== undefined && dto.emdAmount <= 0) {
+      errors.push({ field: 'emdAmount', message: 'EMD amount must be a positive number when EMD is enabled' });
+    }
+
+    // Security Deposit validation - simplified
+    if (dto.hasSecurityDeposit === true && dto.securityDepositAmount !== undefined && dto.securityDepositAmount <= 0) {
+      errors.push({ field: 'securityDepositAmount', message: 'Security deposit amount must be a positive number when security deposit is enabled' });
+    }
+
+    // Performance Guarantee validation - simplified
+    if (dto.hasPerformanceGuarantee === true && dto.performanceGuaranteeAmount !== undefined && dto.performanceGuaranteeAmount <= 0) {
+      errors.push({ field: 'performanceGuaranteeAmount', message: 'Performance guarantee amount must be a positive number when performance guarantee is enabled' });
     }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);
@@ -74,6 +94,22 @@ export class LoaValidator {
     // Tags validation
     if (dto.tags && !Array.isArray(dto.tags)) {
       errors.push({ field: 'tags', message: 'Tags must be an array' });
+    }
+
+    return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);
+  }
+
+  validateStatusUpdate(dto: UpdateStatusDto): Result<ValidationError[]> {
+    const errors: ValidationError[] = [];
+    const validStatuses = ['DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'DELAYED'];
+
+    if (!dto.status) {
+      errors.push({ field: 'status', message: 'Status is required' });
+    } else if (!validStatuses.includes(dto.status)) {
+      errors.push({ 
+        field: 'status', 
+        message: `Status must be one of: ${validStatuses.join(', ')}` 
+      });
     }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);

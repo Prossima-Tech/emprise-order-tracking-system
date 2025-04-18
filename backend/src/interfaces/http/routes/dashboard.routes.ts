@@ -26,5 +26,11 @@ export function setupDashboardRoutes(
     dashboardController.getProcurementTrends
   );
 
+  router.get(
+    '/offers-by-status',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    dashboardController.getOffersByStatus
+  );
+
   return router;
 }

@@ -7,54 +7,84 @@ export class LoaController {
 
   createLoa = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Parse the delivery period if it's a string
+      // Parse delivery period from string to JSON if needed
       let deliveryPeriod;
       try {
-        deliveryPeriod = req.body.deliveryPeriod ? JSON.parse(req.body.deliveryPeriod) : undefined;
+        deliveryPeriod = typeof req.body.deliveryPeriod === 'string'
+          ? JSON.parse(req.body.deliveryPeriod)
+          : req.body.deliveryPeriod;
       } catch (error) {
-        throw new AppError('Invalid delivery period format');
+        console.error('Error parsing delivery period:', error);
+        res.status(400).json({ message: 'Invalid delivery period format' });
+        return;
       }
 
-      // Parse tags if they're a string
-      let tags;
-      try {
-        tags = req.body.tags ? JSON.parse(req.body.tags) : [];
-      } catch (error) {
-        throw new AppError('Invalid tags format');
+      // Parse tags from string to JSON if needed
+      let tags: string[] = [];
+      if (req.body.tags) {
+        try {
+          tags = typeof req.body.tags === 'string'
+            ? JSON.parse(req.body.tags)
+            : req.body.tags;
+        } catch (error) {
+          console.error('Error parsing tags:', error);
+        }
       }
 
       // Parse loaValue as number with default value of 0
       const loaValue = req.body.loaValue ? Number(req.body.loaValue) : 0;
 
-      // Parse EMD IDs if they're provided
-      let emdId: string | undefined = req.body.emdId;
+      // Process the uploaded files
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      // Access the document file
+      const documentFile = files?.documentFile?.[0];
+      const securityDepositFile = files?.securityDepositFile?.[0];
+      const performanceGuaranteeFile = files?.performanceGuaranteeFile?.[0];
 
-      if (!req.file) {
-        throw new AppError('Document file is required');
-      }
+      // Parse boolean values
+      const hasEmd = req.body.hasEmd === 'true' || req.body.hasEmd === true;
+      const hasSecurityDeposit = req.body.hasSecurityDeposit === 'true' || req.body.hasSecurityDeposit === true;
+      const hasPerformanceGuarantee = req.body.hasPerformanceGuarantee === 'true' || req.body.hasPerformanceGuarantee === true;
+
+      // Parse amount values
+      const emdAmount = req.body.emdAmount ? Number(req.body.emdAmount) : undefined;
+      const securityDepositAmount = req.body.securityDepositAmount ? Number(req.body.securityDepositAmount) : undefined;
+      const performanceGuaranteeAmount = req.body.performanceGuaranteeAmount ? Number(req.body.performanceGuaranteeAmount) : undefined;
 
       const result = await this.service.createLoa({
         loaNumber: req.body.loaNumber,
         loaValue: loaValue,
         deliveryPeriod: deliveryPeriod,
         workDescription: req.body.workDescription,
-        documentFile: req.file,
-        tags: tags,
-        emdId: emdId,
-        siteId: req.body.siteId
+        siteId: req.body.siteId,
+        tags,
+        documentFile,
+        // New fields
+        hasEmd,
+        emdAmount,
+        hasSecurityDeposit,
+        securityDepositAmount,
+        securityDepositFile,
+        hasPerformanceGuarantee,
+        performanceGuaranteeAmount,
+        performanceGuaranteeFile
       });
 
       if (!result.isSuccess) {
-        const errorMessage = Array.isArray(result.error) 
-          ? result.error.map(err => `${err.field}: ${err.message}`).join(', ')
-          : result.error || 'Failed to create LOA';
-        throw new AppError(errorMessage);
+        const statusCode = result.error && Array.isArray(result.error)
+          ? 400 // Validation error
+          : 500; // Server error
+
+        res.status(statusCode).json({
+          message: Array.isArray(result.error)
+            ? result.error[0]?.message || 'Validation failed'
+            : result.error || 'Failed to create LOA'
+        });
+        return;
       }
 
-      res.status(201).json({
-        status: 'success',
-        data: result.data
-      });
+      res.status(201).json(result.data);
     } catch (error) {
       next(error);
     }
@@ -64,54 +94,98 @@ export class LoaController {
     try {
       const { id } = req.params;
 
-      // Parse the delivery period if it's a string
-      let deliveryPeriod;
-      try {
-        deliveryPeriod = req.body.deliveryPeriod ? JSON.parse(req.body.deliveryPeriod) : undefined;
-      } catch (error) {
-        throw new AppError('Invalid delivery period format');
+      if (!id) {
+        res.status(400).json({ message: 'LOA ID is required' });
+        return;
       }
 
-      // Parse tags if they're a string
-      let tags;
-      try {
-        tags = req.body.tags ? JSON.parse(req.body.tags) : undefined;
-      } catch (error) {
-        throw new AppError('Invalid tags format');
+      // Parse delivery period from string to JSON if needed
+      let deliveryPeriod = undefined;
+
+      if (req.body.deliveryPeriod) {
+        try {
+          deliveryPeriod = typeof req.body.deliveryPeriod === 'string'
+            ? JSON.parse(req.body.deliveryPeriod)
+            : req.body.deliveryPeriod;
+        } catch (error) {
+          console.error('Error parsing delivery period:', error);
+          res.status(400).json({ message: 'Invalid delivery period format' });
+          return;
+        }
+      }
+
+      // Parse tags from string to JSON if needed
+      let tags: string[] | undefined = undefined;
+      if (req.body.tags) {
+        try {
+          tags = typeof req.body.tags === 'string'
+            ? JSON.parse(req.body.tags)
+            : req.body.tags;
+        } catch (error) {
+          console.error('Error parsing tags:', error);
+        }
       }
 
       // Parse loaValue as number if present
       const loaValue = req.body.loaValue ? Number(req.body.loaValue) : undefined;
 
-      // Parse EMD IDs if they're provided
-      let emdId: string | undefined;
-      try {
-        emdId = req.body.emdId ? JSON.parse(req.body.emdId) : undefined;
-      } catch (error) {
-        throw new AppError('Invalid EMD IDs format');
-      }
+      // Process the uploaded files
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      
+      // Access the document file
+      const documentFile = files?.documentFile?.[0];
+      const securityDepositFile = files?.securityDepositFile?.[0];
+      const performanceGuaranteeFile = files?.performanceGuaranteeFile?.[0];
+
+      // Parse boolean values if present
+      const hasEmd = req.body.hasEmd !== undefined ? 
+        (req.body.hasEmd === 'true' || req.body.hasEmd === true) : 
+        undefined;
+      const hasSecurityDeposit = req.body.hasSecurityDeposit !== undefined ? 
+        (req.body.hasSecurityDeposit === 'true' || req.body.hasSecurityDeposit === true) : 
+        undefined;
+      const hasPerformanceGuarantee = req.body.hasPerformanceGuarantee !== undefined ? 
+        (req.body.hasPerformanceGuarantee === 'true' || req.body.hasPerformanceGuarantee === true) : 
+        undefined;
+
+      // Parse amount values if present
+      const emdAmount = req.body.emdAmount ? Number(req.body.emdAmount) : undefined;
+      const securityDepositAmount = req.body.securityDepositAmount ? Number(req.body.securityDepositAmount) : undefined;
+      const performanceGuaranteeAmount = req.body.performanceGuaranteeAmount ? Number(req.body.performanceGuaranteeAmount) : undefined;
 
       const result = await this.service.updateLoa(id, {
         loaNumber: req.body.loaNumber,
         loaValue: loaValue,
-        deliveryPeriod: deliveryPeriod,
+        deliveryPeriod,
         workDescription: req.body.workDescription,
-        documentFile: req.file,
-        tags: tags,
-        emdId: emdId
+        siteId: req.body.siteId,
+        tags,
+        documentFile,
+        // New fields
+        hasEmd,
+        emdAmount,
+        hasSecurityDeposit,
+        securityDepositAmount,
+        securityDepositFile,
+        hasPerformanceGuarantee,
+        performanceGuaranteeAmount,
+        performanceGuaranteeFile
       });
 
       if (!result.isSuccess) {
-        const errorMessage = Array.isArray(result.error) 
-          ? result.error.map(err => `${err.field}: ${err.message}`).join(', ')
-          : result.error || 'Failed to update LOA';
-        throw new AppError(errorMessage);
+        const statusCode = result.error && Array.isArray(result.error)
+          ? 400 // Validation error
+          : 500; // Server error
+
+        res.status(statusCode).json({
+          message: Array.isArray(result.error)
+            ? result.error[0]?.message || 'Validation failed'
+            : result.error || 'Failed to update LOA'
+        });
+        return;
       }
 
-      res.json({
-        status: 'success',
-        data: result.data
-      });
+      res.status(200).json(result.data);
     } catch (error) {
       next(error);
     }
@@ -243,6 +317,48 @@ export class LoaController {
       }
 
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        res.status(400).json({ message: 'LOA ID is required' });
+        return;
+      }
+
+      const { status, reason } = req.body;
+      
+      if (!status) {
+        res.status(400).json({ message: 'Status is required' });
+        return;
+      }
+
+      console.log(`Updating LOA ${id} status to ${status}`);
+      
+      const result = await this.service.updateStatus(id, { status, reason });
+
+      if (!result.isSuccess) {
+        const statusCode = result.error && Array.isArray(result.error)
+          ? 400 // Validation error
+          : 500; // Server error
+
+        res.status(statusCode).json({
+          message: Array.isArray(result.error)
+            ? result.error[0]?.message || 'Validation failed'
+            : result.error || 'Failed to update LOA status'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: result.data
+      });
     } catch (error) {
       next(error);
     }

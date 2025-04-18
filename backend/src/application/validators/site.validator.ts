@@ -2,7 +2,7 @@
 import { Result, ResultUtils } from '../../shared/types/common.types';
 import { CreateSiteDto, UpdateSiteDto } from '../dtos/site/SiteDto';
 import { SiteStatus } from '../../domain/entities/constants';
-import { RAILWAY_ZONES } from '../../domain/entities/constants/railway';
+// import { RAILWAY_ZONES } from '../../domain/entities/constants/railway';
 
 interface ValidationError {
   field: string;
@@ -11,6 +11,7 @@ interface ValidationError {
 
 export class SiteValidator {
   validate(dto: CreateSiteDto): Result<ValidationError[]> {
+    console.log('Validating site data:', dto);
     const errors: ValidationError[] = [];
 
     // Validate name
@@ -28,9 +29,8 @@ export class SiteValidator {
     // Validate zoneId
     if (!dto.zoneId?.trim()) {
       errors.push({ field: 'zoneId', message: 'Railway zone is required' });
-    } else if (!RAILWAY_ZONES.find(zone => zone.id === dto.zoneId)) {
-      errors.push({ field: 'zoneId', message: 'Invalid railway zone' });
     }
+    // Removed the check for valid railway zone IDs since they now come from the database
 
     // Validate address
     if (!dto.address?.trim()) {
@@ -52,6 +52,10 @@ export class SiteValidator {
     // Validate tags
     if (dto.tags && !Array.isArray(dto.tags)) {
       errors.push({ field: 'tags', message: 'Tags must be an array' });
+    }
+
+    if (errors.length > 0) {
+      console.log('Validation errors found:', errors);
     }
 
     return errors.length === 0 ? ResultUtils.ok([]) : ResultUtils.ok(errors);
@@ -78,9 +82,8 @@ export class SiteValidator {
     if (dto.zoneId !== undefined) {
       if (!dto.zoneId.trim()) {
         errors.push({ field: 'zoneId', message: 'Railway zone cannot be empty' });
-      } else if (!RAILWAY_ZONES.find(zone => zone.id === dto.zoneId)) {
-        errors.push({ field: 'zoneId', message: 'Invalid railway zone' });
       }
+      // Removed the check for valid railway zone IDs since they now come from the database
     }
 
     // Validate address if provided

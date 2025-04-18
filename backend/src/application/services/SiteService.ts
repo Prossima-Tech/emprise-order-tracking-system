@@ -106,19 +106,28 @@ export class SiteService {
   }
 
   private async generateSiteCode(zoneId: string): Promise<string> {
-    const latestSite = await this.repository.findLatestSiteCode(zoneId);
-    
-    if (!latestSite) {
-      return `${zoneId}/SITE/001`;
-    }
+    try {
+      const latestSite = await this.repository.findLatestSiteCode(zoneId);
+      
+      if (!latestSite) {
+        // First site for this customer, start with 001
+        return `${zoneId.slice(0, 5)}/SITE/001`;
+      }
 
-    const [zone, , number] = latestSite.split('/');
-    if (zone === zoneId) {
-      const nextNumber = (parseInt(number) + 1).toString().padStart(3, '0');
-      return `${zoneId}/SITE/${nextNumber}`;
-    }
+      // Extract the number part and increment it
+      const parts = latestSite.split('/');
+      if (parts.length === 3) {
+        const nextNumber = (parseInt(parts[2]) + 1).toString().padStart(3, '0');
+        return `${zoneId.slice(0, 5)}/SITE/${nextNumber}`;
+      }
 
-    return `${zoneId}/SITE/001`;
+      // Fallback if we can't parse the existing code
+      return `${zoneId.slice(0, 5)}/SITE/001`;
+    } catch (error) {
+      console.error('Error generating site code:', error);
+      // Fallback if anything goes wrong
+      return `${zoneId.slice(0, 5)}/SITE/001`;
+    }
   }
 
   async getSiteDetails(id: string): Promise<Result<any>> {
@@ -169,4 +178,13 @@ export class SiteService {
     }
   }
 
+  async getSiteCountsByZone(): Promise<Result<{ zoneId: string; count: number }[]>> {
+    try {
+      const counts = await this.repository.getSiteCountsByZone();
+      return ResultUtils.ok(counts);
+    } catch (error) {
+      console.error('Site Counts By Zone Error:', error);
+      throw new AppError('Failed to fetch site counts by zone');
+    }
+  }
 }

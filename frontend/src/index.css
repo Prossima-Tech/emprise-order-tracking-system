@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    /* Main background and text colors */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+ 
+    /* Card colors */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+ 
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+ 
+    /* Primary colors - Professional Navy Blue */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+ 
+    /* Secondary colors - Soft Gray */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+ 
+    /* Muted colors - Subtle Gray */
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 25% 27%;
+ 
+    /* Accent colors - Subtle Blue */
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
+ 
+    /* Status colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Border and input colors */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 222 47% 11%;
+ 
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 223 47% 18%;
+    --muted-foreground: 215 20% 65%;
+ 
+    --accent: 217 91% 60%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 216 12.2% 83.9%;
+  }
+}

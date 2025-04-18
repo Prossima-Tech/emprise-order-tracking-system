@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "LOAStatus" AS ENUM ('DRAFT', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'DELAYED');
+
+-- AlterTable
+ALTER TABLE "LOA" ADD COLUMN     "status" "LOAStatus" NOT NULL DEFAULT 'DRAFT';

@@ -9,7 +9,6 @@ export class PrismaLoaRepository {
   private mapPrismaLoaToLoa(prismaLoa: PrismaLOA & {
     amendments: PrismaAmendment[];
     purchaseOrders: any[]; // Replace 'any' with your PO type
-    emd?: any; // Add EMD to the mapping
     site?: any;
   }): LOA {
     // Don't parse the deliveryPeriod as it's already an object
@@ -21,6 +20,7 @@ export class PrismaLoaRepository {
         start: new Date((prismaLoa.deliveryPeriod as any).start),
         end: new Date((prismaLoa.deliveryPeriod as any).end)
       } : { start: new Date(), end: new Date() },
+      status: prismaLoa.status || 'DRAFT', // Ensure status is always set
       workDescription: prismaLoa.workDescription,
       documentUrl: prismaLoa.documentUrl,
       tags: prismaLoa.tags,
@@ -41,7 +41,14 @@ export class PrismaLoaRepository {
       },
       siteId: prismaLoa.siteId || '',
       purchaseOrders: prismaLoa.purchaseOrders,
-      emd: prismaLoa.emd || null,
+      hasEmd: prismaLoa.hasEmd,
+      emdAmount: prismaLoa.emdAmount || undefined,
+      hasSecurityDeposit: prismaLoa.hasSecurityDeposit,
+      securityDepositAmount: prismaLoa.securityDepositAmount || undefined,
+      securityDepositDocumentUrl: prismaLoa.securityDepositDocumentUrl || undefined,
+      hasPerformanceGuarantee: prismaLoa.hasPerformanceGuarantee,
+      performanceGuaranteeAmount: prismaLoa.performanceGuaranteeAmount || undefined,
+      performanceGuaranteeDocumentUrl: prismaLoa.performanceGuaranteeDocumentUrl || undefined,
       createdAt: prismaLoa.createdAt,
       updatedAt: prismaLoa.updatedAt
     };
@@ -72,8 +79,15 @@ export class PrismaLoaRepository {
     workDescription: string;
     documentUrl: string;
     tags: string[];
-    emdId?: string; // Single EMD ID
     siteId: string;
+    hasEmd?: boolean;
+    emdAmount?: number;
+    hasSecurityDeposit?: boolean;
+    securityDepositAmount?: number;
+    securityDepositDocumentUrl?: string;
+    hasPerformanceGuarantee?: boolean;
+    performanceGuaranteeAmount?: number;
+    performanceGuaranteeDocumentUrl?: string;
   }): Promise<LOA> {
     try {
       const prismaLoa = await this.prisma.lOA.create({
@@ -87,17 +101,21 @@ export class PrismaLoaRepository {
           workDescription: data.workDescription,
           documentUrl: data.documentUrl,
           tags: data.tags,
-          emd: data.emdId ? {
-            connect: { id: data.emdId }
-          } : undefined,
           site: {
             connect: { id: data.siteId }
-          }
+          },
+          hasEmd: data.hasEmd || false,
+          emdAmount: data.emdAmount || null,
+          hasSecurityDeposit: data.hasSecurityDeposit || false,
+          securityDepositAmount: data.securityDepositAmount || null,
+          securityDepositDocumentUrl: data.securityDepositDocumentUrl || null,
+          hasPerformanceGuarantee: data.hasPerformanceGuarantee || false,
+          performanceGuaranteeAmount: data.performanceGuaranteeAmount || null,
+          performanceGuaranteeDocumentUrl: data.performanceGuaranteeDocumentUrl || null
         },
         include: {
           amendments: true,
           purchaseOrders: true,
-          emd: true, // Include single EMD in the response
           site: true
         }
       });
@@ -109,33 +127,58 @@ export class PrismaLoaRepository {
     }
   }
 
-  async update(id: string, data: Partial<Omit<LOA, 'id' | 'amendments' | 'purchaseOrders'>>): Promise<LOA> {
-    const updateData: Prisma.LOAUpdateInput = {
-      loaNumber: data.loaNumber,
-      loaValue: data.loaValue,
-      workDescription: data.workDescription,
-      documentUrl: data.documentUrl,
-      tags: data.tags ? { set: data.tags } : undefined,
-      deliveryPeriod: data.deliveryPeriod ? {
+  async update(id: string, data: any): Promise<LOA> {
+    // Convert plain object to Prisma update structure
+    const updateData: Prisma.LOAUpdateInput = {};
+
+    // Only set fields that are defined
+    if (data.loaNumber !== undefined) updateData.loaNumber = data.loaNumber;
+    if (data.loaValue !== undefined) updateData.loaValue = data.loaValue;
+    if (data.workDescription !== undefined) updateData.workDescription = data.workDescription;
+    if (data.documentUrl !== undefined) updateData.documentUrl = data.documentUrl;
+    if (data.tags) updateData.tags = { set: data.tags };
+    
+    // Add status field handling
+    if (data.status !== undefined) updateData.status = data.status;
+    
+    // Handle delivery period
+    if (data.deliveryPeriod) {
+      updateData.deliveryPeriod = {
         start: new Date(data.deliveryPeriod.start),
         end: new Date(data.deliveryPeriod.end)
-      } : undefined,
-      emd: (data as any).emdId ? {
-        connect: { id: (data as any).emdId }
-      } : undefined
-    };
+      };
+    }
+    
+    // Handle optional EDM fields
+    if (data.hasEmd !== undefined) updateData.hasEmd = data.hasEmd;
+    if (data.emdAmount !== undefined) updateData.emdAmount = data.emdAmount;
+    
+    // Handle optional security deposit fields
+    if (data.hasSecurityDeposit !== undefined) updateData.hasSecurityDeposit = data.hasSecurityDeposit;
+    if (data.securityDepositAmount !== undefined) updateData.securityDepositAmount = data.securityDepositAmount;
+    if (data.securityDepositDocumentUrl !== undefined) updateData.securityDepositDocumentUrl = data.securityDepositDocumentUrl;
+    
+    // Handle optional performance guarantee fields
+    if (data.hasPerformanceGuarantee !== undefined) updateData.hasPerformanceGuarantee = data.hasPerformanceGuarantee;
+    if (data.performanceGuaranteeAmount !== undefined) updateData.performanceGuaranteeAmount = data.performanceGuaranteeAmount;
+    if (data.performanceGuaranteeDocumentUrl !== undefined) updateData.performanceGuaranteeDocumentUrl = data.performanceGuaranteeDocumentUrl;
 
-    const prismaLoa = await this.prisma.lOA.update({
-      where: { id },
-      data: updateData,
-      include: {
-        amendments: true,
-        purchaseOrders: true,
-        emd: true // Include single EMD in the response
-      }
-    });
+    try {
+      const prismaLoa = await this.prisma.lOA.update({
+        where: { id },
+        data: updateData,
+        include: {
+          amendments: true,
+          purchaseOrders: true,
+          site: true
+        }
+      });
 
-    return this.mapPrismaLoaToLoa(prismaLoa);
+      return this.mapPrismaLoaToLoa(prismaLoa);
+    } catch (error) {
+      console.error('PrismaLoaRepository update error:', error);
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<LOA> {
@@ -156,7 +199,6 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true, // Include single EMD
         site: true
       }
     });
@@ -170,7 +212,6 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true, // Include single EMD 
         site: true
       }
     });
@@ -210,7 +251,6 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
-        emd: true, // Include single EMD
         site: true
       },
       orderBy: {
@@ -258,7 +298,6 @@ export class PrismaLoaRepository {
           include: {
             amendments: true,
             purchaseOrders: true,
-            emd: true,
             site: true
           }
         }
@@ -283,7 +322,6 @@ export class PrismaLoaRepository {
           include: {
             amendments: true,
             purchaseOrders: true,
-            emd: true,
             site: true
           }
         }
@@ -301,7 +339,6 @@ export class PrismaLoaRepository {
           include: {
             amendments: true,
             purchaseOrders: true,
-            emd: true,
             site: true
           }
         }
@@ -319,7 +356,6 @@ export class PrismaLoaRepository {
           include: {
             amendments: true,
             purchaseOrders: true,
-            emd: true,
             site: true
           }
         }
@@ -327,14 +363,5 @@ export class PrismaLoaRepository {
     });
 
     return prismaAmendment ? this.mapPrismaAmendmentToAmendment(prismaAmendment) : null;
-  }
-
-  // Replace findEMDsByIds with findEMDById
-  async findEMDById(emdId: string): Promise<any | null> {
-    return this.prisma.eMD.findUnique({
-      where: {
-        id: emdId
-      }
-    });
   }
 }
