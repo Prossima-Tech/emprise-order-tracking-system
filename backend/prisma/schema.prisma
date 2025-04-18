@@ -52,12 +52,11 @@ model BudgetaryOffer {
   approvalComments String?      @db.Text
   approvalDate     DateTime?
   approvalHistory  Json[]
-  emds             EMD[]        // Add reverse relation
   tags             String[]
   emailLogs        EmailLog[]
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
-  railwayZone      String?      @default("CR")
+  customerId       String?      @default("CR")
 }
 
 enum OfferStatus {
@@ -90,46 +89,28 @@ enum EmailStatus {
   FAILED
 }
 
-// EMD Management
-model EMD {
-  id              String          @id @default(uuid())
-  amount          Float
-  paymentMode     String          @default("FDR")
-  submissionDate  DateTime        @db.Date
-  maturityDate    DateTime        @db.Date
-  bankName        String          @default("IDBI")
-  documentUrl     String          // S3 URL of FDR document
-  extractedData   Json?           // OCR extracted data
-  status          EMDStatus
-  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id])
-  offerId         String?         // Optional as EMD might be created before offer
-  loa             LOA?            @relation(fields: [loaId], references: [id])
-  loaId           String?         @unique // One-to-one relationship
-  tags            String[]
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  @@index([offerId])
-}
-
-enum EMDStatus {
-  ACTIVE
-  EXPIRED
-  RELEASED
-}
-
 enum SiteStatus {
   ACTIVE
   INACTIVE
   UNDER_MAINTENANCE
 }
 
+// New enum for LOA status
+enum LOAStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DELAYED
+}
+
 model Site {
   id              String           @id @default(uuid())
   name            String           @unique
   code            String           @unique  // For easy reference like MUM001, DEL002
-  zoneId          String           // References railway zone like "CR", "WR"
-  location        String?           // Specific location details
+  zoneId          String           // References customer id
+  zone            Customer         @relation(fields: [zoneId], references: [id])
+  location        String?          // Specific location details
   address         String           @db.Text
   contactPerson   String?
   contactPhone    String?
@@ -145,20 +126,31 @@ model Site {
 
 // LOA Management
 model LOA {
-  id              String           @id @default(uuid())
-  loaNumber       String           @unique
-  loaValue        Float
-  site            Site?            @relation(fields: [siteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  siteId          String?          // Optional field
-  deliveryPeriod  Json             // { start: Date, end: Date }
-  workDescription String
-  documentUrl     String           // S3 URL of LOA document
-  amendments      Amendment[]
-  purchaseOrders  PurchaseOrder[]
-  tags            String[]
-  emd             EMD?             @relation
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                           String           @id @default(uuid())
+  loaNumber                    String           @unique
+  loaValue                     Float
+  site                         Site?            @relation(fields: [siteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  siteId                       String?          // Optional field
+  deliveryPeriod               Json             // { start: Date, end: Date }
+  workDescription              String
+  documentUrl                  String           // S3 URL of LOA document
+  status                       LOAStatus        @default(DRAFT)
+  amendments                   Amendment[]
+  purchaseOrders               PurchaseOrder[]
+  tags                         String[]
+  // New fields for EMD
+  hasEmd                       Boolean          @default(false)
+  emdAmount                    Float?
+  // New fields for security deposit
+  hasSecurityDeposit           Boolean          @default(false)
+  securityDepositAmount        Float?
+  securityDepositDocumentUrl   String?
+  // New fields for performance guarantee
+  hasPerformanceGuarantee      Boolean          @default(false)
+  performanceGuaranteeAmount   Float?
+  performanceGuaranteeDocumentUrl String?
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @updatedAt
   
   @@index([siteId])
 }
@@ -273,4 +265,38 @@ model VendorItem {
   updatedAt DateTime  @updatedAt
 
   @@id([vendorId, itemId])
+}
+
+// Customer Management
+model Customer {
+  id           String    @id
+  name         String
+  headquarters String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sites        Site[]
+  
+  @@map("customers")
+}
+
+// Tender Management
+model Tender {
+  id              String        @id @default(uuid())
+  tenderNumber    String        @unique
+  dueDate         DateTime
+  description     String        @db.Text
+  hasEMD          Boolean       @default(false)
+  emdAmount       Float?
+  status          TenderStatus  @default(ACTIVE)
+  documentUrl     String?       // S3 URL of tender document
+  tags            String[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+enum TenderStatus {
+  ACTIVE
+  CLOSED
+  CANCELLED
+  AWARDED
 }

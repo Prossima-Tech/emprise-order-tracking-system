@@ -3,6 +3,7 @@ export interface CreateBudgetaryOfferDto {
     offerDate: string;
     toAuthority: string;
     subject: string;
+    customerId: string;
     workItems: {
       description: string;
       quantity: number;
@@ -12,5 +13,4 @@ export interface CreateBudgetaryOfferDto {
     }[];
     termsConditions: string;
     approverId: string;
-    railwayZone: string;
   }

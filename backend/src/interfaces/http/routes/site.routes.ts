@@ -45,11 +45,24 @@ import { UserRole } from '../../../domain/entities/User';
 export function siteRoutes(controller: SiteController) {
   const router = Router();
 
+  // POST route for creating a site
   router.post('/',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    controller.createSite
+    controller.createSite 
   );
 
+  // GET routes for site collections
+  router.get('/',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+    controller.getAllSites
+  );
+
+  router.get('/counts-by-zone',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
+    controller.getSiteCountsByZone
+  );
+
+  // Routes with :id parameter 
   router.put('/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.updateSite
@@ -63,11 +76,6 @@ export function siteRoutes(controller: SiteController) {
   router.get('/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
     controller.getSite
-  );
-
-  router.get('/',
-    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.BO_SPECIALIST, UserRole.PO_SPECIALIST]),
-    controller.getAllSites
   );
 
   router.get('/:id/details',

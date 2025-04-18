@@ -26,7 +26,7 @@ export interface BudgetaryOffer {
   approvalComments?: string;
   approvalDate?: Date;
   approvalHistory: ApprovalAction[];
-  railwayZone: string;
+  customerId: string;
 }
 
 export interface ApprovalAction {

@@ -10,17 +10,16 @@ import { specs } from './infrastructure/swagger/swagger';
 // Import repositories
 import { PrismaUserRepository } from './infrastructure/persistence/repositories/PrismaUserRepository';
 import { PrismaBudgetaryOfferRepository } from './infrastructure/persistence/repositories/PrismaBudgetaryOfferRepository';
-import { PrismaEmdRepository } from './infrastructure/persistence/repositories/PrismaEmdRepository';
 import { PrismaLoaRepository } from './infrastructure/persistence/repositories/PrismaLoaRepository';
 import { PrismaVendorRepository } from './infrastructure/persistence/repositories/PrismaVendorRepository';
 import { PrismaItemRepository } from './infrastructure/persistence/repositories/PrismaItemRepository';
 import { PrismaPurchaseOrderRepository } from './infrastructure/persistence/repositories/PrismaPurchaseOrderRepository';
 import { PrismaVendorItemRepository } from './infrastructure/persistence/repositories/PrismaVendorItemRepository';
+import { PrismaTenderRepository } from './infrastructure/persistence/repositories/PrismaTenderRepository';
 
 // Import services
 import { AuthService } from './application/services/AuthService';
 import { BudgetaryOfferService } from './application/services/BudgetaryOfferService';
-import { EmdService } from './application/services/EMDService';
 import { LoaService } from './application/services/LOAService';
 import { VendorService } from './application/services/VendorService';
 import { ItemService } from './application/services/ItemService';
@@ -36,22 +35,22 @@ import { UserService } from './application/services/UserService';
 import { DashboardService } from './application/services/DashboardService';
 import { DashboardController } from './interfaces/http/controllers/DashboardController';
 import { SiteController } from './interfaces/http/controllers/SiteController';
-import { RailwayZoneService } from './application/services/RailwayZoneService';
+import { CustomerService } from './application/services/CustomerService';
+import { TenderService } from './application/services/TenderService';
 // Import controllers
 import { AuthController } from './interfaces/http/controllers/AuthController';
 import { BudgetaryOfferController } from './interfaces/http/controllers/BudgetaryOfferController';
-import { EmdController } from './interfaces/http/controllers/EmdController';
 import { LoaController } from './interfaces/http/controllers/LoaController';
 import { VendorController } from './interfaces/http/controllers/VendorController';
 import { ItemController } from './interfaces/http/controllers/ItemController';
 import { PurchaseOrderController } from './interfaces/http/controllers/PurchaseOrderController';
 import { UserController } from './interfaces/http/controllers/UserController';
-import { RailwayZoneController } from './interfaces/http/controllers/RailwayZoneController';
+import { CustomerController } from './interfaces/http/controllers/CustomerController';
+import { TenderController } from './interfaces/http/controllers/TenderController';
 
 // Import routes
 import { authRoutes } from './interfaces/http/routes/auth.routes';
 import { budgetaryOfferRoutes } from './interfaces/http/routes/budgetaryOffer.routes';
-import { emdRoutes } from './interfaces/http/routes/emd.routes';
 import { loaRoutes } from './interfaces/http/routes/loa.routes';
 import { vendorRoutes } from './interfaces/http/routes/vendor.routes';
 import { itemRoutes } from './interfaces/http/routes/item.routes';
@@ -59,7 +58,8 @@ import { purchaseOrderRoutes } from './interfaces/http/routes/purchaseOrder.rout
 import { userRoutes } from './interfaces/http/routes/user.routes';
 import { setupDashboardRoutes } from './interfaces/http/routes/dashboard.routes';
 import { siteRoutes } from './interfaces/http/routes/site.routes';
-import { railwayZoneRoutes } from './interfaces/http/routes/railwayZone.routes';
+import { customerRoutes } from './interfaces/http/routes/customer.routes';
+import { tenderRoutes } from './interfaces/http/routes/tender.routes';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
 import { mkdirSync } from 'fs';
 import { unlinkSync, readdirSync, statSync } from 'fs';
@@ -92,13 +92,13 @@ async function startServer() {
   // Initialize repositories
   const userRepository = new PrismaUserRepository(prisma);
   const budgetaryOfferRepository = new PrismaBudgetaryOfferRepository(prisma);
-  const emdRepository = new PrismaEmdRepository(prisma);
   const loaRepository = new PrismaLoaRepository(prisma);
   const vendorRepository = new PrismaVendorRepository(prisma);
   const itemRepository = new PrismaItemRepository(prisma);
   const purchaseOrderRepository = new PrismaPurchaseOrderRepository(prisma);
   const vendorItemRepository = new PrismaVendorItemRepository(prisma);
   const siteRepository = new PrismaSiteRepository(prisma);
+  const tenderRepository = new PrismaTenderRepository(prisma);
 
   const s3Service = new S3Service({
     region: config.aws.region,
@@ -135,7 +135,6 @@ async function startServer() {
     emailService,
     tokenService
   );
-  const emdService = new EmdService(emdRepository, s3Service, ocrService);
   const loaService = new LoaService(loaRepository, s3Service);
   const vendorService = new VendorService(vendorRepository);
   const vendorItemService = new VendorItemService(vendorItemRepository);
@@ -154,19 +153,20 @@ async function startServer() {
   const userService = new UserService(userRepository);
   const siteService = new SiteService(siteRepository);
   const userController = new UserController(userService);
-  const railwayZoneService = new RailwayZoneService();
+  const customerService = new CustomerService(prisma);
+  const tenderService = new TenderService(tenderRepository, s3Service);
 
   // Initialize controllers
   const authController = new AuthController(authService);
   const budgetaryOfferController = new BudgetaryOfferController(budgetaryOfferService);
-  const emdController = new EmdController(emdService);
   const loaController = new LoaController(loaService);
   const vendorController = new VendorController(vendorService);
   const itemController = new ItemController(itemService);
   const purchaseOrderController = new PurchaseOrderController(purchaseOrderService);
   const vendorItemController = new VendorItemController(vendorItemService);
   const siteController = new SiteController(siteService);
-  const railwayZoneController = new RailwayZoneController(railwayZoneService);
+  const customerController = new CustomerController(customerService);
+  const tenderController = new TenderController(tenderService);
 
   // Initialize Dashboard services and controller
   const dashboardService = new DashboardService(prisma);
@@ -191,11 +191,6 @@ async function startServer() {
   app.use(
     '/api/budgetary-offers',
     budgetaryOfferRoutes(budgetaryOfferController)
-  );
-
-  app.use(
-    '/api/emds',
-    emdRoutes(emdController)
   );
 
   app.use(
@@ -235,8 +230,13 @@ async function startServer() {
   );
 
   app.use(
-    '/api/railway-zones',
-    railwayZoneRoutes(railwayZoneController)
+    '/api/customers',
+    customerRoutes(customerController)
+  );
+
+  app.use(
+    '/api/tenders',
+    tenderRoutes(tenderController)
   );
 
   // Create uploads directory if it doesn't exist
@@ -253,7 +253,6 @@ async function startServer() {
     console.log('Routes initialized:');
     console.log('- /api/auth');
     console.log('- /api/budgetary-offers');
-    console.log('- /api/emds');
     console.log('- /api/loas');
     console.log('- /api/vendors');
     console.log('- /api/items');
@@ -264,7 +263,8 @@ async function startServer() {
     console.log('- /api-docs');
     console.log('- /api/dashboard');
     console.log('- /api/sites');
-    console.log('- /api/railway-zones');
+    console.log('- /api/customers');
+    console.log('- /api/tenders');
   });
 
   // Cleanup uploads directory periodically (every 24 hours)

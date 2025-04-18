@@ -66,6 +66,7 @@ export class PrismaSiteRepository {
       data: {
         ...data,
         status: SiteStatus.ACTIVE,
+        code: data.code || "",
       }
     });
 
@@ -322,5 +323,19 @@ export class PrismaSiteRepository {
         loa: true
       }
     });
+  }
+
+  async getSiteCountsByZone(): Promise<{ zoneId: string; count: number }[]> {
+    const results = await this.prisma.site.groupBy({
+      by: ['zoneId'],
+      _count: {
+        id: true
+      }
+    });
+
+    return results.map(result => ({
+      zoneId: result.zoneId,
+      count: result._count.id
+    }));
   }
 }

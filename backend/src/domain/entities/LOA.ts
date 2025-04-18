@@ -7,6 +7,7 @@ export interface LOA {
         start: Date;
         end: Date;
     };
+    status?: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DELAYED';
     site: {
         id: string;
         name: string;
@@ -17,7 +18,14 @@ export interface LOA {
     workDescription: string;
     documentUrl: string;
     amendments?: Amendment[];
-    emd?: any;
+    hasEmd: boolean;
+    emdAmount?: number;
+    hasSecurityDeposit: boolean;
+    securityDepositAmount?: number;
+    securityDepositDocumentUrl?: string;
+    hasPerformanceGuarantee: boolean;
+    performanceGuaranteeAmount?: number;
+    performanceGuaranteeDocumentUrl?: string;
     tags: string[];
     createdAt: Date;
     updatedAt: Date;

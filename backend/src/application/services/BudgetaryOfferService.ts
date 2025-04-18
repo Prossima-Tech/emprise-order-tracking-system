@@ -56,7 +56,6 @@ export class BudgetaryOfferService {
         : [],
       termsConditions: data.termsConditions,
       status: data.status,
-      railwayZone: data.railwayZone,
       createdById: data.createdById,
       approverId: data.approverId,
       tags: data.tags,
@@ -64,8 +63,8 @@ export class BudgetaryOfferService {
       documentHash: data.documentHash,
       approvalComments: data.approvalComments,
       approvalHistory: Array.isArray(data.approvalHistory) ? data.approvalHistory : [],
-      emailLogs: data.emailLogs
-
+      emailLogs: data.emailLogs,
+      customerId: data.customerId || '',
     };
   }
 
@@ -99,13 +98,13 @@ export class BudgetaryOfferService {
           : offer.workItems,
         termsConditions: offer.termsConditions,
         status: offer.status,
-        railwayZone: offer.railwayZone || '',
         createdBy: {
           name: offer.createdBy.name,
           department: offer.createdBy.department || 'N/A',
           role: offer.createdBy.role
         },
-        tags: offer.tags || []
+        tags: offer.tags || [],
+        customerId: offer.customerId || '',
       };
 
       // Send email with fresh PDF
@@ -319,7 +318,6 @@ export class BudgetaryOfferService {
           baseRate: item.baseRate,
           taxRate: item.taxRate || 0
         })),
-        railwayZone: dto.railwayZone,
         termsConditions: dto.termsConditions,
         status: 'DRAFT',
         tags: dto.tags,
@@ -327,7 +325,8 @@ export class BudgetaryOfferService {
         approverId: dto.approverId,
         documentUrl: '',
         documentHash: '',
-        approvalHistory: [] // Initialize empty approval history
+        approvalHistory: [], // Initialize empty approval history
+        customerId: dto.customerId,
       });
 
       return ResultUtils.ok(this.convertToBudgetaryOffer(offer));
@@ -358,7 +357,8 @@ export class BudgetaryOfferService {
           unitOfMeasurement: item.unit,
           baseRate: item.rate,
           taxRate: 0 // Set appropriate default or get from DTO
-        }))
+        })),
+        customerId: dto.customerId,
       });
 
       return ResultUtils.ok(this.convertToBudgetaryOffer(updatedOffer));
@@ -453,13 +453,13 @@ export class BudgetaryOfferService {
           : offer.workItems,
         termsConditions: offer.termsConditions,
         status: offer.status,
-        railwayZone: offer.railwayZone || '',
         createdBy: {
           name: offer.createdBy.name,
           department: offer.createdBy.department || 'N/A',
           role: offer.createdBy.role
         },
-        tags: offer.tags || []
+        tags: offer.tags || [],
+        customerId: offer.customerId || '',
       };
 
       const { url, hash } = await this.pdfService.generateAndUploadBudgetaryOffer(documentData);
@@ -681,7 +681,7 @@ export class BudgetaryOfferService {
               role: (offerResult.createdBy?.role as UserRole) || UserRole.STAFF
             },
             tags: updatedOffer.tags || [],
-            railwayZone: updatedOffer.railwayZone || ''
+            customerId: updatedOffer.customerId || '',
           };
 
           await this.emailService.sendBudgetaryOfferApproveEmail({

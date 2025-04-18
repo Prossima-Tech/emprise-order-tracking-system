@@ -5,7 +5,7 @@ import { PurchaseOrder } from '../../../domain/entities/PurchaseOrder';
 
 export interface CreateSiteDto {
   name: string;
-  code: string;
+  code?: string;
   location: string;
   zoneId: string;
   address: string;

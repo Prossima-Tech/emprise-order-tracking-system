@@ -42,4 +42,17 @@ export class DashboardController {
       });
     }
   };
+
+  getOffersByStatus = async (req: Request, res: Response) => {
+    try {
+      const offersByStatus = await this.dashboardService.getOffersByStatus();
+      res.json({ status: 'success', data: offersByStatus });
+    } catch (error) {
+      console.error('Offers By Status Error:', error);
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Failed to fetch offers by status' 
+      });
+    }
+  };
 }

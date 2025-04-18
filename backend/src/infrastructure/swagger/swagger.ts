@@ -9,7 +9,7 @@ const swaggerDefinition = {
   info: {
     title: 'Procurement Management API',
     version: '1.0.0',
-    description: 'API documentation for procurement management system with comprehensive features including budgetary offers, EMD management, purchase orders, and vendor management.'
+    description: 'API documentation for procurement management system with comprehensive features including budgetary offers, purchase orders, and vendor management.'
   },
   servers: [
     {
@@ -262,61 +262,7 @@ const swaggerDefinition = {
         }
       },
 
-      // EMD Related Schemas
-      EMD: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          amount: { type: 'number', format: 'float' },
-          paymentMode: { type: 'string', default: 'FDR' },
-          submissionDate: { type: 'string', format: 'date' },
-          maturityDate: { type: 'string', format: 'date' },
-          bankName: { type: 'string', default: 'IDBI' },
-          documentUrl: { type: 'string' },
-          extractedData: { type: 'object', description: 'OCR extracted data' },
-          status: {
-            type: 'string',
-            enum: ['ACTIVE', 'EXPIRED', 'RELEASED']
-          },
-          offerId: { type: 'string' },
-          tags: { type: 'array', items: { type: 'string' } }
-        }
-      },
-
-      CreateEmdDto: {
-        type: 'object',
-        required: ['amount', 'submissionDate', 'maturityDate'],
-        properties: {
-          amount: { type: 'number' },
-          paymentMode: { type: 'string', default: 'FDR' },
-          submissionDate: { type: 'string', format: 'date' },
-          maturityDate: { type: 'string', format: 'date' },
-          bankName: { type: 'string', default: 'IDBI' },
-          documentFile: { type: 'string', format: 'binary' },
-          offerId: { type: 'string' },
-          tags: { type: 'array', items: { type: 'string' } }
-        }
-      },
-
-      // Additional schemas for swagger.ts
-      UpdateLoaDto: {
-        type: 'object',
-        properties: {
-          loaNumber: { type: 'string' },
-          loaValue: { type: 'number' },
-          deliveryPeriod: {
-            type: 'object',
-            properties: {
-              start: { type: 'string', format: 'date' },
-              end: { type: 'string', format: 'date' }
-            }
-          },
-          workDescription: { type: 'string' },
-          documentFile: { type: 'string', format: 'binary' },
-          tags: { type: 'array', items: { type: 'string' } }
-        }
-      },
-
+      // Purchase Order Related Schemas
       PurchaseOrderItemDto: {
         type: 'object',
         required: ['itemId', 'quantity', 'unitPrice', 'taxRate'],
@@ -553,6 +499,88 @@ const swaggerDefinition = {
           error: { type: 'string' },
           sentAt: { type: 'string', format: 'date-time' }
         }
+      },
+
+      // Tender Related Schemas
+      Tender: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          tenderNumber: { type: 'string' },
+          dueDate: { type: 'string', format: 'date' },
+          description: { type: 'string' },
+          hasEMD: { type: 'boolean' },
+          emdAmount: { type: 'number', format: 'float' },
+          status: {
+            type: 'string',
+            enum: ['ACTIVE', 'CLOSED', 'CANCELLED', 'AWARDED']
+          },
+          documentUrl: { type: 'string' },
+          tags: { type: 'array', items: { type: 'string' } },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' }
+        }
+      },
+
+      CreateTenderDto: {
+        type: 'object',
+        required: ['tenderNumber', 'dueDate', 'description', 'hasEMD'],
+        properties: {
+          tenderNumber: { type: 'string' },
+          dueDate: { type: 'string', format: 'date' },
+          description: { type: 'string' },
+          hasEMD: { type: 'boolean' },
+          emdAmount: { type: 'number', format: 'float' },
+          documentFile: { type: 'string', format: 'binary' },
+          tags: { type: 'array', items: { type: 'string' } }
+        }
+      },
+
+      UpdateTenderDto: {
+        type: 'object',
+        properties: {
+          tenderNumber: { type: 'string' },
+          dueDate: { type: 'string', format: 'date' },
+          description: { type: 'string' },
+          hasEMD: { type: 'boolean' },
+          emdAmount: { type: 'number', format: 'float' },
+          status: {
+            type: 'string',
+            enum: ['ACTIVE', 'CLOSED', 'CANCELLED', 'AWARDED']
+          },
+          documentFile: { type: 'string', format: 'binary' },
+          tags: { type: 'array', items: { type: 'string' } }
+        }
+      },
+
+      UpdateTenderStatusDto: {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['ACTIVE', 'CLOSED', 'CANCELLED', 'AWARDED']
+          }
+        }
+      },
+
+      // Additional schemas for swagger.ts
+      UpdateLoaDto: {
+        type: 'object',
+        properties: {
+          loaNumber: { type: 'string' },
+          loaValue: { type: 'number' },
+          deliveryPeriod: {
+            type: 'object',
+            properties: {
+              start: { type: 'string', format: 'date' },
+              end: { type: 'string', format: 'date' }
+            }
+          },
+          workDescription: { type: 'string' },
+          documentFile: { type: 'string', format: 'binary' },
+          tags: { type: 'array', items: { type: 'string' } }
+        }
       }
     },
 
@@ -643,13 +671,17 @@ const swaggerDefinition = {
   security: [{ bearerAuth: [] }],
   // API Tags for grouping endpoints
   tags: [
-    { name: 'Auth', description: 'Authentication endpoints' },
-    { name: 'Budgetary Offers', description: 'Budgetary offer management' },
-    { name: 'EMD', description: 'EMD management' },
-    { name: 'LOA', description: 'Letter of Authorization management' },
-    { name: 'Purchase Orders', description: 'Purchase order management' },
-    { name: 'Vendors', description: 'Vendor management' },
-    { name: 'Items', description: 'Item catalog management' }
+    { name: 'Auth', description: 'Authentication operations' },
+    { name: 'BudgetaryOffer', description: 'Budgetary Offer management' },
+    { name: 'LOA', description: 'Letter of Award management' },
+    { name: 'Vendor', description: 'Vendor management' },
+    { name: 'Item', description: 'Item/Product management' },
+    { name: 'PurchaseOrder', description: 'Purchase Order management' },
+    { name: 'User', description: 'User management' },
+    { name: 'Dashboard', description: 'Dashboard stats and data' },
+    { name: 'Site', description: 'Site management' },
+    { name: 'Customer', description: 'Customer management' },
+    { name: 'Tender', description: 'Tender management' }
   ]
 };
 

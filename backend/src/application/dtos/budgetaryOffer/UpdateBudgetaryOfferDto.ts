@@ -1,4 +1,3 @@
-
 export class UpdateBudgetaryOfferDto {
   offerDate?: string;
   status?: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
@@ -15,5 +14,7 @@ export class UpdateBudgetaryOfferDto {
   }>;
   termsConditions?: string;
   approverId?: string;
-  railwayZone?: string;
+  approvalHistory?: any[];
+  approvalComments?: string;
+  customerId?: string;
 }
