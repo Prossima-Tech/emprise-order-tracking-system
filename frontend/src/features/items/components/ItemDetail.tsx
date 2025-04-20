@@ -205,8 +205,12 @@ export function ItemDetail() {
 
   // Calculate key metrics
   const totalOrders = item.vendors.length;
-  const totalQuantity = item.vendors.reduce((sum, vendor) => sum + vendor.unitPrice, 0);
-  const averagePrice = item.vendors.reduce((sum, vendor) => sum + vendor.unitPrice, 0) / totalOrders || 0;
+  const totalQuantity = item.vendors.length > 0 
+    ? item.vendors.reduce((sum, vendor) => sum + vendor.unitPrice, 0)
+    : 0;
+  const averagePrice = item.vendors.length > 0
+    ? item.vendors.reduce((sum, vendor) => sum + vendor.unitPrice, 0) / totalOrders
+    : 0;
   
   const vendorColumns = [
     {
@@ -389,10 +393,12 @@ export function ItemDetail() {
                 <div>
                   <Label>Unit Price</Label>
                   <p className="text-sm">
-                    {new Intl.NumberFormat("en-IN", {
-                      style: "currency",
-                      currency: "INR",
-                    }).format(item.vendors[0].unitPrice)}
+                    {item.vendors.length > 0 
+                      ? new Intl.NumberFormat("en-IN", {
+                          style: "currency",
+                          currency: "INR",
+                        }).format(item.vendors[0].unitPrice)
+                      : "No vendor price available"}
                   </p>
                 </div>
                 <div>
