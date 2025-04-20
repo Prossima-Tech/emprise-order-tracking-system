@@ -238,14 +238,32 @@ export class POPDFService {
 
   private async generateHTML(data: PDFGenerationData): Promise<string> {
     try {
+      // Check if template path exists
+      try {
+        await fs.access(this.templatePath);
+      } catch (err: any) {
+        console.error(`Template file not found at path: ${this.templatePath}`);
+        throw new Error(`Template file not found: ${err.message}`);
+      }
+
       const templateContent = await fs.readFile(this.templatePath, 'utf-8');
-      const template = handlebars.compile(templateContent);
+      
+      // Process data before template compilation
       const processedData = this.processTemplateData(data);
       
-      return template(processedData);
+      // Compile template
+      try {
+        const template = handlebars.compile(templateContent);
+        return template(processedData);
+      } catch (compileError: any) {
+        console.error('Template compilation error:', compileError);
+        console.error('Data causing compilation error:', JSON.stringify(processedData, null, 2));
+        throw new Error(`Failed to compile template: ${compileError.message}`);
+      }
     } catch (error) {
       console.error('HTML Generation Error:', error);
-      throw new Error('Failed to generate HTML template');
+      throw new Error('Failed to generate HTML template: ' + 
+        (error instanceof Error ? error.message : String(error)));
     }
   }
 
@@ -299,7 +317,16 @@ export class POPDFService {
       return { url, hash };
     } catch (error) {
       console.error('PDF Generation Error:', error);
-      throw new Error('Failed to generate and upload purchase order PDF');
+      // More detailed error information
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
+      throw new Error('Failed to generate and upload purchase order PDF: ' + 
+        (error instanceof Error ? error.message : String(error)));
     }
   }
 }

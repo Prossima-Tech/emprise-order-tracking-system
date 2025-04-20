@@ -340,19 +340,29 @@ export class PurchaseOrderService {
         }
       };
 
-      const { url, hash } = await this.pdfService.generateAndUploadPurchaseOrder(documentData);
+      try {
+        const { url, hash } = await this.pdfService.generateAndUploadPurchaseOrder(documentData);
 
-      // Update PO with document URL and hash
-      const updatedPo = await this.repository.update(id, {
-        documentUrl: url,
-        documentHash: hash
-      });
+        // Update PO with document URL and hash
+        const updatedPo = await this.repository.update(id, {
+          documentUrl: url,
+          documentHash: hash
+        });
 
-      if (!updatedPo) {
-        return ResultUtils.fail('Failed to update purchase order with document details');
+        if (!updatedPo) {
+          return ResultUtils.fail('Failed to update purchase order with document details');
+        }
+
+        return ResultUtils.ok({ url, hash });
+      } catch (pdfError: any) {
+        console.error('PDF generation error:', pdfError);
+        console.error('Error details:', {
+          message: pdfError.message,
+          stack: pdfError.stack,
+          name: pdfError.name
+        });
+        return ResultUtils.fail(`Failed to generate PDF: ${pdfError.message}`);
       }
-
-      return ResultUtils.ok({ url, hash });
     } catch (error) {
       console.error('PDF Generation Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -540,7 +550,12 @@ export class PurchaseOrderService {
         // Generate PDF after admin auto-approval
         const pdfResult = await this.generatePDF(id);
         if (!pdfResult.isSuccess || !pdfResult.data) {
-          return ResultUtils.fail('Failed to generate approved document');
+          console.error('PDF generation failed:', {
+            error: pdfResult.error,
+            isSuccess: pdfResult.isSuccess,
+            hasData: !!pdfResult.data
+          });
+          return ResultUtils.fail(`Failed to generate approved document: ${pdfResult.error || 'Unknown error'}`);
         }
 
         // Update PO with the generated PDF URL and hash
@@ -608,7 +623,8 @@ export class PurchaseOrderService {
       return ResultUtils.ok(updatedPO);
     } catch (error) {
       console.error('PO Submit Error:', error);
-      throw new AppError('Failed to submit purchase order for approval');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new AppError(`Failed to submit purchase order for approval: ${errorMessage}`);
     }
   }
 
@@ -740,57 +756,32 @@ export class PurchaseOrderService {
   }
 
   async handleEmailApproval(token: string, p0: string): Promise<Result<PurchaseOrder>> {
-    console.log('Starting handleEmailApproval with token:', token);
-
     const tokenData = this.tokenService.verifyApprovalToken(token);
-    console.log('Verified token data:', tokenData);
 
     if (!tokenData) {
-      console.log('Token verification failed');
       return ResultUtils.fail('Invalid or expired approval link');
     }
 
     if (tokenData.action !== 'approve') {
-      console.log('Invalid action type:', tokenData.action);
       return ResultUtils.fail('Invalid action type');
     }
 
-    console.log('Proceeding to approve order with:', {
-      poId: tokenData.poId,
-      userId: tokenData.userId
-    });
-
     const approvalResult = await this.approveOrder(tokenData.poId, tokenData.userId);
-    console.log('Approval result:', approvalResult);
-
     return approvalResult;
   }
 
   async handleEmailRejection(token: string, reason: string): Promise<Result<PurchaseOrder>> {
-    console.log('Starting handleEmailRejection with token:', token);
-    
     const tokenData = this.tokenService.verifyApprovalToken(token);
-    console.log('Verified token data:', tokenData);
     
     if (!tokenData) {
-      console.log('Token verification failed');
       return ResultUtils.fail('Invalid or expired rejection link');
     }
   
     if (tokenData.action !== 'reject') {
-      console.log('Invalid action type:', tokenData.action);
       return ResultUtils.fail('Invalid action type');
     }
   
-    console.log('Proceeding to reject order with:', {
-      poId: tokenData.poId,
-      userId: tokenData.userId,
-      reason
-    });
-  
     const rejectionResult = await this.rejectOrder(tokenData.poId, tokenData.userId, reason);
-    console.log('Rejection result:', rejectionResult);
-  
     return rejectionResult;
   }
 
