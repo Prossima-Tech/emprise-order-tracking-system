@@ -76,7 +76,7 @@ import { SiteService } from './application/services/SiteService';
 async function startServer() {
   const app = express();
 
-  // Initialize Prisma client
+  // Initialize Prisma clieant
   const prisma = new PrismaClient();
 
   // Global middleware
@@ -84,7 +84,7 @@ async function startServer() {
   
   // Configure CORS to allow requests from the frontend
   app.use(cors({
-   origin: ['https://emprise.prossimatech.com', 'https://www.emprise.prossimatech.com', 'http://localhost:3000'],
+   origin: ['https://emprise.prossimatech.com', 'https://www.emprise.prossimatech.com', "https://client.prossimatech.com" ,'http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
