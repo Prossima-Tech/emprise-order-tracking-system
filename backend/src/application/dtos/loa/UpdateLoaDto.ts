@@ -19,4 +19,15 @@ export interface UpdateLoaDto {
     hasPerformanceGuarantee?: boolean;
     performanceGuaranteeAmount?: number;
     performanceGuaranteeFile?: Express.Multer.File;
+    // Billing/Invoice fields
+    invoiceNumber?: string;
+    invoiceAmount?: number;
+    totalReceivables?: number;
+    actualAmountReceived?: number;
+    amountDeducted?: number;
+    amountPending?: number;
+    deductionReason?: string;
+    billLinks?: string;
+    invoicePdfFile?: Express.Multer.File;
+    remarks?: string;
 }

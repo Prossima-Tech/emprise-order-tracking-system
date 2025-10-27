@@ -25,9 +25,8 @@ export function authMiddleware(requiredRoles: UserRole[] = []) {
 
       // Verify token
       const decoded = jwt.verify(token, config.jwt.secret) as TokenPayload;
-      
+
       req.user = decoded;
-      console.log(req.user);
 
       // Check role if required
       if (requiredRoles.length > 0 && !requiredRoles.includes(decoded.role)) {

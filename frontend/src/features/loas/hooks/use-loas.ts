@@ -23,25 +23,46 @@ export function useLOAs() {
   };
 
   // Get all LOAs
-  const getLOAs = async () => {
+  const getLOAs = async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) => {
     try {
       setLoading(true);
 
-      const response = await apiClient.get('/loas');
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+      const url = `/loas${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiClient.get(url);
+
       if (!response.data || !response.data.data) {
         console.warn('Unexpected API response structure:', response);
-        return [];
+        return { loas: [], total: 0, page: 1, limit: 10, totalPages: 0 };
       }
-      
+
       // Ensure all LOAs have a status value
       const loas = response.data.data.loas || [];
       loas.forEach((loa: any) => {
         if (!loa.status) {
-          loa.status = "DRAFT"; // Default to DRAFT if status is missing
+          loa.status = "NOT_STARTED"; // Default to NOT_STARTED if status is missing
         }
       });
-      
-      return loas;
+
+      return {
+        loas,
+        total: response.data.data.total || 0,
+        page: response.data.data.page || 1,
+        limit: response.data.data.limit || 10,
+        totalPages: response.data.data.totalPages || 0
+      };
     } catch (error: any) {
       console.error('Error in getLOAs:', error);
       showError(error.response?.data?.message || 'Failed to fetch LOAs');
@@ -58,10 +79,10 @@ export function useLOAs() {
       const response = await apiClient.get(`/loas/${id}`);
       
       const loaData = response.data.data;
-      
+
       // Ensure status is present in the response
       if (!loaData.status) {
-        loaData.status = "DRAFT"; // Default to DRAFT if status is missing
+        loaData.status = "NOT_STARTED"; // Default to NOT_STARTED if status is missing
       }
       
       return loaData;
@@ -85,6 +106,8 @@ export function useLOAs() {
           formData.append(key, value);
         } else if (key === 'performanceGuaranteeFile' && value && data.hasPerformanceGuarantee) {
           formData.append(key, value);
+        } else if (key === 'invoicePdfFile' && value) {
+          formData.append(key, value);
         } else if (key === 'deliveryPeriod') {
           formData.append(key, JSON.stringify(value));
         } else if (key === 'tags') {
@@ -100,7 +123,13 @@ export function useLOAs() {
           formData.append(key, String(value || 0));
         } else if (key === 'performanceGuaranteeAmount' && data.hasPerformanceGuarantee) {
           formData.append(key, String(value || 0));
-        } else if (value !== null && value !== undefined) {
+        } else if (key === 'invoiceAmount' || key === 'totalReceivables' || key === 'actualAmountReceived' ||
+                   key === 'amountDeducted' || key === 'amountPending') {
+          // Handle invoice amount fields - only append if they have a value
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, String(value));
+          }
+        } else if (value !== null && value !== undefined && value !== '') {
           formData.append(key, String(value));
         }
       });
@@ -192,12 +221,14 @@ export function useLOAs() {
           formData.append(key, value);
         } else if (key === 'performanceGuaranteeFile' && value && data.hasPerformanceGuarantee) {
           formData.append(key, value);
+        } else if (key === 'invoicePdfFile' && value) {
+          formData.append(key, value);
         } else if (key === 'deliveryPeriod') {
           const formattedPeriod = {
             start: value.start instanceof Date ? value.start.toISOString() : value.start,
             end: value.end instanceof Date ? value.end.toISOString() : value.end
           };
-          formData.append(key, JSON.stringify(formattedPeriod));  
+          formData.append(key, JSON.stringify(formattedPeriod));
         } else if (key === 'tags') {
           let tagsToSend = [];
           if (Array.isArray(value)) {
@@ -212,7 +243,13 @@ export function useLOAs() {
           formData.append(key, String(value || 0));
         } else if (key === 'performanceGuaranteeAmount' && data.hasPerformanceGuarantee) {
           formData.append(key, String(value || 0));
-        } else if (value !== null && value !== undefined) {
+        } else if (key === 'invoiceAmount' || key === 'totalReceivables' || key === 'actualAmountReceived' ||
+                   key === 'amountDeducted' || key === 'amountPending') {
+          // Handle invoice amount fields - only append if they have a value
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, String(value));
+          }
+        } else if (value !== null && value !== undefined && value !== '') {
           formData.append(key, String(value));
         }
       });
@@ -262,6 +299,45 @@ export function useLOAs() {
     return [];
   };
 
+  const bulkImportLOAs = async (file: File) => {
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiClient.post('/loas/bulk-import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const result = response.data.data;
+
+      // Show summary message
+      if (result.successCount > 0) {
+        showSuccess(
+          `Import completed: ${result.successCount} LOAs created successfully${
+            result.failureCount > 0 || result.skippedCount > 0
+              ? `, ${result.failureCount} failed, ${result.skippedCount} skipped`
+              : ''
+          }`
+        );
+      } else {
+        showError('Import failed: No LOAs were created. Please check the file and try again.');
+      }
+
+      return result;
+    } catch (error: any) {
+      console.error('Error in bulkImportLOAs:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to import LOAs';
+      showError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     loading,
     getLOAs,
@@ -273,5 +349,6 @@ export function useLOAs() {
     deleteAmendment,
     updateLOAStatus,
     getAvailableEMDs,
+    bulkImportLOAs,
   };
 }

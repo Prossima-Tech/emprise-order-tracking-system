@@ -10,6 +10,7 @@ import {
   Calendar,
   Trash2, // Added Trash2 icon
   RefreshCw, // Added RefreshCw icon for status update
+  Pencil, // Added Pencil icon for edit
 } from "lucide-react";
 import {
   Card,
@@ -49,20 +50,38 @@ const formatCurrency = (value: number): string => {
 // Add function to get status badge color
 const getStatusBadgeStyle = (status: LOA['status']) => {
   if (!status) return 'bg-gray-100 text-gray-800';
-  
+
   switch (status) {
-    case 'DRAFT':
+    case 'NOT_STARTED':
       return 'bg-gray-100 text-gray-800';
-    case 'ACTIVE':
-      return 'bg-green-100 text-green-800';
-    case 'COMPLETED':
+    case 'IN_PROGRESS':
       return 'bg-blue-100 text-blue-800';
-    case 'CANCELLED': 
-      return 'bg-red-100 text-red-800';
-    case 'DELAYED':
+    case 'SUPPLY_WORK_COMPLETED':
+      return 'bg-green-100 text-green-800';
+    case 'CHASE_PAYMENT':
       return 'bg-amber-100 text-amber-800';
+    case 'CLOSED':
+      return 'bg-purple-100 text-purple-800';
     default:
       return 'bg-gray-100 text-gray-800';
+  }
+};
+
+// Helper to display readable status text
+const getStatusDisplayText = (status: LOA['status']) => {
+  switch (status) {
+    case 'NOT_STARTED':
+      return '1. Not Started';
+    case 'IN_PROGRESS':
+      return '2. In Progress';
+    case 'SUPPLY_WORK_COMPLETED':
+      return '4. Supply/Work Completed';
+    case 'CHASE_PAYMENT':
+      return '7. Chase Payment';
+    case 'CLOSED':
+      return '9. Closed';
+    default:
+      return status;
   }
 };
 
@@ -81,17 +100,20 @@ export function LOADetail() {
     if (!id) return;
     try {
       const data = await getLOAById(id);
-      
+
       // Ensure the LOA has a status value
       if (data && !data.status) {
-        data.status = 'DRAFT';
+        data.status = 'NOT_STARTED';
       }
-      
+
       setLOA(data);
     } catch (error) {
       console.error("Error fetching LOA:", error);
+      // Redirect to LOA list if LOA not found
+      navigate("/loas");
     }
-  }, [id, getLOAById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   useEffect(() => {
     fetchLOA();
@@ -175,7 +197,14 @@ export function LOADetail() {
           <h1 className="text-2xl font-bold">LOA Details: {loa.loaNumber}</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Button 
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/loas/${id}/edit`)}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit LOA
+          </Button>
+          <Button
             variant="default"
             onClick={() => navigate(`/loas/${id}/amendments/new`)}
           >
@@ -203,7 +232,7 @@ export function LOADetail() {
               </div>
               <div className="mt-2">
                 <Badge className={cn("px-2 py-1", getStatusBadgeStyle(loa.status))}>
-                  {loa.status || 'DRAFT'}
+                  {getStatusDisplayText(loa.status)}
                 </Badge>
               </div>
             </div>
@@ -234,6 +263,9 @@ export function LOADetail() {
       <Tabs defaultValue="details" className="space-y-4">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="billing">
+            Billing {loa.invoices && loa.invoices.length > 0 && `(${loa.invoices.length})`}
+          </TabsTrigger>
           <TabsTrigger value="amendments">
             Amendments ({loa.amendments.length})
           </TabsTrigger>
@@ -304,6 +336,75 @@ export function LOADetail() {
                   </div>
                 </div>
               </div>
+
+              {/* Due Date */}
+              {loa.dueDate && (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Due Date</h3>
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(loa.dueDate), "PPP")}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Warranty Period */}
+              {(loa.warrantyPeriodMonths || loa.warrantyPeriodYears || loa.warrantyStartDate || loa.warrantyEndDate) && (
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Warranty Period</h3>
+                  <div className="bg-muted p-4 rounded-lg space-y-3">
+                    {/* Warranty Duration */}
+                    {(loa.warrantyPeriodMonths || loa.warrantyPeriodYears) && (
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground mb-1">Duration</div>
+                        <div className="text-sm">
+                          {loa.warrantyPeriodYears && loa.warrantyPeriodYears > 0 && (
+                            <span>{loa.warrantyPeriodYears} {loa.warrantyPeriodYears === 1 ? 'year' : 'years'}</span>
+                          )}
+                          {loa.warrantyPeriodYears && loa.warrantyPeriodYears > 0 && loa.warrantyPeriodMonths && loa.warrantyPeriodMonths > 0 && (
+                            <span> and </span>
+                          )}
+                          {loa.warrantyPeriodMonths && loa.warrantyPeriodMonths > 0 && (
+                            <span>{loa.warrantyPeriodMonths} {loa.warrantyPeriodMonths === 1 ? 'month' : 'months'}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Warranty Dates */}
+                    {(loa.warrantyStartDate || loa.warrantyEndDate) && (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {loa.warrantyStartDate && (
+                          <div>
+                            <div className="text-sm font-medium text-muted-foreground mb-1">Start Date</div>
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {format(new Date(loa.warrantyStartDate), "PPP")}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        {loa.warrantyEndDate && (
+                          <div>
+                            <div className="text-sm font-medium text-muted-foreground mb-1">End Date</div>
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {format(new Date(loa.warrantyEndDate), "PPP")}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Work Description */}
               <div>
@@ -410,6 +511,153 @@ export function LOADetail() {
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billing & Invoice Information</CardTitle>
+              <CardDescription>
+                Track all billing, invoices, and payment information for this LOA
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!loa.invoices || loa.invoices.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  No billing information available for this LOA
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {loa.invoices.map((invoice) => (
+                    <div key={invoice.id} className="border rounded-lg overflow-hidden">
+                      {/* Invoice Header */}
+                      <div className="bg-muted px-4 py-3 border-b">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              {invoice.invoiceNumber || 'Invoice'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              Last updated: {format(new Date(invoice.updatedAt), "PPP")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Invoice Details */}
+                      <div className="p-4 space-y-6">
+                        {/* Financial Summary Grid */}
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                          {/* Last Invoice Amount */}
+                          {invoice.invoiceAmount !== undefined && invoice.invoiceAmount !== null && (
+                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                Last Invoice Amount
+                              </h4>
+                              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                                {formatCurrency(invoice.invoiceAmount)}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Total Receivables */}
+                          {invoice.totalReceivables !== undefined && invoice.totalReceivables !== null && (
+                            <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                Total Receivables
+                              </h4>
+                              <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                                {formatCurrency(invoice.totalReceivables)}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Actual Amount Received */}
+                          {invoice.actualAmountReceived !== undefined && invoice.actualAmountReceived !== null && (
+                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                Actual Amount Received
+                              </h4>
+                              <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                                {formatCurrency(invoice.actualAmountReceived)}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Amount Pending */}
+                          {invoice.amountPending !== undefined && invoice.amountPending !== null && (
+                            <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
+                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                Amount Pending
+                              </h4>
+                              <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                                {formatCurrency(invoice.amountPending)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Deduction Information */}
+                        {invoice.amountDeducted !== undefined && invoice.amountDeducted !== null && invoice.amountDeducted > 0 && (
+                          <div className="bg-red-50 dark:bg-red-950 border-l-4 border-red-500 p-4 rounded-lg">
+                            <h4 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2">
+                              Deduction Information
+                            </h4>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Amount Deducted</span>
+                                <span className="text-lg font-bold text-red-700 dark:text-red-300">
+                                  {formatCurrency(invoice.amountDeducted)}
+                                </span>
+                              </div>
+                              {invoice.deductionReason && invoice.deductionReason !== '-' && (
+                                <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
+                                  <h5 className="text-sm font-medium text-muted-foreground mb-1">
+                                    Reason for Deduction
+                                  </h5>
+                                  <p className="text-sm">{invoice.deductionReason}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Remarks */}
+                        {invoice.remarks && (
+                          <div className="bg-muted p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                              Remarks
+                            </h4>
+                            <p className="text-sm whitespace-pre-wrap">{invoice.remarks}</p>
+                          </div>
+                        )}
+
+                        {/* Bill Links */}
+                        {invoice.billLinks && (
+                          <div className="bg-muted p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                              Bill Links
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={invoice.billLinks}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline flex items-center gap-1"
+                              >
+                                <FileText className="h-4 w-4" />
+                                View Bill Document
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

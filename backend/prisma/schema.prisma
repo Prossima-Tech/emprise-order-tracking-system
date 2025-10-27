@@ -54,6 +54,7 @@ model BudgetaryOffer {
   approvalHistory  Json[]
   tags             String[]
   emailLogs        EmailLog[]
+  emds             EMD[]        // EMDs associated with this offer
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   customerId       String?      @default("CR")
@@ -95,13 +96,13 @@ enum SiteStatus {
   UNDER_MAINTENANCE
 }
 
-// New enum for LOA status
+// LOA status matching Excel sheet statuses
 enum LOAStatus {
-  DRAFT
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  DELAYED
+  NOT_STARTED           // 1. Not Started
+  IN_PROGRESS           // 2. In Progress
+  SUPPLY_WORK_COMPLETED // 4. Supply/Work Completed
+  CHASE_PAYMENT         // 7. Chase Payment
+  CLOSED                // 9. Closed
 }
 
 model Site {
@@ -132,12 +133,20 @@ model LOA {
   site                         Site?            @relation(fields: [siteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   siteId                       String?          // Optional field
   deliveryPeriod               Json             // { start: Date, end: Date }
+  dueDate                      DateTime?        // Due date for LOA completion
   workDescription              String
   documentUrl                  String           // S3 URL of LOA document
-  status                       LOAStatus        @default(DRAFT)
+  status                       LOAStatus        @default(NOT_STARTED)
   amendments                   Amendment[]
   purchaseOrders               PurchaseOrder[]
+  invoices                     Invoice[]        // Billing/Invoice records
+  emds                         EMD[]            // EMDs associated with this LOA
   tags                         String[]
+  // Warranty period fields
+  warrantyPeriodMonths         Int?             // Warranty period in months
+  warrantyPeriodYears          Int?             // Warranty period in years
+  warrantyStartDate            DateTime?        // When warranty period starts
+  warrantyEndDate              DateTime?        // Calculated or manually set warranty end date
   // New fields for EMD
   hasEmd                       Boolean          @default(false)
   emdAmount                    Float?
@@ -151,8 +160,9 @@ model LOA {
   performanceGuaranteeDocumentUrl String?
   createdAt                    DateTime         @default(now())
   updatedAt                    DateTime         @updatedAt
-  
+
   @@index([siteId])
+  @@index([dueDate])
 }
 
 model Amendment {
@@ -287,16 +297,90 @@ model Tender {
   description     String        @db.Text
   hasEMD          Boolean       @default(false)
   emdAmount       Float?
-  status          TenderStatus  @default(ACTIVE)
+  status          TenderStatus  @default(NOT_STARTED)
   documentUrl     String?       // S3 URL of tender document
+  emds            EMD[]         // EMDs associated with this tender
   tags            String[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
 
 enum TenderStatus {
+  NOT_STARTED               // 1. Not Started
+  IN_PROGRESS               // 2. In Progress
+  SUPPLY_WORK_DELAYED       // 3. Supply/Work Delayed
+  SUPPLY_WORK_COMPLETED     // 4. Supply/Work Completed
+  APPLICATION_PENDING       // 5. Application Pending
+  UPLOAD_BILL               // 6. Upload Bill
+  CHASE_PAYMENT             // 7. Chase Payment
+  RETRIEVE_EMD_SECURITY     // 8. Retrieve EMD/Security
+  CLOSED                    // 9. Closed
+}
+
+// Shipping Address Management
+model ShippingAddress {
+  id        String   @id @default(uuid())
+  label     String   // e.g., "Office", "Warehouse", "Site A"
+  address   String   @db.Text
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Invoice/Billing Management
+model Invoice {
+  id                    String    @id @default(uuid())
+  loa                   LOA       @relation(fields: [loaId], references: [id], onDelete: Cascade)
+  loaId                 String
+  invoiceNumber         String?   // Last Invoice No.
+  invoiceAmount         Float?    // Last Invoice Amount
+  totalReceivables      Float?    // Total Receivables
+  actualAmountReceived  Float?    // Actual Amount Received
+  amountDeducted        Float?    // Amount Deducted
+  amountPending         Float?    // Amount Pending
+  deductionReason       String?   // Reason for deduction
+  billLinks             String?   // Bill Links
+  invoicePdfUrl         String?   // S3 URL of invoice PDF document
+  remarks               String?   @db.Text // Additional remarks
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([loaId])
+}
+
+// EMD (Earnest Money Deposit) Management
+model EMD {
+  id              String      @id @default(uuid())
+  amount          Float
+  paymentMode     String      @default("FDR") // FDR, Bank Guarantee, Cheque, etc.
+  submissionDate  DateTime
+  maturityDate    DateTime
+  bankName        String      @default("IDBI")
+  documentUrl     String?     // S3 URL of FDR/BG document
+  extractedData   Json?       // Store OCR extracted text and AI parsed data
+  status          EMDStatus   @default(ACTIVE)
+
+  // Relations - EMD can be linked to Offer, LOA, or Tender
+  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  offerId         String?
+  loa             LOA?            @relation(fields: [loaId], references: [id], onDelete: SetNull)
+  loaId           String?
+  tender          Tender?         @relation(fields: [tenderId], references: [id], onDelete: SetNull)
+  tenderId        String?
+
+  tags            String[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([offerId])
+  @@index([loaId])
+  @@index([tenderId])
+  @@index([status])
+  @@index([maturityDate])
+}
+
+enum EMDStatus {
   ACTIVE
-  CLOSED
-  CANCELLED
-  AWARDED
+  EXPIRED
+  RELEASED
 }

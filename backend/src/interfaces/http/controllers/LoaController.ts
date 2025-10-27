@@ -1,9 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { LoaService } from '../../../application/services/LOAService';
+import { BulkImportService } from '../../../application/services/BulkImportService';
 import { AppError } from '../../../shared/errors/AppError';
 
 export class LoaController {
-  constructor(private service: LoaService) {}
+  constructor(
+    private service: LoaService,
+    private bulkImportService: BulkImportService
+  ) {}
 
   createLoa = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -52,6 +56,13 @@ export class LoaController {
       const securityDepositAmount = req.body.securityDepositAmount ? Number(req.body.securityDepositAmount) : undefined;
       const performanceGuaranteeAmount = req.body.performanceGuaranteeAmount ? Number(req.body.performanceGuaranteeAmount) : undefined;
 
+      // Parse invoice/billing amount values
+      const invoiceAmount = req.body.invoiceAmount ? Number(req.body.invoiceAmount) : undefined;
+      const totalReceivables = req.body.totalReceivables ? Number(req.body.totalReceivables) : undefined;
+      const actualAmountReceived = req.body.actualAmountReceived ? Number(req.body.actualAmountReceived) : undefined;
+      const amountDeducted = req.body.amountDeducted ? Number(req.body.amountDeducted) : undefined;
+      const amountPending = req.body.amountPending ? Number(req.body.amountPending) : undefined;
+
       const result = await this.service.createLoa({
         loaNumber: req.body.loaNumber,
         loaValue: loaValue,
@@ -68,7 +79,17 @@ export class LoaController {
         securityDepositFile,
         hasPerformanceGuarantee,
         performanceGuaranteeAmount,
-        performanceGuaranteeFile
+        performanceGuaranteeFile,
+        // Billing/Invoice fields
+        invoiceNumber: req.body.invoiceNumber,
+        invoiceAmount,
+        totalReceivables,
+        actualAmountReceived,
+        amountDeducted,
+        amountPending,
+        deductionReason: req.body.deductionReason,
+        billLinks: req.body.billLinks,
+        remarks: req.body.remarks,
       });
 
       if (!result.isSuccess) {
@@ -153,6 +174,13 @@ export class LoaController {
       const securityDepositAmount = req.body.securityDepositAmount ? Number(req.body.securityDepositAmount) : undefined;
       const performanceGuaranteeAmount = req.body.performanceGuaranteeAmount ? Number(req.body.performanceGuaranteeAmount) : undefined;
 
+      // Parse invoice/billing amount values
+      const invoiceAmount = req.body.invoiceAmount ? Number(req.body.invoiceAmount) : undefined;
+      const totalReceivables = req.body.totalReceivables ? Number(req.body.totalReceivables) : undefined;
+      const actualAmountReceived = req.body.actualAmountReceived ? Number(req.body.actualAmountReceived) : undefined;
+      const amountDeducted = req.body.amountDeducted ? Number(req.body.amountDeducted) : undefined;
+      const amountPending = req.body.amountPending ? Number(req.body.amountPending) : undefined;
+
       const result = await this.service.updateLoa(id, {
         loaNumber: req.body.loaNumber,
         loaValue: loaValue,
@@ -169,7 +197,17 @@ export class LoaController {
         securityDepositFile,
         hasPerformanceGuarantee,
         performanceGuaranteeAmount,
-        performanceGuaranteeFile
+        performanceGuaranteeFile,
+        // Billing/Invoice fields
+        invoiceNumber: req.body.invoiceNumber,
+        invoiceAmount,
+        totalReceivables,
+        actualAmountReceived,
+        amountDeducted,
+        amountPending,
+        deductionReason: req.body.deductionReason,
+        billLinks: req.body.billLinks,
+        remarks: req.body.remarks,
       });
 
       if (!result.isSuccess) {
@@ -232,16 +270,18 @@ export class LoaController {
 
   getAllLoas = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { page, limit, search } = req.query;
-      
+      const { page, limit, search, sortBy, sortOrder } = req.query;
+
       const result = await this.service.getAllLoas({
         searchTerm: search as string,
-        ...(page ? { page: parseInt(page as string) } : {}),
-        ...(limit ? { limit: parseInt(limit as string) } : {})
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as 'asc' | 'desc'
       });
 
       if (!result.isSuccess) {
-        const errorMessage = Array.isArray(result.error) 
+        const errorMessage = Array.isArray(result.error)
           ? result.error[0]?.message || 'Failed to fetch LOAs'
           : result.error || 'Failed to fetch LOAs';
         throw new AppError(errorMessage);
@@ -325,21 +365,21 @@ export class LoaController {
   updateStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      
+
       if (!id) {
         res.status(400).json({ message: 'LOA ID is required' });
         return;
       }
 
       const { status, reason } = req.body;
-      
+
       if (!status) {
         res.status(400).json({ message: 'Status is required' });
         return;
       }
 
       console.log(`Updating LOA ${id} status to ${status}`);
-      
+
       const result = await this.service.updateStatus(id, { status, reason });
 
       if (!result.isSuccess) {
@@ -360,6 +400,54 @@ export class LoaController {
         data: result.data
       });
     } catch (error) {
+      next(error);
+    }
+  };
+
+  bulkImport = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Check if file was uploaded
+      if (!req.file) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Excel file is required'
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedMimeTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel', // .xls
+      ];
+
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Only Excel files (.xlsx, .xls) are allowed'
+        });
+        return;
+      }
+
+      console.log(`Processing bulk import from file: ${req.file.originalname}`);
+
+      // Process the bulk import
+      const result = await this.bulkImportService.bulkImport(req.file);
+
+      if (!result.isSuccess) {
+        res.status(500).json({
+          status: 'error',
+          message: result.error || 'Failed to process bulk import'
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: result.data
+      });
+    } catch (error) {
+      console.error('Bulk import error:', error);
       next(error);
     }
   };

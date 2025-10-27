@@ -3,9 +3,10 @@ import { LOAList } from '../components/LOAList';
 import { LOADetail } from '../components/LOADetail';
 import { LOAForm } from '../components/LOAForm';
 import { AmendmentForm } from '../components/AmendmentForm';
+import { BulkImportDialog } from '../components/BulkImportDialog';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent } from '../../../components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 import { LOA, LOAFormData, AmendmentFormData } from '../types/loa';
 import { useToast } from '../../../hooks/use-toast-app';
 import { useLOAs } from '../hooks/use-loas';
@@ -29,12 +30,32 @@ export function LOAsPage() {
 }
 
 function LOAsList() {
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleBulkImportSuccess = () => {
+    // Trigger a refresh of the LOA list by changing the key
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">PO/LOA Management</h1>
+        <Button
+          variant="outline"
+          onClick={() => setBulkImportOpen(true)}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Bulk Import
+        </Button>
       </div>
-      <LOAList />
+      <LOAList key={refreshKey} />
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onSuccess={handleBulkImportSuccess}
+      />
     </div>
   );
 }
@@ -127,23 +148,61 @@ function EditLOA() {
     );
   }
 
+  // Transform LOA data to LOAFormData structure
+  const firstInvoice = loa.invoices && loa.invoices.length > 0 ? loa.invoices[0] : null;
+
+  const initialFormData = {
+    siteId: loa.siteId,
+    loaNumber: loa.loaNumber,
+    loaValue: loa.loaValue,
+    deliveryPeriod: loa.deliveryPeriod,
+    workDescription: loa.workDescription,
+    tags: loa.tags || [],
+    hasEmd: loa.hasEmd,
+    emdAmount: loa.emdAmount,
+    hasSecurityDeposit: loa.hasSecurityDeposit,
+    securityDepositAmount: loa.securityDepositAmount,
+    hasPerformanceGuarantee: loa.hasPerformanceGuarantee,
+    performanceGuaranteeAmount: loa.performanceGuaranteeAmount,
+    // Map invoice fields from the first invoice
+    invoiceNumber: firstInvoice?.invoiceNumber || '',
+    invoiceAmount: firstInvoice?.invoiceAmount || null,
+    totalReceivables: firstInvoice?.totalReceivables || null,
+    actualAmountReceived: firstInvoice?.actualAmountReceived || null,
+    amountDeducted: firstInvoice?.amountDeducted || null,
+    amountPending: firstInvoice?.amountPending || null,
+    deductionReason: firstInvoice?.deductionReason || '',
+    billLinks: firstInvoice?.billLinks || '',
+    remarks: firstInvoice?.remarks || '',
+  };
+
   return (
-    <Card className="space-y-6">
-      <CardContent className="pt-6">
-        <LOAForm
-          initialData={loa}
-          onSubmit={async (data) => {
-          try {
-            await updateLOA(id!, data);
-            navigate(`/loas/${id}`);
-          } catch (error) {
-            console.error('Error updating LOA:', error);
-          }
-        }}
-          onClose={() => navigate(`/loas/${id}`)}
-        />
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" onClick={() => navigate(`/loas/${id}`)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to LOA
+        </Button>
+        <h1 className="text-2xl font-bold">Edit LOA: {loa.loaNumber}</h1>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <LOAForm
+            initialData={initialFormData}
+            onSubmit={async (data) => {
+            try {
+              await updateLOA(id!, data);
+              navigate(`/loas/${id}`);
+            } catch (error) {
+              console.error('Error updating LOA:', error);
+            }
+          }}
+            onClose={() => navigate(`/loas/${id}`)}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

@@ -275,8 +275,29 @@ export class PrismaPurchaseOrderRepository {
     createdById?: string;
     approverId?: string;
     searchTerm?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PurchaseOrder[]> {
-    const { skip, take, status, vendorId, siteId, zoneId, loaId, createdById, approverId, searchTerm } = params;
+    const { skip, take, status, vendorId, siteId, zoneId, loaId, createdById, approverId, searchTerm, sortBy, sortOrder } = params;
+
+    // Determine sort configuration
+    let orderBy: any = { createdAt: 'desc' }; // Default sorting
+
+    if (sortBy && sortOrder) {
+      switch (sortBy) {
+        case 'totalAmount':
+          orderBy = { totalAmount: sortOrder };
+          break;
+        case 'createdAt':
+          orderBy = { createdAt: sortOrder };
+          break;
+        case 'poNumber':
+          orderBy = { poNumber: sortOrder };
+          break;
+        default:
+          orderBy = { createdAt: 'desc' };
+      }
+    }
 
     const prismaResults = await this.prisma.purchaseOrder.findMany({
       skip,
@@ -311,9 +332,7 @@ export class PrismaPurchaseOrderRepository {
         createdBy: true,
         approver: true
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy
     });
 
     return prismaResults.map(result => this.toDomainEntity(result));

@@ -101,7 +101,9 @@ export class PurchaseOrderController {
         loaId,
         createdById,
         approverId,
-        search
+        search,
+        sortBy,
+        sortOrder
       } = req.query;
 
       const purchaseOrders = await this.service.getAllPurchaseOrders({
@@ -110,7 +112,11 @@ export class PurchaseOrderController {
         loaId: loaId as string,
         createdById: createdById as string,
         approverId: approverId as string,
-        searchTerm: search as string
+        searchTerm: search as string,
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as 'asc' | 'desc'
       });
 
       res.json({

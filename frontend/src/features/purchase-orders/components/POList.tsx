@@ -56,14 +56,21 @@ export function POList() {
   const { submitForApproval, markAsCompleted, getPurchaseOrders } = usePurchaseOrders();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Fetch initial data
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const ordersData = await getPurchaseOrders();
-        setOrders(Array.isArray(ordersData) ? ordersData : []);
+        const data = await getPurchaseOrders({
+          page: currentPage,
+          limit: pageSize,
+          sortBy,
+          sortOrder
+        });
+        setOrders(data.purchaseOrders || []);
       } catch (error) {
         console.error("Failed to fetch purchase orders:", error);
         setOrders([]);
@@ -73,15 +80,18 @@ export function POList() {
     };
 
     fetchOrders();
-  }, []);
+  }, [currentPage, pageSize, sortBy, sortOrder]);
 
   // Handle order actions
   const handleSubmitForApproval = async (id: string) => {
     try {
       await submitForApproval(id);
       // Refresh the order list after submission
-      const response = await getPurchaseOrders();
-      setOrders(response);
+      const data = await getPurchaseOrders({
+        page: currentPage,
+        limit: pageSize
+      });
+      setOrders(data.purchaseOrders || []);
     } catch (error) {
       console.error("Failed to submit order for approval:", error);
     }
@@ -91,8 +101,11 @@ export function POList() {
     try {
       await markAsCompleted(id);
       // Refresh the order list after completion
-      const response = await getPurchaseOrders();
-      setOrders(response);
+      const data = await getPurchaseOrders({
+        page: currentPage,
+        limit: pageSize
+      });
+      setOrders(data.purchaseOrders || []);
     } catch (error) {
       console.error("Failed to mark order as completed:", error);
     }
@@ -132,8 +145,15 @@ export function POList() {
 
   const columns = [
     {
+      header: "Sr. No.",
+      accessor: (_row: PurchaseOrder, index?: number) => {
+        // Calculate serial number based on current page and position
+        return startIndex + (index || 0) + 1;
+      },
+    },
+    {
       header: "PO Number",
-      accessor: (row: PurchaseOrder) => `PO-${row.id.slice(0, 8).toUpperCase()}`,
+      accessor: (row: PurchaseOrder) => row.poNumber || `PO-${row.id.slice(0, 8).toUpperCase()}`,
     },
     {
       header: "Site",
@@ -253,7 +273,7 @@ export function POList() {
     <div className="space-y-6">
       {/* Filters Section */}
       <Card>
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-4 p-4">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 p-4">
             <div className="col-span-2">
               <Input
                 placeholder="Search orders..."
@@ -277,13 +297,35 @@ export function POList() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="col-span-1">
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={(value) => {
+                  const [field, order] = value.split('-');
+                  setSortBy(field);
+                  setSortOrder(order as 'asc' | 'desc');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
+                  <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
+                  <SelectItem value="totalAmount-desc">Amount (High to Low)</SelectItem>
+                  <SelectItem value="totalAmount-asc">Amount (Low to High)</SelectItem>
+                  <SelectItem value="poNumber-asc">PO Number (A-Z)</SelectItem>
+                  <SelectItem value="poNumber-desc">PO Number (Z-A)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="col-span-2 flex justify-end">
               <Button onClick={() => navigate('/purchase-orders/new')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create New Order
               </Button>
-              {/* <Button 
-                variant="outline" 
+              {/* <Button
+                variant="outline"
                 className="w-full"
                 onClick={handleExportExcel}
               >

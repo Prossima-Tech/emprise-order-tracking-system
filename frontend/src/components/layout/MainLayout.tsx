@@ -12,7 +12,7 @@ export const MainLayout = () => {
       <Header collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className="flex-1 flex">
         <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-        <main className="flex-1 overflow-auto bg-gray-50">
+        <main className="flex-1 overflow-auto bg-background">
           <div className="container mx-auto p-6">
             <Outlet />
           </div>

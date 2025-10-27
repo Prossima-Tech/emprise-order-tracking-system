@@ -7,14 +7,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { User, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, LogOut, ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useTheme } from '../../context/ThemeProvider';
 import empriseLogo from '../../assets/empriseLogo.png';
 
 export const Header = ({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (value: boolean) => void }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -39,11 +41,19 @@ export const Header = ({ collapsed, setCollapsed }: { collapsed: boolean; setCol
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Add search functionality if needed */}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative rounded-full hover:bg-accent hover:text-accent-foreground focus:ring-2 focus:ring-offset-2 focus:ring-primary p-2"
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="relative rounded-full hover:bg-accent hover:text-accent-foreground focus:ring-2 focus:ring-offset-2 focus:ring-primary p-2"
               >
                 <User className="h-5 w-5" />

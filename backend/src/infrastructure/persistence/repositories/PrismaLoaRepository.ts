@@ -9,6 +9,7 @@ export class PrismaLoaRepository {
   private mapPrismaLoaToLoa(prismaLoa: PrismaLOA & {
     amendments: PrismaAmendment[];
     purchaseOrders: any[]; // Replace 'any' with your PO type
+    invoices?: any[];
     site?: any;
   }): LOA {
     // Don't parse the deliveryPeriod as it's already an object
@@ -20,7 +21,7 @@ export class PrismaLoaRepository {
         start: new Date((prismaLoa.deliveryPeriod as any).start),
         end: new Date((prismaLoa.deliveryPeriod as any).end)
       } : { start: new Date(), end: new Date() },
-      status: prismaLoa.status || 'DRAFT', // Ensure status is always set
+      status: prismaLoa.status || 'NOT_STARTED', // Ensure status is always set
       workDescription: prismaLoa.workDescription,
       documentUrl: prismaLoa.documentUrl,
       tags: prismaLoa.tags,
@@ -33,6 +34,7 @@ export class PrismaLoaRepository {
         updatedAt: amendment.updatedAt,
         loaId: amendment.loaId
       })),
+      invoices: prismaLoa.invoices || [],
       site: {
         id: prismaLoa.site.id,
         name: prismaLoa.site.name,
@@ -199,6 +201,7 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
+        invoices: true,
         site: true
       }
     });
@@ -225,7 +228,31 @@ export class PrismaLoaRepository {
     searchTerm?: string;
     siteId?: string;
     zoneId?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<LOA[]> {
+    // Determine sort configuration
+    let orderBy: any = { createdAt: 'desc' }; // Default sorting
+
+    if (params.sortBy && params.sortOrder) {
+      switch (params.sortBy) {
+        case 'loaValue':
+          orderBy = { loaValue: params.sortOrder };
+          break;
+        case 'deliveryStartDate':
+          orderBy = { deliveryPeriod: { start: params.sortOrder } };
+          break;
+        case 'deliveryEndDate':
+          orderBy = { deliveryPeriod: { end: params.sortOrder } };
+          break;
+        case 'createdAt':
+          orderBy = { createdAt: params.sortOrder };
+          break;
+        default:
+          orderBy = { createdAt: 'desc' };
+      }
+    }
+
     const prismaLoas = await this.prisma.lOA.findMany({
       skip: params.skip,
       take: params.take,
@@ -251,11 +278,10 @@ export class PrismaLoaRepository {
       include: {
         amendments: true,
         purchaseOrders: true,
+        invoices: true,
         site: true
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy
     });
 
     return prismaLoas.map(this.mapPrismaLoaToLoa.bind(this));
@@ -363,5 +389,97 @@ export class PrismaLoaRepository {
     });
 
     return prismaAmendment ? this.mapPrismaAmendmentToAmendment(prismaAmendment) : null;
+  }
+
+  /**
+   * Create an invoice record for an LOA
+   */
+  async createInvoice(data: {
+    loaId: string;
+    invoiceNumber?: string;
+    invoiceAmount?: number;
+    totalReceivables?: number;
+    actualAmountReceived?: number;
+    amountDeducted?: number;
+    amountPending?: number;
+    deductionReason?: string;
+    billLinks?: string;
+    invoicePdfUrl?: string;
+    remarks?: string;
+  }): Promise<any> {
+    try {
+      const invoice = await this.prisma.invoice.create({
+        data: {
+          loaId: data.loaId,
+          invoiceNumber: data.invoiceNumber,
+          invoiceAmount: data.invoiceAmount,
+          totalReceivables: data.totalReceivables,
+          actualAmountReceived: data.actualAmountReceived,
+          amountDeducted: data.amountDeducted,
+          amountPending: data.amountPending,
+          deductionReason: data.deductionReason,
+          billLinks: data.billLinks,
+          invoicePdfUrl: data.invoicePdfUrl,
+          remarks: data.remarks,
+        }
+      });
+      return invoice;
+    } catch (error) {
+      console.error('PrismaLoaRepository createInvoice error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Find invoice by LOA ID
+   */
+  async findInvoiceByLoaId(loaId: string): Promise<any | null> {
+    try {
+      const invoice = await this.prisma.invoice.findFirst({
+        where: { loaId }
+      });
+      return invoice;
+    } catch (error) {
+      console.error('PrismaLoaRepository findInvoiceByLoaId error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing invoice record
+   */
+  async updateInvoice(id: string, data: {
+    invoiceNumber?: string;
+    invoiceAmount?: number;
+    totalReceivables?: number;
+    actualAmountReceived?: number;
+    amountDeducted?: number;
+    amountPending?: number;
+    deductionReason?: string;
+    billLinks?: string;
+    invoicePdfUrl?: string;
+    remarks?: string;
+  }): Promise<any> {
+    try {
+      const invoice = await this.prisma.invoice.update({
+        where: { id },
+        data: {
+          invoiceNumber: data.invoiceNumber,
+          invoiceAmount: data.invoiceAmount,
+          totalReceivables: data.totalReceivables,
+          actualAmountReceived: data.actualAmountReceived,
+          amountDeducted: data.amountDeducted,
+          amountPending: data.amountPending,
+          deductionReason: data.deductionReason,
+          billLinks: data.billLinks,
+          invoicePdfUrl: data.invoicePdfUrl,
+          remarks: data.remarks,
+        }
+      });
+      return invoice;
+    } catch (error) {
+      console.error('PrismaLoaRepository updateInvoice error:', error);
+      throw error;
+    }
   }
 }

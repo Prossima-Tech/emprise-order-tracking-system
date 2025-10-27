@@ -12,10 +12,10 @@ import { format } from 'date-fns';
 import { LoadingSpinner } from '../../../components/feedback/LoadingSpinner';
 import { extractFDRData } from './fdr-extracter';
 import { parseISO } from 'date-fns';
-import { useOffers } from '../../budgetary-offers/hooks/use-offers';
+import { useTenders } from '../../tenders/hooks/use-tenders';
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
-import { Offer } from '../../budgetary-offers/types/Offer';
+import { Tender } from '../../tenders/types/tender';
 
 interface EMDFormProps {
   initialData?: Partial<EMDFormData>;
@@ -26,33 +26,34 @@ interface EMDFormProps {
 export function EMDForm({ initialData, onSubmit, onCancel }: EMDFormProps) {
   const [extracting, setExtracting] = useState(false);
   const [extractionError, setExtractionError] = useState<string | null>(null);
-  const [openOfferSelect, setOpenOfferSelect] = useState(false);
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [loadingOffers, setLoadingOffers] = useState(false);
-  const { getOffers } = useOffers();
+  const [openTenderSelect, setOpenTenderSelect] = useState(false);
+  const [tenders, setTenders] = useState<Tender[]>([]);
+  const [loadingTenders, setLoadingTenders] = useState(false);
+  const { getAllTenders } = useTenders();
   const [newTag, setNewTag] = useState('');
-  
-  // Fetch offers when component mounts
+
+  // Fetch tenders when component mounts
   useEffect(() => {
-    const fetchOffers = async () => {
+    const fetchTenders = async () => {
       try {
-        setLoadingOffers(true);
-        const fetchedOffers = await getOffers();
-        // Ensure we have an array of offers and filter out those with EMDs
-        const availableOffers = Array.isArray(fetchedOffers) 
-          ? fetchedOffers
+        setLoadingTenders(true);
+        const fetchedTenders = await getAllTenders();
+        // Ensure we have an array of tenders
+        const availableTenders = Array.isArray(fetchedTenders)
+          ? fetchedTenders.filter(t => t.hasEMD) // Only show tenders that require EMD
           : [];
-        setOffers(availableOffers);
+        setTenders(availableTenders);
       } catch (error) {
-        console.error('Error fetching offers:', error);
-        setOffers([]); // Set empty array on error
+        console.error('Error fetching tenders:', error);
+        setTenders([]); // Set empty array on error
       } finally {
-        setLoadingOffers(false);
+        setLoadingTenders(false);
       }
     };
 
-    fetchOffers();
-  }, [getOffers]);
+    fetchTenders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const form = useForm<EMDFormData>({
     schema: emdSchema,
@@ -61,7 +62,7 @@ export function EMDForm({ initialData, onSubmit, onCancel }: EMDFormProps) {
       submissionDate: initialData?.submissionDate || new Date(),
       maturityDate: initialData?.maturityDate || new Date(),
       bankName: 'IDBI',
-      offerId: initialData?.offerId,
+      tenderId: initialData?.tenderId,
       tags: initialData?.tags || ['FDR'],
     },
   });
@@ -252,86 +253,92 @@ export function EMDForm({ initialData, onSubmit, onCancel }: EMDFormProps) {
           )}
         />
 
-        {/* Offer Selection Field */}
+        {/* Tender Selection Field */}
         <FormField
           control={form.control}
-          name="offerId"
+          name="tenderId"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Associated Offer</FormLabel>
-              <Popover 
-                open={openOfferSelect} 
-                onOpenChange={setOpenOfferSelect}
+              <FormLabel>Associated Tender (Optional)</FormLabel>
+              <Popover
+                open={openTenderSelect}
+                onOpenChange={setOpenTenderSelect}
               >
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
                       variant="outline"
                       role="combobox"
-                      aria-expanded={openOfferSelect}
+                      aria-expanded={openTenderSelect}
                       className={cn(
                         "w-full justify-between",
                         !field.value && "text-muted-foreground"
                       )}
-                      disabled={loadingOffers}
+                      disabled={loadingTenders}
                     >
-                      {loadingOffers ? (
-                        "Loading offers..."
+                      {loadingTenders ? (
+                        "Loading tenders..."
                       ) : field.value ? (
-                        offers.find((offer) => offer.id === field.value)?.subject || "Select an offer"
+                        tenders.find((tender) => tender.id === field.value)?.tenderNumber || "Select a tender"
                       ) : (
-                        "Select an offer"
+                        "Select a tender"
                       )}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                {openOfferSelect && (
+                {openTenderSelect && (
                   <PopoverContent className="w-[400px] p-0" align="start">
                     <div className="w-full">
                       <div className="border-b px-3 py-2">
                         <input
                           className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
-                          placeholder="Search offers..."
+                          placeholder="Search tenders..."
                           onChange={(e) => {
                             const searchTerm = e.target.value.toLowerCase();
-                            setOffers(offers.filter(offer => offer.subject.toLowerCase().includes(searchTerm)));
+                            setTenders(tenders.filter(tender =>
+                              tender.tenderNumber.toLowerCase().includes(searchTerm) ||
+                              tender.description.toLowerCase().includes(searchTerm)
+                            ));
                           }}
                         />
                       </div>
                       <div className="max-h-[300px] overflow-auto">
-                        {loadingOffers ? (
+                        {loadingTenders ? (
                           <div className="p-4 text-center text-sm text-muted-foreground">
-                            Loading offers...
+                            Loading tenders...
                           </div>
-                        ) : offers.length === 0 ? (
+                        ) : tenders.length === 0 ? (
                           <div className="p-4 text-center text-sm text-muted-foreground">
-                            No offers available
+                            No tenders with EMD requirement available
                           </div>
                         ) : (
-                          offers.map((offer) => (
+                          tenders.map((tender) => (
                             <div
-                              key={offer.id}
+                              key={tender.id}
                               className={cn(
                                 "flex items-center px-3 py-2 cursor-pointer hover:bg-secondary",
-                                field.value === offer.id && "bg-secondary"
+                                field.value === tender.id && "bg-secondary"
                               )}
                               onClick={() => {
-                                form.setValue("offerId", offer.id);
-                                setOpenOfferSelect(false);
+                                form.setValue("tenderId", tender.id);
+                                setOpenTenderSelect(false);
                               }}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  field.value === offer.id
+                                  field.value === tender.id
                                     ? "opacity-100"
                                     : "opacity-0"
                                 )}
                               />
                               <div>
-                                <div className="text-sm">
-                                 {offer.subject}
+                                <div className="text-sm font-medium">
+                                  {tender.tenderNumber}
+                                </div>
+                                <div className="text-xs text-muted-foreground line-clamp-1">
+                                  {tender.description}
                                 </div>
                               </div>
                             </div>

@@ -86,7 +86,7 @@ export class LoaService {
                 return ResultUtils.fail(documentUrls.errorMessage || 'Failed to process document files');
             }
 
-            // Step 5: Create LOA record
+            // Step 5: Create LOA record with optional invoice
             const loa = await this.repository.create({
                 loaNumber: dto.loaNumber,
                 loaValue: dto.loaValue,
@@ -108,6 +108,33 @@ export class LoaService {
                 performanceGuaranteeDocumentUrl: documentUrls.performanceGuaranteeDocumentUrl
             });
 
+            // Step 6: Create Invoice record if billing data exists
+            const hasBillingData = dto.invoiceNumber ||
+                                   dto.invoiceAmount ||
+                                   dto.totalReceivables ||
+                                   dto.actualAmountReceived ||
+                                   dto.amountDeducted ||
+                                   dto.amountPending ||
+                                   dto.deductionReason ||
+                                   dto.billLinks ||
+                                   dto.remarks;
+
+            if (hasBillingData) {
+                await this.repository.createInvoice({
+                    loaId: loa.id,
+                    invoiceNumber: dto.invoiceNumber,
+                    invoiceAmount: dto.invoiceAmount,
+                    totalReceivables: dto.totalReceivables,
+                    actualAmountReceived: dto.actualAmountReceived,
+                    amountDeducted: dto.amountDeducted,
+                    amountPending: dto.amountPending,
+                    deductionReason: dto.deductionReason,
+                    billLinks: dto.billLinks,
+                    invoicePdfUrl: documentUrls.invoicePdfUrl,
+                    remarks: dto.remarks,
+                });
+            }
+
             return ResultUtils.ok(loa);
         } catch (error) {
             console.error('LOA Creation Error:', error);
@@ -123,6 +150,7 @@ export class LoaService {
         documentUrl?: string;
         securityDepositDocumentUrl?: string;
         performanceGuaranteeDocumentUrl?: string;
+        invoicePdfUrl?: string;
         errorMessage?: string;
     }> {
         try {
@@ -130,6 +158,7 @@ export class LoaService {
             let documentUrl = '';
             let securityDepositDocumentUrl = '';
             let performanceGuaranteeDocumentUrl = '';
+            let invoicePdfUrl = '';
 
             // Process main LOA document
             if (dto.documentFile) {
@@ -137,9 +166,9 @@ export class LoaService {
                     documentUrl = await this.processDocument(dto.documentFile);
                 } catch (error) {
                     console.error('Error processing LOA document file:', error);
-                    return { 
-                        success: false, 
-                        errorMessage: 'Failed to process LOA document file' 
+                    return {
+                        success: false,
+                        errorMessage: 'Failed to process LOA document file'
                     };
                 }
             }
@@ -150,9 +179,9 @@ export class LoaService {
                     securityDepositDocumentUrl = await this.processDocument(dto.securityDepositFile);
                 } catch (error) {
                     console.error('Error processing security deposit file:', error);
-                    return { 
-                        success: false, 
-                        errorMessage: 'Failed to process security deposit file' 
+                    return {
+                        success: false,
+                        errorMessage: 'Failed to process security deposit file'
                     };
                 }
             }
@@ -163,9 +192,22 @@ export class LoaService {
                     performanceGuaranteeDocumentUrl = await this.processDocument(dto.performanceGuaranteeFile);
                 } catch (error) {
                     console.error('Error processing performance guarantee file:', error);
-                    return { 
-                        success: false, 
-                        errorMessage: 'Failed to process performance guarantee file' 
+                    return {
+                        success: false,
+                        errorMessage: 'Failed to process performance guarantee file'
+                    };
+                }
+            }
+
+            // Process invoice PDF (if applicable)
+            if (dto.invoicePdfFile) {
+                try {
+                    invoicePdfUrl = await this.processDocument(dto.invoicePdfFile);
+                } catch (error) {
+                    console.error('Error processing invoice PDF file:', error);
+                    return {
+                        success: false,
+                        errorMessage: 'Failed to process invoice PDF file'
                     };
                 }
             }
@@ -174,7 +216,8 @@ export class LoaService {
                 success: true,
                 documentUrl,
                 securityDepositDocumentUrl,
-                performanceGuaranteeDocumentUrl
+                performanceGuaranteeDocumentUrl,
+                invoicePdfUrl
             };
         } catch (error) {
             console.error('Document processing error:', error);
@@ -204,6 +247,7 @@ export class LoaService {
             let documentUrl = existingLoa.documentUrl;
             let securityDepositDocumentUrl = existingLoa.securityDepositDocumentUrl;
             let performanceGuaranteeDocumentUrl = existingLoa.performanceGuaranteeDocumentUrl;
+            let invoicePdfUrl: string | undefined;
 
             if (dto.documentFile) {
                 try {
@@ -229,6 +273,15 @@ export class LoaService {
                 } catch (error) {
                     console.error('Error processing performance guarantee file:', error);
                     return ResultUtils.fail('Failed to process performance guarantee file');
+                }
+            }
+
+            if (dto.invoicePdfFile) {
+                try {
+                    invoicePdfUrl = await this.processDocument(dto.invoicePdfFile);
+                } catch (error) {
+                    console.error('Error processing invoice PDF file:', error);
+                    return ResultUtils.fail('Failed to process invoice PDF file');
                 }
             }
 
@@ -272,6 +325,53 @@ export class LoaService {
 
             // Update the LOA
             const updatedLoa = await this.repository.update(id, updateData);
+
+            // Handle invoice update/creation
+            const hasBillingData = dto.invoiceNumber ||
+                                   dto.invoiceAmount ||
+                                   dto.totalReceivables ||
+                                   dto.actualAmountReceived ||
+                                   dto.amountDeducted ||
+                                   dto.amountPending ||
+                                   dto.deductionReason ||
+                                   dto.billLinks ||
+                                   dto.remarks;
+
+            if (hasBillingData) {
+                // Check if invoice already exists for this LOA
+                const existingInvoice = await this.repository.findInvoiceByLoaId(id);
+
+                if (existingInvoice) {
+                    // Update existing invoice
+                    await this.repository.updateInvoice(existingInvoice.id, {
+                        invoiceNumber: dto.invoiceNumber,
+                        invoiceAmount: dto.invoiceAmount,
+                        totalReceivables: dto.totalReceivables,
+                        actualAmountReceived: dto.actualAmountReceived,
+                        amountDeducted: dto.amountDeducted,
+                        amountPending: dto.amountPending,
+                        deductionReason: dto.deductionReason,
+                        billLinks: dto.billLinks,
+                        invoicePdfUrl: invoicePdfUrl || existingInvoice.invoicePdfUrl,
+                        remarks: dto.remarks,
+                    });
+                } else {
+                    // Create new invoice
+                    await this.repository.createInvoice({
+                        loaId: id,
+                        invoiceNumber: dto.invoiceNumber,
+                        invoiceAmount: dto.invoiceAmount,
+                        totalReceivables: dto.totalReceivables,
+                        actualAmountReceived: dto.actualAmountReceived,
+                        amountDeducted: dto.amountDeducted,
+                        amountPending: dto.amountPending,
+                        deductionReason: dto.deductionReason,
+                        billLinks: dto.billLinks,
+                        invoicePdfUrl,
+                        remarks: dto.remarks,
+                    });
+                }
+            }
 
             return ResultUtils.ok(updatedLoa);
         } catch (error) {
@@ -343,20 +443,38 @@ export class LoaService {
 
     async getAllLoas(params: {
         searchTerm?: string;
-    }): Promise<Result<{ loas: any[]; total: number }>> {
+        page?: number;
+        limit?: number;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    }): Promise<Result<{ loas: any[]; total: number; page: number; limit: number; totalPages: number }>> {
         try {
+            // Default pagination values
+            const page = params.page || 1;
+            const limit = params.limit || 10;
+            const skip = (page - 1) * limit;
+
             const [loas, total] = await Promise.all([
                 this.repository.findAll({
-                    searchTerm: params.searchTerm
+                    searchTerm: params.searchTerm,
+                    skip,
+                    take: limit,
+                    sortBy: params.sortBy,
+                    sortOrder: params.sortOrder
                 }),
                 this.repository.count({
                     searchTerm: params.searchTerm
                 })
             ]);
 
+            const totalPages = Math.ceil(total / limit);
+
             return ResultUtils.ok({
                 loas,
-                total
+                total,
+                page,
+                limit,
+                totalPages
             });
         } catch (error) {
             console.error('LOAs Fetch Error:', error);

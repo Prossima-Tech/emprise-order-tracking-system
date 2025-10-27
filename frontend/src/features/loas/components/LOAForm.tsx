@@ -62,6 +62,7 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
         start: initialData?.deliveryPeriod?.start ? new Date(initialData.deliveryPeriod.start) : new Date(),
         end: initialData?.deliveryPeriod?.end ? new Date(initialData.deliveryPeriod.end) : new Date(),
       },
+      dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : null,
       workDescription: initialData?.workDescription || '',
       tags: initialData?.tags || [],
       hasEmd: initialData?.hasEmd || false,
@@ -70,6 +71,21 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       securityDepositAmount: initialData?.securityDepositAmount || null,
       hasPerformanceGuarantee: initialData?.hasPerformanceGuarantee || false,
       performanceGuaranteeAmount: initialData?.performanceGuaranteeAmount || null,
+      // Warranty fields
+      warrantyPeriodMonths: initialData?.warrantyPeriodMonths || null,
+      warrantyPeriodYears: initialData?.warrantyPeriodYears || null,
+      warrantyStartDate: initialData?.warrantyStartDate ? new Date(initialData.warrantyStartDate) : null,
+      warrantyEndDate: initialData?.warrantyEndDate ? new Date(initialData.warrantyEndDate) : null,
+      // Billing fields
+      invoiceNumber: initialData?.invoiceNumber || '',
+      invoiceAmount: initialData?.invoiceAmount || null,
+      totalReceivables: initialData?.totalReceivables || null,
+      actualAmountReceived: initialData?.actualAmountReceived || null,
+      amountDeducted: initialData?.amountDeducted || null,
+      amountPending: initialData?.amountPending || null,
+      deductionReason: initialData?.deductionReason || '',
+      billLinks: initialData?.billLinks || '',
+      remarks: initialData?.remarks || '',
     },
   });
   // Fetch available sites on component mount
@@ -94,6 +110,7 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
   const hasEmd = form.watch("hasEmd");
   const hasSecurityDeposit = form.watch("hasSecurityDeposit");
   const hasPerformanceGuarantee = form.watch("hasPerformanceGuarantee");
+  const amountDeducted = form.watch("amountDeducted");
 
   const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
@@ -323,6 +340,52 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
             )}
           />
         </div>
+
+        {/* Due Date */}
+        <FormField
+          control={form.control}
+          name="dueDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Due Date (Optional)</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick due date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Target completion date for this LOA
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Work Description */}
         <FormField
@@ -588,6 +651,350 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
               />
             </>
           )}
+        </div>
+
+        {/* Warranty Period Section */}
+        <div className="space-y-4 border p-4 rounded-md">
+          <h3 className="text-lg font-semibold">Warranty Period</h3>
+          <p className="text-sm text-muted-foreground">Optional warranty period information for this LOA</p>
+
+          {/* Warranty Period - Months and Years */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="warrantyPeriodMonths"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Warranty Period (Months)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="e.g., 6"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Number of months for warranty
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="warrantyPeriodYears"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Warranty Period (Years)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="e.g., 2"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Number of years for warranty
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Warranty Start and End Dates */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="warrantyStartDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Warranty Start Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick start date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value || undefined}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormDescription>
+                    When warranty period starts
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="warrantyEndDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Warranty End Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick end date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value || undefined}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormDescription>
+                    When warranty period ends
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Billing Information Section */}
+        <div className="space-y-4 border p-4 rounded-md">
+          <h3 className="text-lg font-semibold">Billing Information</h3>
+          <p className="text-sm text-muted-foreground">Optional billing and invoice details for this LOA</p>
+
+          {/* Invoice Number */}
+          <FormField
+            control={form.control}
+            name="invoiceNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Invoice Number</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g., EM-22-23-E-1317"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Financial Fields - 2 column grid */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="invoiceAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Invoice Amount (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="totalReceivables"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Total Receivables (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="actualAmountReceived"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Actual Amount Received (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="amountPending"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount Pending (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Amount Deducted */}
+          <FormField
+            control={form.control}
+            name="amountDeducted"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amount Deducted (₹)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                  />
+                </FormControl>
+                <FormDescription>
+                  If there was any deduction from the invoice amount
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Deduction Reason - shown only if amountDeducted > 0 */}
+          {amountDeducted && amountDeducted > 0 && (
+            <FormField
+              control={form.control}
+              name="deductionReason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Reason for Deduction</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter reason for deduction"
+                      className="min-h-[60px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* Invoice PDF Upload */}
+          <FormField
+            control={form.control}
+            name="invoicePdfFile"
+            render={({ field: { value, onChange, ...field } }) => (
+              <FormItem>
+                <FormLabel>Invoice PDF Document</FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => onChange(e.target.files?.[0])}
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Upload invoice PDF document (PDF format only)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Remarks */}
+          <FormField
+            control={form.control}
+            name="remarks"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Remarks</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Additional notes or comments"
+                    className="min-h-[80px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         {/* Form Actions */}

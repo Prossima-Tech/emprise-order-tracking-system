@@ -1,13 +1,14 @@
-import { 
-    LayoutDashboard, 
-    FileText, 
-    FileCheck, 
-    ShoppingCart, 
-    Package, 
+import {
+    LayoutDashboard,
+    FileText,
+    FileCheck,
+    ShoppingCart,
+    Package,
     Users,
     Building,
     UserCircle,
-    ClipboardCheck
+    ClipboardCheck,
+    Wallet
   } from 'lucide-react';
 import { ROUTES } from './routes';
 
@@ -41,6 +42,12 @@ export const MENU_ITEMS = [
     title: 'Tender Management',
     path: ROUTES.TENDERS,
     icon: ClipboardCheck,
+    section: 'main'
+  },
+  {
+    title: 'EMD Management',
+    path: ROUTES.EMDS,
+    icon: Wallet,
     section: 'main'
   },
   {
