@@ -21,10 +21,13 @@ export class PrismaLoaRepository {
         start: new Date((prismaLoa.deliveryPeriod as any).start),
         end: new Date((prismaLoa.deliveryPeriod as any).end)
       } : { start: new Date(), end: new Date() },
+      dueDate: prismaLoa.dueDate || undefined,
+      orderReceivedDate: prismaLoa.orderReceivedDate || undefined,
       status: (prismaLoa.status || 'NOT_STARTED') as any, // Ensure status is always set
       workDescription: prismaLoa.workDescription,
       documentUrl: prismaLoa.documentUrl,
       tags: prismaLoa.tags,
+      remarks2: prismaLoa.remarks2 || undefined,
       amendments: prismaLoa.amendments.map(amendment => ({
         id: amendment.id,
         amendmentNumber: amendment.amendmentNumber,

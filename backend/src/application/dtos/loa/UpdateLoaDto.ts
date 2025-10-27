@@ -4,10 +4,13 @@ export interface UpdateLoaDto {
     loaNumber?: string;
     loaValue?: number;
     deliveryPeriod?: DeliveryPeriod;
+    dueDate?: string;
+    orderReceivedDate?: string;
     workDescription?: string;
     documentFile?: Express.Multer.File;
     tags?: string[];
     siteId?: string;
+    remarks2?: string;
     // New fields for EMD
     hasEmd?: boolean;
     emdAmount?: number;

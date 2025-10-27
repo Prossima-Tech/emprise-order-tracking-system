@@ -63,8 +63,10 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
         end: initialData?.deliveryPeriod?.end ? new Date(initialData.deliveryPeriod.end) : new Date(),
       },
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : null,
+      orderReceivedDate: initialData?.orderReceivedDate ? new Date(initialData.orderReceivedDate) : null,
       workDescription: initialData?.workDescription || '',
       tags: initialData?.tags || [],
+      remarks2: initialData?.remarks2 || '',
       hasEmd: initialData?.hasEmd || false,
       emdAmount: initialData?.emdAmount || null,
       hasSecurityDeposit: initialData?.hasSecurityDeposit || false,
@@ -228,6 +230,52 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
               <FormControl>
                 <Input placeholder="Enter LOA number" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Order Received Date */}
+        <FormField
+          control={form.control}
+          name="orderReceivedDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Order Received Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick order received date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Date when this order/LOA was received
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -991,6 +1039,28 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Remarks2 */}
+          <FormField
+            control={form.control}
+            name="remarks2"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Additional Remarks (Remarks2)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Additional remarks or notes"
+                    className="min-h-[80px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Secondary remarks field for additional information
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

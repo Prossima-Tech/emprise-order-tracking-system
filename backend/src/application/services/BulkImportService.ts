@@ -384,10 +384,12 @@ export class BulkImportService {
                   end: deliveryPeriodEnd.toISOString()
                 },
                 dueDate: row.orderDueDate || null, // Add due date from Excel
+                orderReceivedDate: row.orderReceivedDate || null, // Add order received date from Excel
                 workDescription: row.workDescription,
                 documentUrl: 'pending', // Will be updated later if document is uploaded
                 status: status,
                 tags: [],
+                remarks2: row.remarks || null, // Map remarks from Excel to remarks2
                 hasEmd: !!row.emd,
                 emdAmount: row.emd,
                 hasSecurityDeposit: !!row.securityDeposit,

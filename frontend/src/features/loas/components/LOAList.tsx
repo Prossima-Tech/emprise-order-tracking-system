@@ -154,39 +154,34 @@ export function LOAList() {
     }
   };
 
+  // Helper function to calculate days till due date
+  const calculateDaysTillDueDate = (dueDate?: string | null) => {
+    if (!dueDate) return '-';
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return <span className="text-red-600 font-semibold">Overdue ({Math.abs(diffDays)} days)</span>;
+    } else if (diffDays === 0) {
+      return <span className="text-orange-600 font-semibold">Due Today</span>;
+    } else if (diffDays <= 7) {
+      return <span className="text-yellow-600 font-semibold">{diffDays} days</span>;
+    } else {
+      return <span className="text-green-600">{diffDays} days</span>;
+    }
+  };
+
   const columns = useMemo<Column<LOA>[]>(() => [
     {
       header: "Sr. No.",
       accessor: (_row: LOA, index?: number) => {
-        // Calculate serial number based on current page and position
         return (currentPage - 1) * pageSize + (index || 0) + 1;
       },
     },
     {
-      header: "LOA Number",
-      accessor: "loaNumber",
-    },
-    {
-      header: "Site",
-      accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          <span>{row.site?.name}</span>
-          <span className="text-sm text-muted-foreground">
-            {row.site?.location}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Value",
-      accessor: (row: LOA) =>
-        new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-        }).format(row.loaValue),
-    },
-    {
-      header: "Status",
+      header: "Order Status",
       accessor: (row: LOA) => (
         <Badge className={cn("px-2 py-1", getStatusBadgeStyle(row.status))}>
           {getStatusDisplayText(row.status)}
@@ -194,49 +189,126 @@ export function LOAList() {
       ),
     },
     {
-      header: "Delivery Period",
+      header: "Days to Due Date",
+      accessor: (row: LOA) => calculateDaysTillDueDate(row.dueDate),
+    },
+    {
+      header: "Delivery Date",
+      accessor: (row: LOA) => format(new Date(row.deliveryPeriod.end), "PP"),
+    },
+    {
+      header: "Order Due Date",
+      accessor: (row: LOA) => row.dueDate ? format(new Date(row.dueDate), "PP") : "-",
+    },
+    {
+      header: "Order Received Date",
+      accessor: (row: LOA) => row.orderReceivedDate ? format(new Date(row.orderReceivedDate), "PP") : "-",
+    },
+    {
+      header: "Order Value",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.loaValue),
+    },
+    {
+      header: "PO/LOA Number",
+      accessor: "loaNumber",
+    },
+    {
+      header: "Site",
+      accessor: (row: LOA) => row.site?.name || "-",
+    },
+    {
+      header: "Description of Work",
       accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          <span>{format(new Date(row.deliveryPeriod.start), "PP")}</span>
-          <span className="text-muted-foreground">
-            to {format(new Date(row.deliveryPeriod.end), "PP")}
-          </span>
-          {isAfter(new Date(), new Date(row.deliveryPeriod.end)) && (
-            <span className="text-red-500 text-sm">Overdue</span>
-          )}
+        <div className="max-w-xs truncate" title={row.workDescription}>
+          {row.workDescription}
         </div>
       ),
     },
     {
-      header: "Due Date",
+      header: "EMD",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.emdAmount || 0),
+    },
+    {
+      header: "Security Deposit",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.securityDepositAmount || 0),
+    },
+    {
+      header: "Remarks2",
       accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          {row.dueDate ? (
-            <>
-              <span>{format(new Date(row.dueDate), "PP")}</span>
-              {isAfter(new Date(), new Date(row.dueDate)) && (
-                <span className="text-red-500 text-sm">Overdue</span>
-              )}
-            </>
-          ) : (
-            <span className="text-muted-foreground text-sm">-</span>
-          )}
+        <div className="max-w-xs truncate" title={row.remarks2 || undefined}>
+          {row.remarks2 || "-"}
         </div>
       ),
     },
     {
-      header: "Amendments",
+      header: "Last Invoice No.",
+      accessor: (row: LOA) => row.invoices?.[0]?.invoiceNumber || "-",
+    },
+    {
+      header: "Last Invoice Amount",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.invoiceAmount || 0),
+    },
+    {
+      header: "Total Receivables",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.totalReceivables || 0),
+    },
+    {
+      header: "Actual Amount Received",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.actualAmountReceived || 0),
+    },
+    {
+      header: "Amount Deducted",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.amountDeducted || 0),
+    },
+    {
+      header: "Amount Pending",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.amountPending || 0),
+    },
+    {
+      header: "Reason for Deduction",
       accessor: (row: LOA) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.amendments.length}</span>
+        <div className="max-w-xs truncate" title={row.invoices?.[0]?.deductionReason || undefined}>
+          {row.invoices?.[0]?.deductionReason || "-"}
         </div>
       ),
     },
     {
-      header: "Purchase Orders",
+      header: "Bill Links",
       accessor: (row: LOA) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.purchaseOrders.length}</span>
+        <div className="max-w-xs truncate" title={row.invoices?.[0]?.billLinks || undefined}>
+          {row.invoices?.[0]?.billLinks || "-"}
         </div>
       ),
     },

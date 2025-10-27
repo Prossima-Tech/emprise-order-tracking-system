@@ -134,6 +134,7 @@ model LOA {
   siteId                       String?          // Optional field
   deliveryPeriod               Json             // { start: Date, end: Date }
   dueDate                      DateTime?        // Due date for LOA completion
+  orderReceivedDate            DateTime?        // Date when order/LOA was received
   workDescription              String
   documentUrl                  String           // S3 URL of LOA document
   status                       LOAStatus        @default(NOT_STARTED)
@@ -142,6 +143,7 @@ model LOA {
   invoices                     Invoice[]        // Billing/Invoice records
   emds                         EMD[]            // EMDs associated with this LOA
   tags                         String[]
+  remarks2                     String?          @db.Text // Additional remarks field
   // Warranty period fields
   warrantyPeriodMonths         Int?             // Warranty period in months
   warrantyPeriodYears          Int?             // Warranty period in years

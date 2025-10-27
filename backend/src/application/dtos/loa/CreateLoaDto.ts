@@ -7,10 +7,13 @@ export interface CreateLoaDto {
     loaNumber: string;
     loaValue: number;
     deliveryPeriod: DeliveryPeriod;
+    dueDate?: string;
+    orderReceivedDate?: string;
     workDescription: string;
     documentFile?: Express.Multer.File;
     tags?: string[];
     siteId: string;
+    remarks2?: string;
     hasEmd?: boolean;
     emdAmount?: number;
     hasSecurityDeposit?: boolean;

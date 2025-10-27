@@ -94,10 +94,13 @@ export class LoaService {
                     start: new Date(dto.deliveryPeriod.start).toISOString(),
                     end: new Date(dto.deliveryPeriod.end).toISOString()
                 },
+                dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+                orderReceivedDate: dto.orderReceivedDate ? new Date(dto.orderReceivedDate) : undefined,
                 siteId: dto.siteId,
                 workDescription: dto.workDescription,
                 documentUrl: documentUrls.documentUrl || 'pending',
                 tags,
+                remarks2: dto.remarks2,
                 hasEmd: dto.hasEmd || false,
                 emdAmount: dto.emdAmount,
                 hasSecurityDeposit: dto.hasSecurityDeposit || false,
