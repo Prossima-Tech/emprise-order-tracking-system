@@ -18,6 +18,7 @@ export interface LOA {
     workDescription: string;
     documentUrl: string;
     amendments?: Amendment[];
+    invoices?: any[]; // Invoice records for billing
     hasEmd: boolean;
     emdAmount?: number;
     hasSecurityDeposit: boolean;

@@ -21,7 +21,7 @@ export class PrismaLoaRepository {
         start: new Date((prismaLoa.deliveryPeriod as any).start),
         end: new Date((prismaLoa.deliveryPeriod as any).end)
       } : { start: new Date(), end: new Date() },
-      status: prismaLoa.status || 'NOT_STARTED', // Ensure status is always set
+      status: (prismaLoa.status || 'NOT_STARTED') as any, // Ensure status is always set
       workDescription: prismaLoa.workDescription,
       documentUrl: prismaLoa.documentUrl,
       tags: prismaLoa.tags,
