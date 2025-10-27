@@ -235,16 +235,36 @@ export class PurchaseOrderService {
     createdById?: string;
     approverId?: string;
     searchTerm?: string;
-  }): Promise<Result<{ purchaseOrders: any[]; total: number }>> {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<Result<{ purchaseOrders: any[]; total: number; page: number; limit: number; totalPages: number }>> {
     try {
+      // Default pagination values
+      const page = params.page || 1;
+      const limit = params.limit || 10;
+      const skip = (page - 1) * limit;
+
       const [pos, total] = await Promise.all([
-        this.repository.findAll(params),
+        this.repository.findAll({
+          ...params,
+          skip,
+          take: limit,
+          sortBy: params.sortBy,
+          sortOrder: params.sortOrder
+        }),
         this.repository.count(params)
       ]);
 
+      const totalPages = Math.ceil(total / limit);
+
       return ResultUtils.ok({
         purchaseOrders: pos,
-        total
+        total,
+        page,
+        limit,
+        totalPages
       });
     } catch (error) {
       console.error('POs Fetch Error:', error);

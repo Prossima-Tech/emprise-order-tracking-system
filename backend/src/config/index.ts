@@ -29,6 +29,7 @@ export const config = {
       // tenantId: process.env.AZURE_TENANT_ID!
     }
   },
+  openRouterApiKey: process.env.OPENROUTER_API_KEY,
   environment: process.env.NODE_ENV || 'development'
 };
 

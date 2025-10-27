@@ -2,22 +2,40 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
-import { TenderForm } from '../components/TenderForm';
+import { TenderForm, EMDData } from '../components/TenderForm';
 import { useTenders } from '../hooks/use-tenders';
 import { TenderFormData } from '../types/tender';
+import { useEMDs } from '../../emds/hooks/use-emds';
 
 export function CreateTenderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { createTender } = useTenders();
+  const { createEMD } = useEMDs();
 
-  const handleSubmit = async (data: TenderFormData) => {
+  const handleSubmit = async (tenderData: TenderFormData, emdData?: EMDData) => {
     try {
       setIsSubmitting(true);
-      await createTender(data);
+
+      // Step 1: Create the tender
+      const createdTender = await createTender(tenderData);
+
+      // Step 2: If EMD data exists, create EMD record linked to tender
+      if (emdData && createdTender.id) {
+        await createEMD({
+          amount: emdData.amount,
+          bankName: emdData.bankName,
+          submissionDate: emdData.submissionDate,
+          maturityDate: emdData.maturityDate,
+          documentFile: emdData.documentFile,
+          tenderId: createdTender.id, // Link to tender
+          tags: emdData.tags
+        });
+      }
+
       navigate('/tenders');
     } catch (error) {
-      console.error('Failed to create tender', error);
+      console.error('Failed to create tender/EMD', error);
     } finally {
       setIsSubmitting(false);
     }

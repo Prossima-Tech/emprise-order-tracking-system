@@ -1,5 +1,6 @@
 // FDR Data Extraction Utility
 import Tesseract from 'tesseract.js';
+import apiClient from '../../../lib/utils/api-client';
 
 interface ExtractedFDRData {
   amount: number | null;
@@ -20,65 +21,28 @@ export async function extractFDRData(imageFile: File): Promise<ExtractedFDRData>
     const text = result.data.text;
     console.log('Raw extracted text:', text);
 
-    // Prepare prompt for DeepSeek-R1
-    const prompt = `Extract these fields as JSON ONLY from the text:
-    {
-      "amount": number,
-      "maturityDate": "DD-MM-YYYY",
-      "submissionDate": "DD-MM-YYYY"
-    }
-    Return ONLY valid JSON without any formatting or explanations and if you encounter two amounts then provide the amount which has higher value. Text: ${text}`;
-
-    // Call DeepSeek-R1 API
-    const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer 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`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://localhost:3000',
-        'X-Title': 'Emprise'
-      },
-      body: JSON.stringify({
-        model: "mistralai/mistral-small-24b-instruct-2501",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-        response_format: { type: "json_object" }
-      })
+    // Call backend API for AI extraction
+    const apiResponse = await apiClient.post('/emds/extract', {
+      extractedText: text
     });
 
-    if (!apiResponse.ok) {
-      throw new Error(`DeepSeek API error: ${await apiResponse.text()}`);
+    if (apiResponse.data.status !== 'success') {
+      throw new Error(apiResponse.data.message || 'AI extraction failed');
     }
 
-    const responseData = await apiResponse.json();
-    const llmResponse = responseData.choices[0].message.content;
-    console.log('DeepSeek Response:', llmResponse);
+    const extractedData = apiResponse.data.data;
+    console.log('AI Extracted data:', extractedData);
 
-    // Parse and validate response
-    let parsedData: Partial<ExtractedFDRData>;
-    try {
-      // Clean the response by removing Markdown formatting
-      const sanitizedResponse = llmResponse
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-        
-      parsedData = JSON.parse(sanitizedResponse);
-    } catch (e) {
-      console.error('Failed to parse response:', llmResponse);
-      throw new Error('Failed to parse DeepSeek response. Please try again.');
-    }
-
-    // Build final result
-    const extractedData: ExtractedFDRData = {
-      amount: validateNumber(parsedData.amount),
-      maturityDate: validateDate(parsedData.maturityDate),
-      submissionDate: validateDate(parsedData.submissionDate),
-      bankName: 'IDBI' // Directly set since we're not extracting this
+    // Build final result with validation
+    const finalData: ExtractedFDRData = {
+      amount: validateNumber(extractedData.amount),
+      maturityDate: validateDate(extractedData.maturityDate),
+      submissionDate: validateDate(extractedData.submissionDate),
+      bankName: extractedData.bankName || 'IDBI'
     };
 
-    console.log('Final extracted data:', extractedData);
-    return extractedData;
+    console.log('Final extracted data:', finalData);
+    return finalData;
 
   } catch (error) {
     console.error('Error in FDR data extraction:', error);

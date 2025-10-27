@@ -27,6 +27,22 @@ interface SidebarProps {
 export const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const { user } = useAuthStore();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+
+  // Determine if sidebar should be shown as expanded
+  const isExpanded = !collapsed || hoverExpanded;
+
+  const handleMouseEnter = () => {
+    if (collapsed) {
+      setHoverExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (collapsed) {
+      setHoverExpanded(false);
+    }
+  };
 
   // Filter menu items based on user role and permissions
   const authorizedMenuItems = MENU_ITEMS.filter(item => {
@@ -61,22 +77,27 @@ export const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
     <>
       {/* Mobile sidebar overlay */}
       {!collapsed && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 lg:hidden z-600"
           onClick={() => setCollapsed(true)}
         />
       )}
-      <div className={cn(
-        "fixed inset-y-0 left-0 bg-white dark:bg-gray-900 transition-all duration-300 lg:relative",
-        "border-r shadow-sm",
-        "z-50 mt-14 lg:mt-0",
-        collapsed ? "-translate-x-full lg:translate-x-0 lg:w-16" : "w-64 translate-x-0",
-      )}>
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 bg-white dark:bg-gray-900 transition-all duration-300 lg:relative",
+          "border-r shadow-sm",
+          "z-50 mt-14 lg:mt-0",
+          collapsed ? "-translate-x-full lg:translate-x-0 lg:w-16" : "w-64 translate-x-0",
+          isExpanded && collapsed ? "lg:w-64" : ""
+        )}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <ScrollArea className="h-full py-2">
           <div className="space-y-2">
             {menuItemsBySection.map((section) => (
               <div key={section.id} className="px-2 py-1">
-                {collapsed ? (
+                {!isExpanded ? (
                   <div className="mb-2">
                     <TooltipProvider delayDuration={300}>
                       <Tooltip>
@@ -131,8 +152,8 @@ export const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
                     </AccordionItem>
                   </Accordion>
                 )}
-                
-                {collapsed && (
+
+                {!isExpanded && (
                   <div className="mt-1 space-y-1">
                     {section.items.map((item) => (
                       <NavLink

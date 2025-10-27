@@ -248,13 +248,13 @@ export function EMDDetail() {
             </div>
           </div>
 
-          {/* Associated Offer */}
-          {emd.offer && (
+          {/* Associated Tender */}
+          {emd.tender && (
             <div>
-              <h3 className="text-lg font-medium mb-2">Associated Offer</h3>
+              <h3 className="text-lg font-medium mb-2">Associated Tender</h3>
               <Button
                 variant="outline"
-                onClick={() => navigate(`/budgetary-offers/${emd.offer?.id}`)}
+                onClick={() => navigate(`/tenders/${emd.tender?.id}`)}
                 disabled={loading}
               >
                 {loading ? (
@@ -262,7 +262,29 @@ export function EMDDetail() {
                 ) : (
                   <FileText className="h-4 w-4 mr-2" />
                 )}
-                {emd.offer?.subject} ({emd.offer?.offerId})
+                {emd.tender?.tenderNumber}
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                {emd.tender?.description}
+              </p>
+            </div>
+          )}
+
+          {/* Associated LOA */}
+          {emd.loa && (
+            <div>
+              <h3 className="text-lg font-medium mb-2">Associated LOA</h3>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/loas/${emd.loa?.id}`)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                {emd.loa?.loaNumber}
               </Button>
             </div>
           )}

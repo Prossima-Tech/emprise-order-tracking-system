@@ -16,11 +16,14 @@ import { PrismaItemRepository } from './infrastructure/persistence/repositories/
 import { PrismaPurchaseOrderRepository } from './infrastructure/persistence/repositories/PrismaPurchaseOrderRepository';
 import { PrismaVendorItemRepository } from './infrastructure/persistence/repositories/PrismaVendorItemRepository';
 import { PrismaTenderRepository } from './infrastructure/persistence/repositories/PrismaTenderRepository';
+import { PrismaShippingAddressRepository } from './infrastructure/persistence/repositories/PrismaShippingAddressRepository';
+import { PrismaEmdRepository } from './infrastructure/persistence/repositories/PrismaEmdRepository';
 
 // Import services
 import { AuthService } from './application/services/AuthService';
 import { BudgetaryOfferService } from './application/services/BudgetaryOfferService';
 import { LoaService } from './application/services/LOAService';
+import { BulkImportService } from './application/services/BulkImportService';
 import { VendorService } from './application/services/VendorService';
 import { ItemService } from './application/services/ItemService';
 import { PurchaseOrderService } from './application/services/PurchaseOrderService';
@@ -37,6 +40,8 @@ import { DashboardController } from './interfaces/http/controllers/DashboardCont
 import { SiteController } from './interfaces/http/controllers/SiteController';
 import { CustomerService } from './application/services/CustomerService';
 import { TenderService } from './application/services/TenderService';
+import { ShippingAddressService } from './application/services/ShippingAddressService';
+import { EmdService } from './application/services/EmdService';
 // Import controllers
 import { AuthController } from './interfaces/http/controllers/AuthController';
 import { BudgetaryOfferController } from './interfaces/http/controllers/BudgetaryOfferController';
@@ -47,6 +52,8 @@ import { PurchaseOrderController } from './interfaces/http/controllers/PurchaseO
 import { UserController } from './interfaces/http/controllers/UserController';
 import { CustomerController } from './interfaces/http/controllers/CustomerController';
 import { TenderController } from './interfaces/http/controllers/TenderController';
+import { ShippingAddressController } from './interfaces/http/controllers/ShippingAddressController';
+import { EmdController } from './interfaces/http/controllers/EmdController';
 
 // Import routes
 import { authRoutes } from './interfaces/http/routes/auth.routes';
@@ -60,6 +67,8 @@ import { setupDashboardRoutes } from './interfaces/http/routes/dashboard.routes'
 import { siteRoutes } from './interfaces/http/routes/site.routes';
 import { customerRoutes } from './interfaces/http/routes/customer.routes';
 import { tenderRoutes } from './interfaces/http/routes/tender.routes';
+import { shippingAddressRoutes } from './interfaces/http/routes/shippingAddress.routes';
+import { emdRoutes } from './interfaces/http/routes/emd.routes';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
 import { mkdirSync } from 'fs';
 import { unlinkSync, readdirSync, statSync } from 'fs';
@@ -107,6 +116,8 @@ async function startServer() {
   const vendorItemRepository = new PrismaVendorItemRepository(prisma);
   const siteRepository = new PrismaSiteRepository(prisma);
   const tenderRepository = new PrismaTenderRepository(prisma);
+  const shippingAddressRepository = new PrismaShippingAddressRepository(prisma);
+  const emdRepository = new PrismaEmdRepository(prisma);
 
   const s3Service = new S3Service({
     region: config.aws.region,
@@ -163,11 +174,14 @@ async function startServer() {
   const userController = new UserController(userService);
   const customerService = new CustomerService(prisma);
   const tenderService = new TenderService(tenderRepository, s3Service);
+  const shippingAddressService = new ShippingAddressService(shippingAddressRepository);
+  const bulkImportService = new BulkImportService(prisma);
+  const emdService = new EmdService(emdRepository, s3Service, ocrService, config.openRouterApiKey);
 
   // Initialize controllers
   const authController = new AuthController(authService);
   const budgetaryOfferController = new BudgetaryOfferController(budgetaryOfferService);
-  const loaController = new LoaController(loaService);
+  const loaController = new LoaController(loaService, bulkImportService);
   const vendorController = new VendorController(vendorService);
   const itemController = new ItemController(itemService);
   const purchaseOrderController = new PurchaseOrderController(purchaseOrderService);
@@ -175,6 +189,8 @@ async function startServer() {
   const siteController = new SiteController(siteService);
   const customerController = new CustomerController(customerService);
   const tenderController = new TenderController(tenderService);
+  const shippingAddressController = new ShippingAddressController(shippingAddressService);
+  const emdController = new EmdController(emdService);
 
   // Initialize Dashboard services and controller
   const dashboardService = new DashboardService(prisma);
@@ -247,6 +263,16 @@ async function startServer() {
     tenderRoutes(tenderController)
   );
 
+  app.use(
+    '/api/shipping-addresses',
+    shippingAddressRoutes(shippingAddressController)
+  );
+
+  app.use(
+    '/api/emds',
+    emdRoutes(emdController)
+  );
+
   // Create uploads directory if it doesn't exist
   mkdirSync('uploads', { recursive: true });
 
@@ -273,6 +299,8 @@ async function startServer() {
     console.log('- /api/sites');
     console.log('- /api/customers');
     console.log('- /api/tenders');
+    console.log('- /api/shipping-addresses');
+    console.log('- /api/emds');
   });
 
   // Cleanup uploads directory periodically (every 24 hours)

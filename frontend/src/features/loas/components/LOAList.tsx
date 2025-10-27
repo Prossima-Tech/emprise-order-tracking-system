@@ -37,14 +37,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../components/ui/dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "../../../components/ui/pagination";
 import { useLOAs } from "../hooks/use-loas";
 const statusOptions = [
   { label: "All Status", value: "ALL" },
-  { label: "Draft", value: "DRAFT" },
-  { label: "Active", value: "ACTIVE" },
-  { label: "Completed", value: "COMPLETED" },
-  { label: "Cancelled", value: "CANCELLED" },
-  { label: "Delayed", value: "DELAYED" },
+  { label: "1. Not Started", value: "NOT_STARTED" },
+  { label: "2. In Progress", value: "IN_PROGRESS" },
+  { label: "4. Supply/Work Completed", value: "SUPPLY_WORK_COMPLETED" },
+  { label: "7. Chase Payment", value: "CHASE_PAYMENT" },
+  { label: "9. Closed", value: "CLOSED" },
 ];
 
 export function LOAList() {
@@ -58,17 +67,28 @@ export function LOAList() {
   const { loading, getLOAs, deleteLOA } = useLOAs();
   const [error, setError] = useState<string | null>(null);
   const [loaToDelete, setLoaToDelete] = useState<LOA | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  // @ts-expect-error - totalItems is used for tracking, will be displayed in future updates
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const fetchLOAs = async () => {
       try {
-        const data = await getLOAs();
-        if (Array.isArray(data)) {
-          setLOAs(data);
-        } else {
-          setError('Invalid data format received');
-          setLOAs([]);
-        }
+        const data = await getLOAs({
+          page: currentPage,
+          limit: pageSize,
+          sortBy,
+          sortOrder
+        });
+
+        setLOAs(data.loas || []);
+        setTotalItems(data.total || 0);
+        setTotalPages(data.totalPages || 0);
+        setError(null);
       } catch (error) {
         console.error("Failed to fetch LOAs:", error);
         setError('Failed to fetch LOAs. Please try again.');
@@ -77,37 +97,71 @@ export function LOAList() {
     };
 
     fetchLOAs();
-  }, []);
+  }, [currentPage, pageSize, sortBy, sortOrder]);
 
   const handleDeleteClick = async (loa: LOA) => {
     try {
       await deleteLOA(loa.id);
-      const updatedData = await getLOAs();
-      setLOAs(updatedData);
+      const data = await getLOAs({
+        page: currentPage,
+        limit: pageSize
+      });
+      setLOAs(data.loas || []);
+      setTotalItems(data.total || 0);
+      setTotalPages(data.totalPages || 0);
     } catch (error) {
       console.error('Error deleting LOA:', error);
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Helper function to get status badge style
   const getStatusBadgeStyle = (status: LOA['status']) => {
     switch (status) {
-      case 'DRAFT':
+      case 'NOT_STARTED':
         return 'bg-gray-100 text-gray-800';
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
-      case 'COMPLETED':
+      case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800';
-      case 'CANCELLED': 
-        return 'bg-red-100 text-red-800';
-      case 'DELAYED':
+      case 'SUPPLY_WORK_COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'CHASE_PAYMENT':
         return 'bg-amber-100 text-amber-800';
+      case 'CLOSED':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  // Helper to display readable status text
+  const getStatusDisplayText = (status: LOA['status']) => {
+    switch (status) {
+      case 'NOT_STARTED':
+        return '1. Not Started';
+      case 'IN_PROGRESS':
+        return '2. In Progress';
+      case 'SUPPLY_WORK_COMPLETED':
+        return '4. Supply/Work Completed';
+      case 'CHASE_PAYMENT':
+        return '7. Chase Payment';
+      case 'CLOSED':
+        return '9. Closed';
+      default:
+        return status;
+    }
+  };
+
   const columns = useMemo<Column<LOA>[]>(() => [
+    {
+      header: "Sr. No.",
+      accessor: (_row: LOA, index?: number) => {
+        // Calculate serial number based on current page and position
+        return (currentPage - 1) * pageSize + (index || 0) + 1;
+      },
+    },
     {
       header: "LOA Number",
       accessor: "loaNumber",
@@ -135,7 +189,7 @@ export function LOAList() {
       header: "Status",
       accessor: (row: LOA) => (
         <Badge className={cn("px-2 py-1", getStatusBadgeStyle(row.status))}>
-          {row.status}
+          {getStatusDisplayText(row.status)}
         </Badge>
       ),
     },
@@ -149,6 +203,23 @@ export function LOAList() {
           </span>
           {isAfter(new Date(), new Date(row.deliveryPeriod.end)) && (
             <span className="text-red-500 text-sm">Overdue</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Due Date",
+      accessor: (row: LOA) => (
+        <div className="flex flex-col">
+          {row.dueDate ? (
+            <>
+              <span>{format(new Date(row.dueDate), "PP")}</span>
+              {isAfter(new Date(), new Date(row.dueDate)) && (
+                <span className="text-red-500 text-sm">Overdue</span>
+              )}
+            </>
+          ) : (
+            <span className="text-muted-foreground text-sm">-</span>
           )}
         </div>
       ),
@@ -186,7 +257,7 @@ export function LOAList() {
         </DropdownMenu>
       ),
     },
-  ], [navigate]);
+  ], [navigate, currentPage, pageSize]);
 
   const filteredData = useMemo(() => {
     const loasArray = Array.isArray(loas) ? loas : [];
@@ -223,7 +294,7 @@ export function LOAList() {
     <div className="space-y-6">
       {/* Filter Section */}
       <Card className="p-4">
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div>
             <Input
               placeholder="Search by LOA number..."
@@ -247,8 +318,8 @@ export function LOAList() {
             />
           </div>
           <div>
-            <Select 
-              value={statusFilter} 
+            <Select
+              value={statusFilter}
               onValueChange={setStatusFilter}
             >
               <SelectTrigger>
@@ -260,6 +331,32 @@ export function LOAList() {
                     {option.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Select
+              value={`${sortBy}-${sortOrder}`}
+              onValueChange={(value) => {
+                const [field, order] = value.split('-');
+                setSortBy(field);
+                setSortOrder(order as 'asc' | 'desc');
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
+                <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
+                <SelectItem value="loaValue-desc">Value (High to Low)</SelectItem>
+                <SelectItem value="loaValue-asc">Value (Low to High)</SelectItem>
+                <SelectItem value="deliveryStartDate-asc">Start Date (Early)</SelectItem>
+                <SelectItem value="deliveryStartDate-desc">Start Date (Late)</SelectItem>
+                <SelectItem value="deliveryEndDate-asc">End Date (Early)</SelectItem>
+                <SelectItem value="deliveryEndDate-desc">End Date (Late)</SelectItem>
+                <SelectItem value="dueDate-asc">Due Date (Early)</SelectItem>
+                <SelectItem value="dueDate-desc">Due Date (Late)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -275,19 +372,110 @@ export function LOAList() {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <>
+        <div className="space-y-4">
           {filteredData.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               No LOAs found
             </div>
           ) : (
-            <DataTable
-              columns={columns}
-              data={filteredData}
-              onRowClick={(row) => navigate(`/loas/${row.id}`)}
-            />
+            <>
+              <DataTable
+                columns={columns}
+                data={filteredData}
+                onRowClick={(row) => navigate(`/loas/${row.id}`)}
+              />
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) handlePageChange(currentPage - 1);
+                        }}
+                      />
+                    </PaginationItem>
+
+                    {/* First Page */}
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(1);
+                        }}
+                        isActive={currentPage === 1}
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+
+                    {/* Show ellipsis if there are many pages before current */}
+                    {currentPage > 3 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+
+                    {/* Pages around current page */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => page !== 1 && page !== totalPages && Math.abs(currentPage - page) <= 1)
+                      .map(page => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(page);
+                            }}
+                            isActive={currentPage === page}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+
+                    {/* Show ellipsis if there are many pages after current */}
+                    {currentPage < totalPages - 2 && (
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    )}
+
+                    {/* Last Page */}
+                    {totalPages > 1 && (
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(totalPages);
+                          }}
+                          isActive={currentPage === totalPages}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                        }}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
           )}
-        </>
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}

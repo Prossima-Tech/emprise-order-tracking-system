@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
-import { TenderForm } from '../components/TenderForm';
+import { TenderForm, EMDData } from '../components/TenderForm';
 import { useTenders } from '../hooks/use-tenders';
 import { TenderFormData } from '../types/tender';
 import { LoadingSpinner } from '../../../components/feedback/LoadingSpinner';
+import { useEMDs } from '../../emds/hooks/use-emds';
 
 export function EditTenderPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,7 @@ export function EditTenderPage() {
   const [defaultValues, setDefaultValues] = useState<Partial<TenderFormData>>({});
   const navigate = useNavigate();
   const { updateTender, getTenderById } = useTenders();
+  const { getAllEMDs, updateEMD, createEMD } = useEMDs();
 
   useEffect(() => {
     let isMounted = true;
@@ -54,15 +56,48 @@ export function EditTenderPage() {
     };
   }, [id, navigate]);
 
-  const handleSubmit = async (data: TenderFormData) => {
+  const handleSubmit = async (tenderData: TenderFormData, emdData?: EMDData) => {
     if (!id) return;
-    
+
     try {
       setIsSubmitting(true);
-      await updateTender(id, data);
+
+      // Step 1: Update the tender
+      await updateTender(id, tenderData);
+
+      // Step 2: Handle EMD data if present
+      if (emdData) {
+        // Check if EMD exists for this tender
+        const allEMDs = await getAllEMDs();
+        const existingEMD = allEMDs.find((e) => e.tenderId === id);
+
+        if (existingEMD) {
+          // Update existing EMD
+          await updateEMD(existingEMD.id, {
+            amount: emdData.amount,
+            bankName: emdData.bankName,
+            submissionDate: emdData.submissionDate,
+            maturityDate: emdData.maturityDate,
+            documentFile: emdData.documentFile,
+            tags: emdData.tags
+          });
+        } else {
+          // Create new EMD
+          await createEMD({
+            amount: emdData.amount,
+            bankName: emdData.bankName,
+            submissionDate: emdData.submissionDate,
+            maturityDate: emdData.maturityDate,
+            documentFile: emdData.documentFile,
+            tenderId: id, // Link to tender
+            tags: emdData.tags
+          });
+        }
+      }
+
       navigate('/tenders');
     } catch (error) {
-      console.error('Failed to update tender', error);
+      console.error('Failed to update tender/EMD', error);
     } finally {
       setIsSubmitting(false);
     }

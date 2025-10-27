@@ -39,6 +39,7 @@ import { VendorSelector } from "./VendorSelector";
 import { useSites } from "../../sites/hooks/use-sites";
 import type { Site } from "../../sites/types/site";
 import { getUser } from "../../../lib/utils/auth";
+import { ShippingAddressSelector } from "./ShippingAddressSelector";
 
 interface POFormProps {
   mode: 'create' | 'edit';
@@ -199,7 +200,7 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
           apiClient.get('/users')
         ]);
 
-        setLoas(loasResponse);
+        setLoas(loasResponse?.loas || []);
         setVendors(vendorsResponse || []);
         setSites(sitesResponse?.sites || []);
 
@@ -708,10 +709,10 @@ export function POForm({ mode, initialData, onCancel, onSubmit }: POFormProps) {
             <FormItem>
               <FormLabel>Shipping Address</FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="Enter shipping address..."
-                  className="min-h-[100px]"
-                  {...field}
+                <ShippingAddressSelector
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={submitting}
                 />
               </FormControl>
               <FormDescription>

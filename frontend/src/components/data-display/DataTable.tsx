@@ -10,7 +10,7 @@ import {
   
   export interface Column<T> {
     header: string | ((props: { sortable?: boolean }) => React.ReactNode);
-    accessor: keyof T | ((row: T) => React.ReactNode);
+    accessor: keyof T | ((row: T, index?: number) => React.ReactNode);
   }
   
   interface DataTableProps<T> {
@@ -63,7 +63,7 @@ import {
                   {columns.map((column, colIndex) => (
                     <TableCell key={colIndex}>
                       {typeof column.accessor === 'function'
-                        ? column.accessor(row)
+                        ? column.accessor(row, rowIndex)
                         : String(row[column.accessor])}
                     </TableCell>
                   ))}

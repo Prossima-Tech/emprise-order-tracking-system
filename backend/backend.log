@@ -1,0 +1,26 @@
+
+> backend@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/index.ts
+
+[INFO] 11:35:07 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.7.3)
+(node:68030) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Server is running on port 3000
+Environment: development
+Routes initialized:
+- /api/auth
+- /api/budgetary-offers
+- /api/loas
+- /api/vendors
+- /api/items
+- /api/vendors/:vendorId/items
+- /api/items/:itemId/vendors
+- /api/purchase-orders
+- /api/users
+- /api-docs
+- /api/dashboard
+- /api/sites
+- /api/customers
+- /api/tenders
+- /api/shipping-addresses
+- /api/emds

@@ -94,22 +94,40 @@ export function usePurchaseOrders() {
     }
   };
 
-  const getPurchaseOrders = async () => {
+  const getPurchaseOrders = async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/purchase-orders');
-      
+
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.search) queryParams.append('search', params.search);
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+      const url = `/purchase-orders${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiClient.get(url);
+
       if (!response.data || response.data.status !== 'success') {
         throw new Error(response.data?.message || 'Failed to fetch purchase orders');
       }
-      
+
       // Get current user from context or auth state
-      if (!getCurrentUser) {  
+      if (!getCurrentUser) {
         throw new Error('User not found');
       }
-      const currentUser = getCurrentUser; // Get user from auth context hook
-      const purchaseOrders = response.data?.data?.data?.purchaseOrders || [];
-      
+      const currentUser = getCurrentUser;
+      const responseData = response.data?.data?.data || response.data?.data || {};
+      const purchaseOrders = responseData.purchaseOrders || [];
+
       // Filter POs based on user role and ownership
       const filteredPOs = purchaseOrders.filter((po: any) => {
         if (currentUser.role === 'ADMIN') {
@@ -117,8 +135,14 @@ export function usePurchaseOrders() {
         }
         return po.createdById === currentUser.id; // Regular users can only see their own POs
       });
-      
-      return filteredPOs;
+
+      return {
+        purchaseOrders: filteredPOs,
+        total: responseData.total || 0,
+        page: responseData.page || 1,
+        limit: responseData.limit || 10,
+        totalPages: responseData.totalPages || 0
+      };
     } catch (error: any) {
       console.error('Get POs error:', error.response || error);
       showError(error.response?.data?.message || 'Failed to fetch purchase orders');

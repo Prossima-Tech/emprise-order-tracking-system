@@ -205,6 +205,25 @@ const upload = multer({
   },
 });
 
+// Configure multer for Excel file upload
+const excelUpload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 20 * 1024 * 1024, // 20MB limit for Excel files
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed!'));
+    }
+  },
+});
+
 // Setup routes
 export function loaRoutes(controller: LoaController) {
   const router = Router();
@@ -283,6 +302,14 @@ export function loaRoutes(controller: LoaController) {
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     controller.updateStatus
   );
-  
+
+  // Bulk import LOAs from Excel
+  router.post(
+    '/bulk-import',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    excelUpload.single('file'),
+    controller.bulkImport
+  );
+
   return router;
 }

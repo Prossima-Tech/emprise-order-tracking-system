@@ -11,6 +11,7 @@ import { Separator } from '../../../components/ui/separator';
 import { useTenders } from '../hooks/use-tenders';
 import { Tender, TenderStatus } from '../types/tender';
 import { LoadingSpinner } from '../../../components/feedback/LoadingSpinner';
+import { EMDSidebar } from '../../emds/components/EMDSidebar';
 import {
   Select,
   SelectContent,
@@ -247,6 +248,14 @@ export function TenderDetailsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* EMD Tracking Section */}
+        {tender.hasEMD && (
+          <EMDSidebar
+            tenderId={id}
+            onEMDClick={(emdId) => navigate(`/emds/${emdId}`)}
+          />
+        )}
       </div>
 
       {/* Status Update Dialog */}
