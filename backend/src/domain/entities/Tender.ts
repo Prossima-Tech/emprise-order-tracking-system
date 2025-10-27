@@ -9,6 +9,7 @@ export interface Tender {
   emdAmount?: number;
   status: TenderStatus;
   documentUrl?: string;
+  nitDocumentUrl?: string;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;

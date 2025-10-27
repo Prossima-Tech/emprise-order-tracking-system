@@ -33,9 +33,10 @@ export class PrismaEmdRepository {
         documentUrl: data.documentUrl,
         extractedData: data.extractedData,
         status: data.status || EMDStatus.ACTIVE,
-        offerId: data.offerId,
-        loaId: data.loaId,
-        tenderId: data.tenderId,
+        // Only set foreign keys if they have valid values (not empty strings)
+        ...(data.offerId && data.offerId.trim() !== '' ? { offerId: data.offerId } : {}),
+        ...(data.loaId && data.loaId.trim() !== '' ? { loaId: data.loaId } : {}),
+        ...(data.tenderId && data.tenderId.trim() !== '' ? { tenderId: data.tenderId } : {}),
         tags: data.tags || [],
       },
       include: {

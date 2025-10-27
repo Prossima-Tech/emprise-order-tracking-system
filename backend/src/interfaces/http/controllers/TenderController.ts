@@ -8,9 +8,11 @@ export class TenderController {
 
   createTender = async (req: Request, res: Response) => {
     try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const tender = await this.service.createTender({
         ...req.body,
-        documentFile: req.file
+        documentFile: files?.documentFile?.[0],
+        nitDocumentFile: files?.nitDocumentFile?.[0]
       });
 
       res.status(201).json({
@@ -28,9 +30,11 @@ export class TenderController {
   updateTender = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const updatedTender = await this.service.updateTender(id, {
         ...req.body,
-        documentFile: req.file
+        documentFile: files?.documentFile?.[0],
+        nitDocumentFile: files?.nitDocumentFile?.[0]
       });
 
       res.json({

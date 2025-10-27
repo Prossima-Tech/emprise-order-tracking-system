@@ -43,6 +43,7 @@ export function TenderForm({
   submitLabel,
 }: TenderFormProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [nitFile, setNitFile] = useState<File | null>(null);
   const [emdDocumentFile, setEmdDocumentFile] = useState<File | null>(null);
   const [emdSubmissionDate, setEmdSubmissionDate] = useState<Date | undefined>(undefined);
   const [emdMaturityDate, setEmdMaturityDate] = useState<Date | undefined>(undefined);
@@ -96,7 +97,8 @@ export function TenderForm({
       ...data,
       // If hasEMD is false, ensure emdAmount is null
       emdAmount: data.hasEMD ? data.emdAmount : null,
-      documentFile: file || undefined
+      documentFile: file || undefined,
+      nitDocumentFile: nitFile || undefined
     };
 
     // Prepare EMD data if hasEMD is true and required fields are filled
@@ -378,6 +380,17 @@ export function TenderForm({
               />
               <FormDescription>
                 Upload a PDF or document file (max 5MB)
+              </FormDescription>
+            </FormItem>
+
+            <FormItem>
+              <FormLabel>NIT Document</FormLabel>
+              <FilePicker
+                accept=".pdf,.doc,.docx"
+                onChange={(file: File | null) => setNitFile(file)}
+              />
+              <FormDescription>
+                Upload NIT (Notice Inviting Tender) document (max 5MB)
               </FormDescription>
             </FormItem>
           </CardContent>

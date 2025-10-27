@@ -8,5 +8,6 @@ export interface CreateTenderDto {
   emdAmount?: number | string | null;
   status?: TenderStatus;
   documentFile?: Express.Multer.File;
+  nitDocumentFile?: Express.Multer.File;
   tags?: string[];
 } 

@@ -1,5 +1,4 @@
 // FDR Data Extraction Utility
-import Tesseract from 'tesseract.js';
 import apiClient from '../../../lib/utils/api-client';
 
 interface ExtractedFDRData {
@@ -9,29 +8,27 @@ interface ExtractedFDRData {
   bankName: string;
 }
 
-export async function extractFDRData(imageFile: File): Promise<ExtractedFDRData> {
+export async function extractFDRData(file: File): Promise<ExtractedFDRData> {
   try {
-    // OCR with Tesseract
-    const result = await Tesseract.recognize(
-      imageFile,
-      'eng',
-      { logger: m => console.log(m) }
-    );
+    // Create FormData to send file to backend
+    const formData = new FormData();
+    formData.append('file', file);
 
-    const text = result.data.text;
-    console.log('Raw extracted text:', text);
+    console.log('Sending file to backend for extraction...', file.name, file.type);
 
-    // Call backend API for AI extraction
-    const apiResponse = await apiClient.post('/emds/extract', {
-      extractedText: text
+    // Call backend API for complete OCR + AI extraction
+    const apiResponse = await apiClient.post('/emds/extract-from-file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
 
     if (apiResponse.data.status !== 'success') {
-      throw new Error(apiResponse.data.message || 'AI extraction failed');
+      throw new Error(apiResponse.data.message || 'Extraction failed');
     }
 
     const extractedData = apiResponse.data.data;
-    console.log('AI Extracted data:', extractedData);
+    console.log('Backend extracted data:', extractedData);
 
     // Build final result with validation
     const finalData: ExtractedFDRData = {

@@ -299,6 +299,7 @@ model Tender {
   emdAmount       Float?
   status          TenderStatus  @default(NOT_STARTED)
   documentUrl     String?       // S3 URL of tender document
+  nitDocumentUrl  String?       // S3 URL of NIT document
   emds            EMD[]         // EMDs associated with this tender
   tags            String[]
   createdAt       DateTime      @default(now())

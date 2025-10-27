@@ -48,10 +48,11 @@ export function useEMDs() {
       const formData = new FormData();
       Object.entries(data).forEach(([key, value]) => {
         if (key === 'documentFile' && value) {
-          formData.append('document', value);
+          formData.append('documentFile', value); // Match backend field name
         } else if (key === 'tags') {
           formData.append(key, JSON.stringify(value));
-        } else {
+        } else if (value !== undefined && value !== null && value !== '') {
+          // Only append if value exists and is not empty (prevents "undefined" string)
           formData.append(key, String(value));
         }
       });
@@ -81,7 +82,8 @@ export function useEMDs() {
           formData.append(key, value);
         } else if (key === 'tags') {
           formData.append(key, JSON.stringify(value));
-        } else if (value !== undefined) {
+        } else if (value !== undefined && value !== null && value !== '') {
+          // Only append if value exists and is not empty (prevents "undefined" string)
           formData.append(key, String(value));
         }
       });

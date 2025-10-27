@@ -278,11 +278,19 @@ export function emdRoutes(controller: EmdController) {
     controller.createEmd
   );
 
-  // AI extraction endpoint (called by frontend)
+  // AI extraction endpoint (called by frontend with text)
   router.post(
     '/extract',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     controller.extractData
+  );
+
+  // File extraction endpoint (OCR + AI - handles PDF and images)
+  router.post(
+    '/extract-from-file',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
+    upload.single('file'),
+    controller.extractFromFile
   );
 
   // Get expiring EMDs (must be before /:id route)

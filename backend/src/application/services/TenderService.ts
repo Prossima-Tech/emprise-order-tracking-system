@@ -28,11 +28,12 @@ export class TenderService {
       }
 
       let documentUrl: string | undefined;
+      let nitDocumentUrl: string | undefined;
 
       // If document file is provided, upload to S3
       if (dto.documentFile) {
         try {
-          const filename = `${dto.tenderNumber}-${Date.now().toString()}`;
+          const filename = `${dto.tenderNumber}-tender-${Date.now().toString()}`;
           const uploadResult = await this.s3Service.uploadFile(
             filename,
             dto.documentFile.buffer,
@@ -40,8 +41,32 @@ export class TenderService {
           );
           documentUrl = uploadResult;
         } catch (uploadError) {
-          console.error('Error uploading file to S3:', uploadError);
-          throw new AppError('Failed to upload document file', 500);
+          console.error('Error uploading tender document file to S3:', uploadError);
+          throw new AppError('Failed to upload tender document file', 500);
+        }
+      }
+
+      // If NIT document file is provided, upload to S3
+      if (dto.nitDocumentFile) {
+        try {
+          const filename = `${dto.tenderNumber}-nit-${Date.now().toString()}`;
+          const uploadResult = await this.s3Service.uploadFile(
+            filename,
+            dto.nitDocumentFile.buffer,
+            dto.nitDocumentFile.mimetype
+          );
+          nitDocumentUrl = uploadResult;
+        } catch (uploadError) {
+          console.error('Error uploading NIT document file to S3:', uploadError);
+          // Clean up tender document if already uploaded
+          if (documentUrl) {
+            try {
+              await this.s3Service.deleteFile(documentUrl);
+            } catch (deleteError) {
+              console.error('Failed to delete tender document after NIT upload error:', deleteError);
+            }
+          }
+          throw new AppError('Failed to upload NIT document file', 500);
         }
       }
 
@@ -66,18 +91,26 @@ export class TenderService {
           emdAmount,
           status: dto.status || TenderStatus.ACTIVE,
           documentUrl,
+          nitDocumentUrl,
           tags: dto.tags || []
         });
 
         return this.mapToResponseDto(tender);
       } catch (dbError) {
         console.error('Error creating tender in database:', dbError);
-        // If we uploaded a file but failed to create the tender, clean up the file
+        // If we uploaded files but failed to create the tender, clean up the files
         if (documentUrl) {
           try {
             await this.s3Service.deleteFile(documentUrl);
           } catch (deleteError) {
-            console.error('Failed to delete file after tender creation error:', deleteError);
+            console.error('Failed to delete tender document after tender creation error:', deleteError);
+          }
+        }
+        if (nitDocumentUrl) {
+          try {
+            await this.s3Service.deleteFile(nitDocumentUrl);
+          } catch (deleteError) {
+            console.error('Failed to delete NIT document after tender creation error:', deleteError);
           }
         }
         throw new AppError('Failed to create tender in database', 500);
@@ -99,21 +132,38 @@ export class TenderService {
       }
 
       let documentUrl = tender.documentUrl;
+      let nitDocumentUrl = tender.nitDocumentUrl;
 
-      // If document file is provided, upload to S3
+      // If tender document file is provided, upload to S3
       if (dto.documentFile) {
         // Delete old document if exists
         if (tender.documentUrl) {
           await this.s3Service.deleteFile(tender.documentUrl);
         }
 
-        const filename = `${tender.tenderNumber}-${Date.now().toString()}`;
+        const filename = `${tender.tenderNumber}-tender-${Date.now().toString()}`;
         const uploadResult = await this.s3Service.uploadFile(
           filename,
           dto.documentFile.buffer,
           dto.documentFile.mimetype
         );
         documentUrl = uploadResult;
+      }
+
+      // If NIT document file is provided, upload to S3
+      if (dto.nitDocumentFile) {
+        // Delete old NIT document if exists
+        if (tender.nitDocumentUrl) {
+          await this.s3Service.deleteFile(tender.nitDocumentUrl);
+        }
+
+        const filename = `${tender.tenderNumber}-nit-${Date.now().toString()}`;
+        const uploadResult = await this.s3Service.uploadFile(
+          filename,
+          dto.nitDocumentFile.buffer,
+          dto.nitDocumentFile.mimetype
+        );
+        nitDocumentUrl = uploadResult;
       }
 
       // If tenderNumber is changed, check if new tenderNumber is unique
@@ -151,6 +201,7 @@ export class TenderService {
         emdAmount,
         status: dto.status,
         documentUrl,
+        nitDocumentUrl,
         tags: dto.tags
       });
 
@@ -170,9 +221,12 @@ export class TenderService {
         throw new AppError('Tender not found', 404);
       }
 
-      // Delete document from S3 if exists
+      // Delete documents from S3 if exists
       if (tender.documentUrl) {
         await this.s3Service.deleteFile(tender.documentUrl);
+      }
+      if (tender.nitDocumentUrl) {
+        await this.s3Service.deleteFile(tender.nitDocumentUrl);
       }
 
       await this.repository.delete(id);
@@ -251,6 +305,7 @@ export class TenderService {
       emdAmount: tender.emdAmount,
       status: tender.status,
       documentUrl: tender.documentUrl,
+      nitDocumentUrl: tender.nitDocumentUrl,
       tags: tender.tags,
       createdAt: tender.createdAt,
       updatedAt: tender.updatedAt

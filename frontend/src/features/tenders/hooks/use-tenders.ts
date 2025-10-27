@@ -88,6 +88,8 @@ export function useTenders() {
       for (const key in formData) {
         if (key === 'documentFile' && formData.documentFile) {
           form.append('documentFile', formData.documentFile as File);
+        } else if (key === 'nitDocumentFile' && formData.nitDocumentFile) {
+          form.append('nitDocumentFile', formData.nitDocumentFile as File);
         } else if (key === 'tags' && Array.isArray(formData.tags)) {
           form.append('tags', JSON.stringify(formData.tags));
         } else if (formData[key as keyof TenderFormData] !== undefined && formData[key as keyof TenderFormData] !== null) {
@@ -121,6 +123,8 @@ export function useTenders() {
       for (const key in formData) {
         if (key === 'documentFile' && formData.documentFile) {
           form.append('documentFile', formData.documentFile as File);
+        } else if (key === 'nitDocumentFile' && formData.nitDocumentFile) {
+          form.append('nitDocumentFile', formData.nitDocumentFile as File);
         } else if (key === 'tags' && Array.isArray(formData.tags)) {
           form.append('tags', JSON.stringify(formData.tags));
         } else if (formData[key as keyof Partial<TenderFormData>] !== undefined && formData[key as keyof Partial<TenderFormData>] !== null) {
