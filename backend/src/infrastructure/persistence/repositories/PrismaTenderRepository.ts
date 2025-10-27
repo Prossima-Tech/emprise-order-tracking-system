@@ -40,7 +40,7 @@ export class PrismaTenderRepository {
         description: tender.description,
         hasEMD: tender.hasEMD,
         emdAmount: tender.emdAmount,
-        status: tender.status,
+        status: tender.status as any,
         documentUrl: tender.documentUrl,
         tags: tags
       }
@@ -69,7 +69,7 @@ export class PrismaTenderRepository {
         description: tender.description,
         hasEMD: tender.hasEMD,
         emdAmount: tender.emdAmount,
-        status: tender.status,
+        status: tender.status as any,
         documentUrl: tender.documentUrl,
         tags: tags
       }
