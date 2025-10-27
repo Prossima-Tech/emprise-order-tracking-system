@@ -112,6 +112,36 @@ export class EmdService {
   }
 
   /**
+   * Extract data from file (PDF or image) - Complete OCR + AI pipeline
+   */
+  async extractDataFromFile(file: Express.Multer.File): Promise<Result<any>> {
+    try {
+      // Step 1: Extract text using OCR (handles both PDF and images)
+      const extractedText = await this.ocrService.extractTextFromFile(file.path);
+      console.log('Extracted text from file:', extractedText);
+
+      // Step 2: Use AI to extract structured data
+      const aiResult = await this.extractDataFromDocument({ extractedText });
+
+      // Clean up temp file
+      try {
+        await fs.unlink(file.path);
+      } catch (unlinkError) {
+        console.warn('Failed to delete temp file:', unlinkError);
+      }
+
+      return aiResult;
+    } catch (error) {
+      console.error('File extraction error:', error);
+      return ResultUtils.fail(
+        error instanceof Error
+          ? error.message
+          : 'Failed to extract data from file'
+      );
+    }
+  }
+
+  /**
    * Create a new EMD
    */
   async createEmd(dto: CreateEmdDto): Promise<Result<any>> {

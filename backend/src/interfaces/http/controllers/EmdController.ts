@@ -22,9 +22,10 @@ export class EmdController {
         bankName: req.body.bankName || 'IDBI',
         documentFile: req.file,
         extractedData: req.body.extractedData ? JSON.parse(req.body.extractedData) : undefined,
-        offerId: req.body.offerId,
-        loaId: req.body.loaId,
-        tenderId: req.body.tenderId,
+        // Filter out empty strings, "undefined" string, and whitespace
+        offerId: req.body.offerId && req.body.offerId.trim() !== '' && req.body.offerId !== 'undefined' ? req.body.offerId : undefined,
+        loaId: req.body.loaId && req.body.loaId.trim() !== '' && req.body.loaId !== 'undefined' ? req.body.loaId : undefined,
+        tenderId: req.body.tenderId && req.body.tenderId.trim() !== '' && req.body.tenderId !== 'undefined' ? req.body.tenderId : undefined,
         tags: req.body.tags,
       };
 
@@ -305,6 +306,43 @@ export class EmdController {
       });
     } catch (error) {
       console.error('Extract Data Error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Internal server error',
+      });
+    }
+  };
+
+  /**
+   * Extract data from file (PDF or image) - Complete OCR + AI pipeline
+   * POST /api/emds/extract-from-file
+   */
+  extractFromFile = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          status: 'error',
+          message: 'File is required',
+        });
+        return;
+      }
+
+      const result = await this.service.extractDataFromFile(req.file);
+
+      if (!result.isSuccess) {
+        res.status(400).json({
+          status: 'error',
+          message: result.error || 'Failed to extract data from file',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: result.data,
+      });
+    } catch (error) {
+      console.error('Extract From File Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',

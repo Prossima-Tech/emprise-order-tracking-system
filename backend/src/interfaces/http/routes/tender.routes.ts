@@ -161,7 +161,7 @@ import multer from 'multer';
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
@@ -172,18 +172,23 @@ const upload = multer({
   },
 });
 
+const uploadFields = upload.fields([
+  { name: 'documentFile', maxCount: 1 },
+  { name: 'nitDocumentFile', maxCount: 1 }
+]);
+
 export function tenderRoutes(controller: TenderController) {
   const router = Router();
 
   router.post('/',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
-    upload.single('documentFile'),
+    uploadFields,
     controller.createTender
   );
 
   router.put('/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
-    upload.single('documentFile'),
+    uploadFields,
     controller.updateTender
   );
 

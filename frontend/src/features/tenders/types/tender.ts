@@ -7,7 +7,8 @@ export const tenderSchema = z.object({
   hasEMD: z.boolean().default(false),
   emdAmount: z.number().min(0, 'EMD amount must be positive').optional().nullable(),
   tags: z.array(z.string()).default([]),
-  documentFile: z.any().optional() // We'll handle file validation separately
+  documentFile: z.any().optional(), // We'll handle file validation separately
+  nitDocumentFile: z.any().optional() // We'll handle file validation separately
 });
 
 export type TenderFormData = z.infer<typeof tenderSchema>;
@@ -23,6 +24,7 @@ export interface Tender {
   emdAmount?: number | null;
   status: TenderStatus;
   documentUrl?: string;
+  nitDocumentUrl?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;
