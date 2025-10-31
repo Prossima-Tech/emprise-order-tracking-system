@@ -28,6 +28,7 @@ import { LoadingSpinner } from "../../../components/feedback/LoadingSpinner";
 import type { LOA } from "../types/loa";
 import { Badge } from "../../../components/ui/badge";
 import { cn } from "../../../lib/utils";
+import { calculateDaysFromNowIST } from "../../../lib/utils/date";
 
 import {
   Dialog,
@@ -165,25 +166,6 @@ export function LOAList() {
     }
   };
 
-  // Helper function to calculate days till due date
-  const calculateDaysTillDueDate = (dueDate?: Date | string | null) => {
-    if (!dueDate) return '-';
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return <span className="text-red-600 font-semibold">Overdue ({Math.abs(diffDays)} days)</span>;
-    } else if (diffDays === 0) {
-      return <span className="text-orange-600 font-semibold">Due Today</span>;
-    } else if (diffDays <= 7) {
-      return <span className="text-yellow-600 font-semibold">{diffDays} days</span>;
-    } else {
-      return <span className="text-green-600">{diffDays} days</span>;
-    }
-  };
-
   const columns: Column<LOA>[] = [
     {
       header: "Sr. No.",
@@ -201,7 +183,39 @@ export function LOAList() {
     },
     {
       header: "Days to Due Date",
-      accessor: (row: LOA) => calculateDaysTillDueDate(row.dueDate),
+      accessor: (row: LOA) => {
+        // If LOA is completed/closed, show "Completed"
+        if (row.status === 'CLOSED') {
+          return <span className="text-muted-foreground">Completed</span>;
+        }
+
+        // If no due date, show "-"
+        if (!row.dueDate) {
+          return <span>-</span>;
+        }
+
+        // Calculate days from today (IST) to due date
+        const calculatedDays = calculateDaysFromNowIST(row.dueDate);
+
+        if (calculatedDays === null) {
+          return <span>-</span>;
+        }
+
+        // Color code based on days remaining
+        if (calculatedDays < 0) {
+          return (
+            <span className="text-red-600 font-semibold">
+              Overdue ({Math.abs(calculatedDays)} days)
+            </span>
+          );
+        } else if (calculatedDays === 0) {
+          return <span className="text-orange-600 font-semibold">Due Today</span>;
+        } else if (calculatedDays <= 7) {
+          return <span className="text-yellow-600 font-semibold">{calculatedDays} days</span>;
+        } else {
+          return <span className="text-green-600">{calculatedDays} days</span>;
+        }
+      },
     },
     {
       header: "Delivery Date",

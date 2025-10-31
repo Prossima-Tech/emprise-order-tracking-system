@@ -29,6 +29,7 @@ export interface LOAImportRow {
   reasonForDeduction?: string;
   billLinks?: string;
   remarks?: string;
+  daysToDueDate?: string;          // Days to due date from Excel (can be "Completed", "(2,182)", or "5")
 }
 
 export interface BulkImportResult {
