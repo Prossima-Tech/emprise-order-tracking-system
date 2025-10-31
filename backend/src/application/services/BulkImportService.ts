@@ -116,6 +116,34 @@ export class BulkImportService {
   }
 
   /**
+   * Parse "Days to due date" column from Excel
+   * Handles: "Completed", "(2,182)" for overdue, "5" for remaining days
+   */
+  private parseDaysToDueDate(value: any): number | null {
+    if (!value) return null;
+
+    const strValue = this.parseStringValue(value);
+    if (!strValue) return null;
+
+    // Handle "Completed" status
+    if (strValue.toUpperCase().includes('COMPLETED')) {
+      return null; // Completed LOAs don't have days to due date
+    }
+
+    // Handle parentheses (negative numbers like "(2,182)" meaning overdue)
+    if (strValue.includes('(') && strValue.includes(')')) {
+      const numStr = strValue.replace(/[()]/g, '').replace(/,/g, '').trim();
+      const num = Number(numStr);
+      return isNaN(num) ? null : -num; // Negative for overdue
+    }
+
+    // Handle positive numbers with commas (like "2,182" or "5")
+    const cleanValue = strValue.replace(/,/g, '').trim();
+    const num = Number(cleanValue);
+    return isNaN(num) ? null : num;
+  }
+
+  /**
    * Parse Excel file and extract LOA rows
    */
   private async parseExcelFile(filePath: string): Promise<LOAImportRow[]> {
@@ -157,6 +185,7 @@ export class BulkImportService {
       reasonForDeduction: this.parseStringValue(row['Reason for deduction']),
       billLinks: this.parseStringValue(row['Bill Links']),
       remarks: this.parseStringValue(row['Remarks']),
+      daysToDueDate: this.parseStringValue(row['Days to due date']),
     }));
 
     return rows;
@@ -530,6 +559,7 @@ export class BulkImportService {
                 tenderNo: row.tenderNo || null,
                 orderPOC: row.orderPOC || null,
                 fdBgDetails: row.fdBgDetails || null,
+                daysToDueDateFromExcel: this.parseDaysToDueDate(row.daysToDueDate),
               },
               include: {
                 site: true

@@ -80,6 +80,7 @@ export interface LOA extends Omit<LOAFormData, 'documentFile' | 'securityDeposit
   amendments: Amendment[];
   purchaseOrders: PurchaseOrder[];
   invoices?: Invoice[];
+  daysToDueDateFromExcel?: number | null;  // Days to due date from Excel (negative=overdue, positive=remaining, null=completed)
   site: {
     id: string;
     name: string;

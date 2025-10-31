@@ -156,14 +156,25 @@ function EditLOA() {
     loaNumber: loa.loaNumber,
     loaValue: loa.loaValue,
     deliveryPeriod: loa.deliveryPeriod,
+    dueDate: loa.dueDate || null,
+    orderReceivedDate: loa.orderReceivedDate || null,
     workDescription: loa.workDescription,
     tags: loa.tags || [],
+    remarks: loa.remarks || '',
+    tenderNo: loa.tenderNo || '',
+    orderPOC: loa.orderPOC || '',
+    fdBgDetails: loa.fdBgDetails || '',
     hasEmd: loa.hasEmd,
     emdAmount: loa.emdAmount,
     hasSecurityDeposit: loa.hasSecurityDeposit,
     securityDepositAmount: loa.securityDepositAmount,
     hasPerformanceGuarantee: loa.hasPerformanceGuarantee,
     performanceGuaranteeAmount: loa.performanceGuaranteeAmount,
+    // Warranty fields
+    warrantyPeriodMonths: loa.warrantyPeriodMonths || null,
+    warrantyPeriodYears: loa.warrantyPeriodYears || null,
+    warrantyStartDate: loa.warrantyStartDate || null,
+    warrantyEndDate: loa.warrantyEndDate || null,
     // Map invoice fields from the first invoice
     invoiceNumber: firstInvoice?.invoiceNumber || '',
     invoiceAmount: firstInvoice?.invoiceAmount || null,
@@ -173,7 +184,6 @@ function EditLOA() {
     amountPending: firstInvoice?.amountPending || null,
     deductionReason: firstInvoice?.deductionReason || '',
     billLinks: firstInvoice?.billLinks || '',
-    remarks: firstInvoice?.remarks || '',
   };
 
   return (

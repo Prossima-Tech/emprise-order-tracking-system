@@ -169,6 +169,7 @@ model LOA {
   tenderNo                     String?          // Tender number reference
   orderPOC                     String?          // Point of contact for the order
   fdBgDetails                  String?          @db.Text // FD/BG details
+  daysToDueDateFromExcel       Int?             // Days to due date as extracted from Excel (negative=overdue, positive=remaining, null=completed)
   createdAt                    DateTime         @default(now())
   updatedAt                    DateTime         @updatedAt
 
