@@ -5,6 +5,7 @@ export interface BulkImportLoaDto {
 export interface LOAImportRow {
   loaNumber: string;
   site: string;
+  customerName?: string;           // Customer name from Excel column
   orderValue: number;
   workDescription: string;
   orderReceivedDate?: Date;
@@ -13,6 +14,11 @@ export interface LOAImportRow {
   orderStatus?: string;
   emd?: number;
   securityDeposit?: number;
+  performanceGuarantee?: number;   // Performance guarantee amount
+  // Additional fields
+  tenderNo?: string;               // Tender number
+  orderPOC?: string;               // Point of contact
+  fdBgDetails?: string;            // FD/BG details
   // Billing fields
   lastInvoiceNo?: string;
   lastInvoiceAmount?: number;

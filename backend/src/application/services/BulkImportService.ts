@@ -11,15 +11,19 @@ export class BulkImportService {
    * Map Excel status to database enum
    * Maps from your sheet's status format to database LOAStatus enum
    */
-  private mapStatus(excelStatus?: string): 'NOT_STARTED' | 'IN_PROGRESS' | 'SUPPLY_WORK_COMPLETED' | 'CHASE_PAYMENT' | 'CLOSED' {
+  private mapStatus(excelStatus?: string): 'NOT_STARTED' | 'IN_PROGRESS' | 'SUPPLY_WORK_DELAYED' | 'SUPPLY_WORK_COMPLETED' | 'APPLICATION_PENDING' | 'UPLOAD_BILL' | 'CHASE_PAYMENT' | 'RETRIEVE_EMD_SECURITY' | 'CLOSED' {
     if (!excelStatus) return 'NOT_STARTED';
 
-    const statusMap: Record<string, 'NOT_STARTED' | 'IN_PROGRESS' | 'SUPPLY_WORK_COMPLETED' | 'CHASE_PAYMENT' | 'CLOSED'> = {
+    const statusMap: Record<string, 'NOT_STARTED' | 'IN_PROGRESS' | 'SUPPLY_WORK_DELAYED' | 'SUPPLY_WORK_COMPLETED' | 'APPLICATION_PENDING' | 'UPLOAD_BILL' | 'CHASE_PAYMENT' | 'RETRIEVE_EMD_SECURITY' | 'CLOSED'> = {
       // Excel Status → Database Status (exact match)
       '1. Not Started': 'NOT_STARTED',
       '2. In Progress': 'IN_PROGRESS',
+      '3. Supply/Work Delayed': 'SUPPLY_WORK_DELAYED',
       '4. Supply/Work Completed': 'SUPPLY_WORK_COMPLETED',
+      '5. Application Pending': 'APPLICATION_PENDING',
+      '6. Upload Bill': 'UPLOAD_BILL',
       '7. Chase Payment': 'CHASE_PAYMENT',
+      '8. Retrieve EMD/Security': 'RETRIEVE_EMD_SECURITY',
       '9. Closed': 'CLOSED',
     };
 
@@ -79,13 +83,35 @@ export class BulkImportService {
   }
 
   /**
-   * Parse numeric value, handling NaN and empty values
+   * Parse string value, treating N/A, NA, empty, and dash as undefined
+   */
+  private parseStringValue(value: any): string | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    const strValue = value.toString().trim();
+    // Treat N/A, NA, dash, and empty string as undefined
+    if (strValue === '' || strValue === '-' || strValue.toUpperCase() === 'N/A' || strValue.toUpperCase() === 'NA') {
+      return undefined;
+    }
+    return strValue;
+  }
+
+  /**
+   * Parse numeric value, handling NaN, empty values, and N/A
    */
   private parseNumber(value: any): number | undefined {
     if (value === null || value === undefined || value === '' || value === '-') {
       return undefined;
     }
-    const num = Number(value);
+    // Check if value is N/A or NA
+    const strValue = value.toString().trim().toUpperCase();
+    if (strValue === 'N/A' || strValue === 'NA') {
+      return undefined;
+    }
+    // Remove commas before parsing (handles Indian number format like 2,29,04,712.22)
+    const cleanValue = value.toString().replace(/,/g, '');
+    const num = Number(cleanValue);
     return isNaN(num) ? undefined : num;
   }
 
@@ -105,45 +131,35 @@ export class BulkImportService {
 
     // Map to LOAImportRow
     const rows: LOAImportRow[] = jsonData.map((row) => ({
-      loaNumber: row['PO/LOA Number']?.toString().trim() || '',
-      site: row['Site']?.toString().trim() || '',
+      loaNumber: this.parseStringValue(row['PO/LOA Number']) || '',
+      site: this.parseStringValue(row['Site']) || '',
+      customerName: this.parseStringValue(row['Customer Name']),
       orderValue: this.parseNumber(row['Order Value']) || 0,
-      workDescription: row['Description of Work']?.toString().trim() || '',
+      workDescription: this.parseStringValue(row['Description of Work']) || '',
       orderReceivedDate: this.parseExcelDate(row['Order Received Date']),
       deliveryDate: this.parseExcelDate(row['Delivery Date']),
       orderDueDate: this.parseExcelDate(row['Order Due date']),
-      orderStatus: row['Order Status']?.toString().trim(),
+      orderStatus: this.parseStringValue(row['Order Status']),
       emd: this.parseNumber(row['EMD']),
       securityDeposit: this.parseNumber(row['Security Deposit']),
+      performanceGuarantee: this.parseNumber(row['Performance Guarantee']),
+      // Additional fields
+      tenderNo: this.parseStringValue(row['Tender No.']),
+      orderPOC: this.parseStringValue(row['Order POC']),
+      fdBgDetails: this.parseStringValue(row['FD/BG Details']),
       // Billing fields
-      lastInvoiceNo: row['Last Invoice No.']?.toString().trim(),
+      lastInvoiceNo: this.parseStringValue(row['Last Invoice No.']),
       lastInvoiceAmount: this.parseNumber(row['Last Invoice Amount']),
       totalReceivables: this.parseNumber(row['Total Receivables '] || row['Total Receivables']),
       actualAmountReceived: this.parseNumber(row['Actual Amount Received']),
       amountDeducted: this.parseNumber(row['Amount Deducted']),
       amountPending: this.parseNumber(row['Amount Pending']),
-      reasonForDeduction: row['Reason for deduction']?.toString().trim(),
-      billLinks: row['Bill Links']?.toString().trim(),
-      remarks: row['Remarks2']?.toString().trim(),
+      reasonForDeduction: this.parseStringValue(row['Reason for deduction']),
+      billLinks: this.parseStringValue(row['Bill Links']),
+      remarks: this.parseStringValue(row['Remarks']),
     }));
 
     return rows;
-  }
-
-  /**
-   * Extract customer name from file name
-   * Example: "GreenCell Sheet.xlsx" -> "GreenCell"
-   */
-  private extractCustomerNameFromFile(fileName: string): string {
-    // Remove file extension
-    const nameWithoutExt = fileName.replace(/\.(xlsx|xls|csv)$/i, '');
-
-    // Remove common suffixes like "Sheet", "Data", etc.
-    const cleanedName = nameWithoutExt
-      .replace(/\s+(sheet|data|export|import|list)$/i, '')
-      .trim();
-
-    return cleanedName;
   }
 
   /**
@@ -154,12 +170,12 @@ export class BulkImportService {
   }
 
   /**
-   * Find or create customer with case-insensitive matching
+   * Find or create customer with case-insensitive matching and ID collision detection
    */
   private async findOrCreateCustomer(customerName: string): Promise<string> {
     const normalizedName = this.normalizeString(customerName);
 
-    // Try to find existing customer with case-insensitive match
+    // Try to find existing customer with case-insensitive match on name
     const existingCustomers = await this.prisma.customer.findMany();
     const matchingCustomer = existingCustomers.find(
       c => this.normalizeString(c.name) === normalizedName
@@ -171,12 +187,26 @@ export class BulkImportService {
     }
 
     // Create new customer if not found
-    // Generate ID from name (uppercase, no spaces)
-    const customerId = customerName
+    // Generate base ID from name (uppercase, no spaces, max 18 chars to leave room for suffix)
+    const baseId = customerName
       .toUpperCase()
       .replace(/\s+/g, '')
       .replace(/[^A-Z0-9]/g, '')
-      .substring(0, 20); // Limit length
+      .substring(0, 18); // Limit to 18 chars to allow for 2-digit suffix
+
+    // Check for ID collision and append number if needed
+    let customerId = baseId;
+    let counter = 1;
+
+    while (await this.prisma.customer.findUnique({ where: { id: customerId } })) {
+      customerId = `${baseId}${counter}`;
+      counter++;
+
+      // Safety check: prevent infinite loop
+      if (counter > 99) {
+        throw new Error(`Unable to generate unique ID for customer: ${customerName}`);
+      }
+    }
 
     const newCustomer = await this.prisma.customer.create({
       data: {
@@ -186,28 +216,42 @@ export class BulkImportService {
       }
     });
 
-    console.log(`Created new customer: ${newCustomer.name} (ID: ${newCustomer.id})`);
+    if (customerId !== baseId) {
+      console.log(`Created new customer with collision-resolved ID: ${newCustomer.name} (ID: ${newCustomer.id}, originally tried: ${baseId})`);
+    } else {
+      console.log(`Created new customer: ${newCustomer.name} (ID: ${newCustomer.id})`);
+    }
+
     return newCustomer.id;
   }
 
   /**
-   * Find or create site with duplicate prevention
+   * Find or create site with customer-scoped duplicate prevention
+   * @param siteCodeCache - Map to track site codes generated in current batch
    */
-  private async findOrCreateSite(siteName: string, customerId: string): Promise<string> {
-    const normalizedName = this.normalizeString(siteName);
+  private async findOrCreateSite(
+    siteName: string,
+    customerId: string,
+    siteCodeCache: Map<string, Set<string>> = new Map()
+  ): Promise<string> {
+    // Try to find existing site for THIS specific customer with case-insensitive match
+    const existingSite = await this.prisma.site.findFirst({
+      where: {
+        zoneId: customerId,
+        name: {
+          equals: siteName,
+          mode: 'insensitive'
+        }
+      }
+    });
 
-    // Try to find existing site with case-insensitive match
-    const existingSites = await this.prisma.site.findMany();
-    const matchingSite = existingSites.find(
-      s => this.normalizeString(s.name) === normalizedName
-    );
-
-    if (matchingSite) {
-      return matchingSite.id;
+    if (existingSite) {
+      console.log(`Found existing site: ${existingSite.name} (ID: ${existingSite.id}) for customer ${customerId}`);
+      return existingSite.id;
     }
 
     // Create new site if not found
-    // Generate site code
+    // Generate site code by finding the highest number for this customer
     const existingSitesForCustomer = await this.prisma.site.findMany({
       where: { zoneId: customerId },
       orderBy: { code: 'desc' },
@@ -223,7 +267,39 @@ export class BulkImportService {
       }
     }
 
-    const siteCode = `${customerId.substring(0, 5)}/SITE/${siteNumber.toString().padStart(3, '0')}`;
+    // Check cache for codes already generated in this batch
+    const cachedCodes = siteCodeCache.get(customerId);
+    if (cachedCodes) {
+      // Find the highest number in cached codes
+      for (const code of cachedCodes) {
+        const match = code.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num >= siteNumber) {
+            siteNumber = num + 1;
+          }
+        }
+      }
+    }
+
+    // Generate unique site code
+    const codePrefix = customerId.substring(0, 5);
+    let siteCode = `${codePrefix}/SITE/${siteNumber.toString().padStart(3, '0')}`;
+
+    // Ensure code is unique (check both DB and cache)
+    while (
+      (cachedCodes && cachedCodes.has(siteCode)) ||
+      (await this.prisma.site.findUnique({ where: { code: siteCode } }))
+    ) {
+      siteNumber++;
+      siteCode = `${codePrefix}/SITE/${siteNumber.toString().padStart(3, '0')}`;
+    }
+
+    // Add to cache
+    if (!siteCodeCache.has(customerId)) {
+      siteCodeCache.set(customerId, new Set());
+    }
+    siteCodeCache.get(customerId)!.add(siteCode);
 
     const newSite = await this.prisma.site.create({
       data: {
@@ -245,6 +321,8 @@ export class BulkImportService {
    */
   private validateRow(row: LOAImportRow, rowIndex: number): string | null {
     // Required fields validation
+    // Note: Customer Name is checked separately in processing loop to allow skipping
+
     if (!row.loaNumber) {
       return `Row ${rowIndex}: LOA Number is required`;
     }
@@ -257,16 +335,9 @@ export class BulkImportService {
       return `Row ${rowIndex}: Order Value must be a positive number`;
     }
 
-    if (!row.workDescription || row.workDescription.length < 3) {
-      return `Row ${rowIndex}: Work Description must be at least 3 characters`;
-    }
+    // Work description is optional now - no minimum length required
 
-    // Date validation
-    if (row.orderReceivedDate && row.deliveryDate) {
-      if (row.orderReceivedDate > row.deliveryDate) {
-        return `Row ${rowIndex}: Order Received Date cannot be after Delivery Date`;
-      }
-    }
+    // Date validation removed - allow any date combinations
 
     return null;
   }
@@ -283,27 +354,61 @@ export class BulkImportService {
         return ResultUtils.fail('No data found in Excel file');
       }
 
-      // Step 2: Extract customer name from file name and find/create customer
-      const customerName = this.extractCustomerNameFromFile(file.originalname);
-      console.log(`Extracted customer name from file: ${customerName}`);
+      // Step 2: Build customer-site mapping from Excel data
+      // Create a map of: customerName -> siteName -> siteId
+      const customerSiteMapping = new Map<string, Map<string, string>>();
 
-      const customerId = await this.findOrCreateCustomer(customerName);
+      // Cache for tracking site codes generated in this batch to prevent duplicates
+      const siteCodeCache = new Map<string, Set<string>>();
 
-      // Step 3: Collect all unique site names from rows
-      const uniqueSiteNames = new Set<string>();
+      // Collect unique customer-site combinations
+      interface CustomerSitePair {
+        customerName: string;
+        siteName: string;
+      }
+      const uniquePairs = new Map<string, CustomerSitePair>();
+
       rows.forEach(row => {
-        if (row.site && row.site.trim()) {
-          uniqueSiteNames.add(row.site.trim());
+        if (row.customerName && row.site) {
+          const key = `${row.customerName.trim()}::${row.site.trim()}`;
+          if (!uniquePairs.has(key)) {
+            uniquePairs.set(key, {
+              customerName: row.customerName.trim(),
+              siteName: row.site.trim()
+            });
+          }
         }
       });
 
-      console.log(`Found ${uniqueSiteNames.size} unique site names in Excel`);
+      console.log(`Found ${uniquePairs.size} unique customer-site combinations in Excel`);
 
-      // Step 4: Find or create all sites
-      const siteMap = new Map<string, string>();
-      for (const siteName of uniqueSiteNames) {
-        const siteId = await this.findOrCreateSite(siteName, customerId);
-        siteMap.set(siteName.toLowerCase().trim(), siteId);
+      // Step 3: Create all customers and sites
+      for (const pair of uniquePairs.values()) {
+        try {
+          // Find or create customer
+          const customerId = await this.findOrCreateCustomer(pair.customerName);
+
+          // Ensure customer has a site map
+          if (!customerSiteMapping.has(customerId)) {
+            customerSiteMapping.set(customerId, new Map());
+          }
+
+          const siteMap = customerSiteMapping.get(customerId)!;
+
+          // Find or create site for this customer
+          if (!siteMap.has(pair.siteName.toLowerCase())) {
+            try {
+              const siteId = await this.findOrCreateSite(pair.siteName, customerId, siteCodeCache);
+              siteMap.set(pair.siteName.toLowerCase(), siteId);
+            } catch (error) {
+              // Handle site creation errors (e.g., duplicate site name across customers)
+              console.warn(`Warning: Could not create site '${pair.siteName}' for customer '${pair.customerName}': ${error instanceof Error ? error.message : 'Unknown error'}`);
+              // Site will be looked up again during row processing
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing customer-site pair (${pair.customerName}, ${pair.siteName}):`, error);
+        }
       }
 
       // Step 5: Process each row
@@ -321,6 +426,17 @@ export class BulkImportService {
         const rowNumber = i + 2; // Excel row number (accounting for header)
 
         try {
+          // Skip rows with missing customer name
+          if (!row.customerName || row.customerName.trim() === '') {
+            result.errors.push({
+              row: rowNumber,
+              loaNumber: row.loaNumber || 'N/A',
+              error: 'Customer Name is missing - row skipped'
+            });
+            result.skippedCount++;
+            continue;
+          }
+
           // Validate row
           const validationError = this.validateRow(row, rowNumber);
           if (validationError) {
@@ -348,18 +464,32 @@ export class BulkImportService {
             continue;
           }
 
-          // Map site name to site ID (sites are now guaranteed to exist)
-          const siteId = siteMap.get(row.site.toLowerCase().trim());
+          // Get customer ID for this row
+          const customerId = await this.findOrCreateCustomer(row.customerName!);
+
+          // Get site ID from customer-site mapping
+          const siteMap = customerSiteMapping.get(customerId);
+          let siteId = siteMap?.get(row.site.toLowerCase().trim());
+
+          // If site not found in pre-created map, try to find or create it now
           if (!siteId) {
-            // This should not happen as we created all sites above, but handle it just in case
-            console.error(`Unexpected: Site '${row.site}' not found in siteMap`);
-            result.errors.push({
-              row: rowNumber,
-              loaNumber: row.loaNumber,
-              error: `Site '${row.site}' could not be mapped`
-            });
-            result.failureCount++;
-            continue;
+            try {
+              siteId = await this.findOrCreateSite(row.site, customerId, siteCodeCache);
+              // Update the mapping
+              if (!customerSiteMapping.has(customerId)) {
+                customerSiteMapping.set(customerId, new Map());
+              }
+              customerSiteMapping.get(customerId)!.set(row.site.toLowerCase().trim(), siteId);
+            } catch (error) {
+              console.error(`Error creating site '${row.site}' for customer '${row.customerName}':`, error);
+              result.errors.push({
+                row: rowNumber,
+                loaNumber: row.loaNumber,
+                error: `Could not create site '${row.site}': ${error instanceof Error ? error.message : 'Unknown error'}`
+              });
+              result.failureCount++;
+              continue;
+            }
           }
 
           // Determine delivery period
@@ -384,14 +514,22 @@ export class BulkImportService {
                   end: deliveryPeriodEnd.toISOString()
                 },
                 dueDate: row.orderDueDate || null, // Add due date from Excel
+                orderReceivedDate: row.orderReceivedDate || null, // Add order received date from Excel
                 workDescription: row.workDescription,
                 documentUrl: 'pending', // Will be updated later if document is uploaded
                 status: status,
                 tags: [],
+                remarks: row.remarks || null, // Map remarks from Excel to LOA remarks
                 hasEmd: !!row.emd,
                 emdAmount: row.emd,
                 hasSecurityDeposit: !!row.securityDeposit,
                 securityDepositAmount: row.securityDeposit,
+                hasPerformanceGuarantee: !!row.performanceGuarantee,
+                performanceGuaranteeAmount: row.performanceGuarantee,
+                // New fields from bulk import
+                tenderNo: row.tenderNo || null,
+                orderPOC: row.orderPOC || null,
+                fdBgDetails: row.fdBgDetails || null,
               },
               include: {
                 site: true
@@ -406,8 +544,7 @@ export class BulkImportService {
                                    row.amountDeducted ||
                                    row.amountPending ||
                                    row.reasonForDeduction ||
-                                   row.billLinks ||
-                                   row.remarks;
+                                   row.billLinks;
 
             if (hasBillingData) {
               await tx.invoice.create({
@@ -421,7 +558,6 @@ export class BulkImportService {
                   amountPending: row.amountPending,
                   deductionReason: row.reasonForDeduction,
                   billLinks: row.billLinks,
-                  remarks: row.remarks,
                 }
               });
             }

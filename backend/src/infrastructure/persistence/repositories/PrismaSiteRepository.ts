@@ -325,7 +325,7 @@ export class PrismaSiteRepository {
     });
   }
 
-  async getSiteCountsByZone(): Promise<{ zoneId: string; count: number }[]> {
+  async getSiteCountsByZone(): Promise<Record<string, number>> {
     const results = await this.prisma.site.groupBy({
       by: ['zoneId'],
       _count: {
@@ -333,9 +333,12 @@ export class PrismaSiteRepository {
       }
     });
 
-    return results.map(result => ({
-      zoneId: result.zoneId,
-      count: result._count.id
-    }));
+    // Convert array to object with zoneId as key and count as value
+    const siteCounts = results.reduce((acc, result) => {
+      acc[result.zoneId] = result._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return siteCounts;
   }
 }

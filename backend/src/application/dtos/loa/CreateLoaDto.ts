@@ -7,10 +7,16 @@ export interface CreateLoaDto {
     loaNumber: string;
     loaValue: number;
     deliveryPeriod: DeliveryPeriod;
+    dueDate?: string;
+    orderReceivedDate?: string;
     workDescription: string;
     documentFile?: Express.Multer.File;
     tags?: string[];
     siteId: string;
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     hasEmd?: boolean;
     emdAmount?: number;
     hasSecurityDeposit?: boolean;
@@ -29,5 +35,4 @@ export interface CreateLoaDto {
     deductionReason?: string;
     billLinks?: string;
     invoicePdfFile?: Express.Multer.File;
-    remarks?: string;
 }

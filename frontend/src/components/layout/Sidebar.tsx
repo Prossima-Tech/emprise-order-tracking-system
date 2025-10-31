@@ -5,12 +5,6 @@ import { NavLink } from 'react-router-dom';
 import { MENU_ITEMS, MENU_SECTIONS } from '../../lib/config/menu';
 import { useAuthStore } from '../../lib/stores/auth-store';
 
-import { 
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from "../ui/accordion";
 import {
   Tooltip,
   TooltipContent,
@@ -26,7 +20,6 @@ interface SidebarProps {
 
 export const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
   const { user } = useAuthStore();
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [hoverExpanded, setHoverExpanded] = useState(false);
 
   // Determine if sidebar should be shown as expanded
@@ -115,42 +108,31 @@ export const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
                     </TooltipProvider>
                   </div>
                 ) : (
-                  <Accordion
-                    type="multiple"
-                    value={expandedSections}
-                    onValueChange={setExpandedSections}
-                    className="border-none"
-                  >
-                    <AccordionItem value={section.id} className="border-none">
-                      <AccordionTrigger 
-                        className="py-2 px-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 no-underline text-left"
-                      >
-                        {section.title}
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-1 pt-0 px-0">
-                        <div className="space-y-1">
-                          {section.items.map((item) => (
-                            <NavLink
-                              key={item.path}
-                              to={item.path}
-                              onClick={() => window.innerWidth < 1024 && setCollapsed(true)}
-                              className={({ isActive }) =>
-                                cn(
-                                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
-                                  isActive 
-                                    ? "bg-gray-100 dark:bg-gray-800 text-primary" 
-                                    : "text-gray-700 dark:text-gray-300"
-                                )
-                              }
-                            >
-                              <item.icon className="h-4 w-4" />
-                              <span className="truncate">{item.title}</span>
-                            </NavLink>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  <div>
+                    <div className="py-2 px-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {section.title}
+                    </div>
+                    <div className="space-y-1">
+                      {section.items.map((item) => (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => window.innerWidth < 1024 && setCollapsed(true)}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+                              isActive
+                                ? "bg-gray-100 dark:bg-gray-800 text-primary"
+                                : "text-gray-700 dark:text-gray-300"
+                            )
+                          }
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span className="truncate">{item.title}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {!isExpanded && (

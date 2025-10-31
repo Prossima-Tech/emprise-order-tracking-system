@@ -20,7 +20,7 @@ const LoginPage = lazy(() => import('./features/auth/pages/LoginPage').then(m =>
 const RegisterPage = lazy(() => import('./features/auth/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const DashboardPage = lazy(() => import('./features/dashboards/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const OffersPage = lazy(() => import('./features/budgetary-offers/pages/OffersPage').then(m => ({ default: m.OffersPage })));
-const EMDsPage = lazy(() => import('./features/emds/pages/EMDsPage').then(m => ({ default: m.EMDsPage })));
+const FDRsPage = lazy(() => import('./features/fdrs/pages/FDRsPage').then(m => ({ default: m.FDRsPage })));
 const LOAsPage = lazy(() => import('./features/loas/pages/LOAsPage').then(m => ({ default: m.LOAsPage })));
 const PurchaseOrdersPage = lazy(() => import('./features/purchase-orders/pages/PurchaseOrdersPage').then(m => ({ default: m.PurchaseOrdersPage })));
 const VendorsPage = lazy(() => import('./features/vendors/pages/VendorsPage').then(m => ({ default: m.VendorsPage })));
@@ -51,7 +51,7 @@ function App() {
                 >
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/budgetary-offers/*" element={<OffersPage />} />
-                  <Route path="/emds/*" element={<EMDsPage />} />
+                  <Route path="/fdrs/*" element={<FDRsPage />} />
                   <Route path="/loas/*" element={<LOAsPage />} />
                   <Route path="/purchase-orders/*" element={<PurchaseOrdersPage />} />
                   <Route path="/items/*" element={<ItemsPage />} />

@@ -270,12 +270,34 @@ export class LoaController {
 
   getAllLoas = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { page, limit, search, sortBy, sortOrder } = req.query;
+      const {
+        page,
+        limit,
+        search,
+        siteId,
+        zoneId,
+        status,
+        minValue,
+        maxValue,
+        hasEMD,
+        hasSecurity,
+        hasPerformanceGuarantee,
+        sortBy,
+        sortOrder
+      } = req.query;
 
       const result = await this.service.getAllLoas({
         searchTerm: search as string,
         page: page ? parseInt(page as string) : undefined,
         limit: limit ? parseInt(limit as string) : undefined,
+        siteId: siteId as string,
+        zoneId: zoneId as string,
+        status: status as string,
+        minValue: minValue ? parseFloat(minValue as string) : undefined,
+        maxValue: maxValue ? parseFloat(maxValue as string) : undefined,
+        hasEMD: hasEMD === 'true' ? true : hasEMD === 'false' ? false : undefined,
+        hasSecurity: hasSecurity === 'true' ? true : hasSecurity === 'false' ? false : undefined,
+        hasPerformanceGuarantee: hasPerformanceGuarantee === 'true' ? true : hasPerformanceGuarantee === 'false' ? false : undefined,
         sortBy: sortBy as string,
         sortOrder: sortOrder as 'asc' | 'desc'
       });

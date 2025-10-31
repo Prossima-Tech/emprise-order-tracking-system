@@ -7,6 +7,8 @@ export interface LOA {
         start: Date;
         end: Date;
     };
+    dueDate?: Date;
+    orderReceivedDate?: Date;
     status?: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'DELAYED';
     site: {
         id: string;
@@ -19,6 +21,10 @@ export interface LOA {
     documentUrl: string;
     amendments?: Amendment[];
     invoices?: any[]; // Invoice records for billing
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     hasEmd: boolean;
     emdAmount?: number;
     hasSecurityDeposit: boolean;

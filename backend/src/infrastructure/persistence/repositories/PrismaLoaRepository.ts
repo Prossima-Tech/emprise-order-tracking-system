@@ -21,10 +21,16 @@ export class PrismaLoaRepository {
         start: new Date((prismaLoa.deliveryPeriod as any).start),
         end: new Date((prismaLoa.deliveryPeriod as any).end)
       } : { start: new Date(), end: new Date() },
+      dueDate: prismaLoa.dueDate || undefined,
+      orderReceivedDate: prismaLoa.orderReceivedDate || undefined,
       status: (prismaLoa.status || 'NOT_STARTED') as any, // Ensure status is always set
       workDescription: prismaLoa.workDescription,
       documentUrl: prismaLoa.documentUrl,
       tags: prismaLoa.tags,
+      remarks: prismaLoa.remarks || undefined,
+      tenderNo: prismaLoa.tenderNo || undefined,
+      orderPOC: prismaLoa.orderPOC || undefined,
+      fdBgDetails: prismaLoa.fdBgDetails || undefined,
       amendments: prismaLoa.amendments.map(amendment => ({
         id: amendment.id,
         amendmentNumber: amendment.amendmentNumber,
@@ -82,6 +88,10 @@ export class PrismaLoaRepository {
     documentUrl: string;
     tags: string[];
     siteId: string;
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     hasEmd?: boolean;
     emdAmount?: number;
     hasSecurityDeposit?: boolean;
@@ -106,6 +116,10 @@ export class PrismaLoaRepository {
           site: {
             connect: { id: data.siteId }
           },
+          remarks: data.remarks || null,
+          tenderNo: data.tenderNo || null,
+          orderPOC: data.orderPOC || null,
+          fdBgDetails: data.fdBgDetails || null,
           hasEmd: data.hasEmd || false,
           emdAmount: data.emdAmount || null,
           hasSecurityDeposit: data.hasSecurityDeposit || false,
@@ -164,6 +178,12 @@ export class PrismaLoaRepository {
     if (data.hasPerformanceGuarantee !== undefined) updateData.hasPerformanceGuarantee = data.hasPerformanceGuarantee;
     if (data.performanceGuaranteeAmount !== undefined) updateData.performanceGuaranteeAmount = data.performanceGuaranteeAmount;
     if (data.performanceGuaranteeDocumentUrl !== undefined) updateData.performanceGuaranteeDocumentUrl = data.performanceGuaranteeDocumentUrl;
+
+    // Handle optional LOA fields
+    if (data.remarks !== undefined) updateData.remarks = data.remarks;
+    if (data.tenderNo !== undefined) updateData.tenderNo = data.tenderNo;
+    if (data.orderPOC !== undefined) updateData.orderPOC = data.orderPOC;
+    if (data.fdBgDetails !== undefined) updateData.fdBgDetails = data.fdBgDetails;
 
     try {
       const prismaLoa = await this.prisma.lOA.update({
@@ -228,6 +248,12 @@ export class PrismaLoaRepository {
     searchTerm?: string;
     siteId?: string;
     zoneId?: string;
+    status?: string;
+    minValue?: number;
+    maxValue?: number;
+    hasEMD?: boolean;
+    hasSecurity?: boolean;
+    hasPerformanceGuarantee?: boolean;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }): Promise<LOA[]> {
@@ -253,28 +279,64 @@ export class PrismaLoaRepository {
       }
     }
 
+    // Build where clause with filters
+    const whereConditions: any[] = [];
+
+    if (params.siteId) {
+      whereConditions.push({ siteId: params.siteId });
+    }
+
+    if (params.zoneId) {
+      whereConditions.push({ site: { zoneId: params.zoneId } });
+    }
+
+    if (params.status) {
+      whereConditions.push({ status: params.status });
+    }
+
+    if (params.minValue !== undefined || params.maxValue !== undefined) {
+      const valueFilter: any = {};
+      if (params.minValue !== undefined) {
+        valueFilter.gte = params.minValue;
+      }
+      if (params.maxValue !== undefined) {
+        valueFilter.lte = params.maxValue;
+      }
+      whereConditions.push({ loaValue: valueFilter });
+    }
+
+    if (params.hasEMD !== undefined) {
+      whereConditions.push({ hasEmd: params.hasEMD });
+    }
+
+    if (params.hasSecurity !== undefined) {
+      whereConditions.push({ hasSecurityDeposit: params.hasSecurity });
+    }
+
+    if (params.hasPerformanceGuarantee !== undefined) {
+      whereConditions.push({ hasPerformanceGuarantee: params.hasPerformanceGuarantee });
+    }
+
+    if (params.searchTerm) {
+      whereConditions.push({
+        OR: [
+          { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+          { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
+          { tags: { has: params.searchTerm } },
+          { site: {
+            OR: [
+              { name: { contains: params.searchTerm, mode: 'insensitive' } },
+              { code: { contains: params.searchTerm, mode: 'insensitive' } }
+            ]
+          }}
+        ]
+      });
+    }
+
     const prismaLoas = await this.prisma.lOA.findMany({
       skip: params.skip,
       take: params.take,
-      where: {
-        AND: [
-          params.siteId ? { siteId: params.siteId } : {},
-          params.zoneId ? { site: { zoneId: params.zoneId } } : {},
-          params.searchTerm ? {
-            OR: [
-              { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
-              { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
-              { tags: { has: params.searchTerm } },
-              { site: {
-                OR: [
-                  { name: { contains: params.searchTerm, mode: 'insensitive' } },
-                  { code: { contains: params.searchTerm, mode: 'insensitive' } }
-                ]
-              }}
-            ]
-          } : {}
-        ]
-      },
+      where: whereConditions.length > 0 ? { AND: whereConditions } : {},
       include: {
         amendments: true,
         purchaseOrders: true,
@@ -287,27 +349,73 @@ export class PrismaLoaRepository {
     return prismaLoas.map(this.mapPrismaLoaToLoa.bind(this));
   }
 
-  async count(params: { searchTerm?: string, siteId?: string, zoneId?: string }): Promise<number> {
-    return this.prisma.lOA.count({
-      where: {
-        AND: [
-          params.siteId ? { siteId: params.siteId } : {},
-          params.zoneId ? { site: { zoneId: params.zoneId } } : {},
-          params.searchTerm ? {
-            OR: [
-              { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
-              { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
-              { tags: { has: params.searchTerm } },
-              { site: {
-                OR: [
-                  { name: { contains: params.searchTerm, mode: 'insensitive' } },
-                  { code: { contains: params.searchTerm, mode: 'insensitive' } }
-                ]
-              }}
-            ]
-          } : {}
-        ]
+  async count(params: {
+    searchTerm?: string;
+    siteId?: string;
+    zoneId?: string;
+    status?: string;
+    minValue?: number;
+    maxValue?: number;
+    hasEMD?: boolean;
+    hasSecurity?: boolean;
+    hasPerformanceGuarantee?: boolean;
+  }): Promise<number> {
+    // Build where clause with filters - same logic as findAll
+    const whereConditions: any[] = [];
+
+    if (params.siteId) {
+      whereConditions.push({ siteId: params.siteId });
+    }
+
+    if (params.zoneId) {
+      whereConditions.push({ site: { zoneId: params.zoneId } });
+    }
+
+    if (params.status) {
+      whereConditions.push({ status: params.status });
+    }
+
+    if (params.minValue !== undefined || params.maxValue !== undefined) {
+      const valueFilter: any = {};
+      if (params.minValue !== undefined) {
+        valueFilter.gte = params.minValue;
       }
+      if (params.maxValue !== undefined) {
+        valueFilter.lte = params.maxValue;
+      }
+      whereConditions.push({ loaValue: valueFilter });
+    }
+
+    if (params.hasEMD !== undefined) {
+      whereConditions.push({ hasEmd: params.hasEMD });
+    }
+
+    if (params.hasSecurity !== undefined) {
+      whereConditions.push({ hasSecurityDeposit: params.hasSecurity });
+    }
+
+    if (params.hasPerformanceGuarantee !== undefined) {
+      whereConditions.push({ hasPerformanceGuarantee: params.hasPerformanceGuarantee });
+    }
+
+    if (params.searchTerm) {
+      whereConditions.push({
+        OR: [
+          { loaNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+          { workDescription: { contains: params.searchTerm, mode: 'insensitive' } },
+          { tags: { has: params.searchTerm } },
+          { site: {
+            OR: [
+              { name: { contains: params.searchTerm, mode: 'insensitive' } },
+              { code: { contains: params.searchTerm, mode: 'insensitive' } }
+            ]
+          }}
+        ]
+      });
+    }
+
+    return this.prisma.lOA.count({
+      where: whereConditions.length > 0 ? { AND: whereConditions } : {}
     });
   }
 

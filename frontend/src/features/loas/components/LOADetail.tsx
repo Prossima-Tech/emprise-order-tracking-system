@@ -338,30 +338,41 @@ export function LOADetail() {
               </div>
 
               {/* Due Date */}
-              {loa.dueDate && (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Due Date</h3>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm text-muted-foreground">
-                        {format(new Date(loa.dueDate), "PPP")}
-                      </div>
+              <div>
+                <h3 className="text-lg font-medium mb-2">Due Date</h3>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      {loa.dueDate ? format(new Date(loa.dueDate), "PPP") : "-"}
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Order Received Date */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Order Received Date</h3>
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-sm text-muted-foreground">
+                      {loa.orderReceivedDate ? format(new Date(loa.orderReceivedDate), "PPP") : "-"}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Warranty Period */}
-              {(loa.warrantyPeriodMonths || loa.warrantyPeriodYears || loa.warrantyStartDate || loa.warrantyEndDate) && (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Warranty Period</h3>
-                  <div className="bg-muted p-4 rounded-lg space-y-3">
-                    {/* Warranty Duration */}
-                    {(loa.warrantyPeriodMonths || loa.warrantyPeriodYears) && (
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground mb-1">Duration</div>
-                        <div className="text-sm">
+              <div>
+                <h3 className="text-lg font-medium mb-2">Warranty Period</h3>
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  {/* Warranty Duration */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Duration</div>
+                    <div className="text-sm">
+                      {loa.warrantyPeriodYears || loa.warrantyPeriodMonths ? (
+                        <>
                           {loa.warrantyPeriodYears && loa.warrantyPeriodYears > 0 && (
                             <span>{loa.warrantyPeriodYears} {loa.warrantyPeriodYears === 1 ? 'year' : 'years'}</span>
                           )}
@@ -371,40 +382,36 @@ export function LOADetail() {
                           {loa.warrantyPeriodMonths && loa.warrantyPeriodMonths > 0 && (
                             <span>{loa.warrantyPeriodMonths} {loa.warrantyPeriodMonths === 1 ? 'month' : 'months'}</span>
                           )}
-                        </div>
-                      </div>
-                    )}
+                        </>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </div>
+                  </div>
 
-                    {/* Warranty Dates */}
-                    {(loa.warrantyStartDate || loa.warrantyEndDate) && (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {loa.warrantyStartDate && (
-                          <div>
-                            <div className="text-sm font-medium text-muted-foreground mb-1">Start Date</div>
-                            <div className="flex items-center space-x-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">
-                                {format(new Date(loa.warrantyStartDate), "PPP")}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        {loa.warrantyEndDate && (
-                          <div>
-                            <div className="text-sm font-medium text-muted-foreground mb-1">End Date</div>
-                            <div className="flex items-center space-x-2">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">
-                                {format(new Date(loa.warrantyEndDate), "PPP")}
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                  {/* Warranty Dates */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Start Date</div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {loa.warrantyStartDate ? format(new Date(loa.warrantyStartDate), "PPP") : "-"}
+                        </span>
                       </div>
-                    )}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">End Date</div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {loa.warrantyEndDate ? format(new Date(loa.warrantyEndDate), "PPP") : "-"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Work Description */}
               <div>
@@ -435,16 +442,16 @@ export function LOADetail() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Earnest Money Deposit (EMD)</h3>
                 <div className="bg-muted p-4 rounded-lg">
-                  {loa.hasEmd ? (
-                    <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mr-2">Required</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium mr-2 ${loa.hasEmd ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {loa.hasEmd ? 'Required' : 'Not Required'}
+                        </span>
                         <span className="font-medium">Amount: {formatCurrency(loa.emdAmount || 0)}</span>
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No EMD required for this LOA</p>
-                  )}
+                  </div>
                 </div>
               </div>
 
@@ -452,31 +459,29 @@ export function LOADetail() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Security Deposit</h3>
                 <div className="bg-muted p-4 rounded-lg">
-                  {loa.hasSecurityDeposit ? (
-                    <div className="space-y-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mr-2">Required</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium mr-2 ${loa.hasSecurityDeposit ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {loa.hasSecurityDeposit ? 'Required' : 'Not Required'}
+                        </span>
                         <span className="font-medium">Amount: {formatCurrency(loa.securityDepositAmount || 0)}</span>
                       </div>
-                      {loa.securityDepositDocumentUrl && (
-                        <div className="mt-2">
-                          <a
-                            href={loa.securityDepositDocumentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline flex items-center"
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            View Security Deposit Document
-                          </a>
-                        </div>
-                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">
-                      No security deposit required for this LOA
-                    </div>
-                  )}
+                    {loa.securityDepositDocumentUrl && (
+                      <div className="mt-2">
+                        <a
+                          href={loa.securityDepositDocumentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          View Security Deposit Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -484,31 +489,61 @@ export function LOADetail() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Performance Guarantee</h3>
                 <div className="bg-muted p-4 rounded-lg">
-                  {loa.hasPerformanceGuarantee ? (
-                    <div className="space-y-2">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center text-sm">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium mr-2">Required</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium mr-2 ${loa.hasPerformanceGuarantee ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {loa.hasPerformanceGuarantee ? 'Required' : 'Not Required'}
+                        </span>
                         <span className="font-medium">Amount: {formatCurrency(loa.performanceGuaranteeAmount || 0)}</span>
                       </div>
-                      {loa.performanceGuaranteeDocumentUrl && (
-                        <div className="mt-2">
-                          <a
-                            href={loa.performanceGuaranteeDocumentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline flex items-center"
-                          >
-                            <FileText className="h-4 w-4 mr-1" />
-                            View Performance Guarantee Document
-                          </a>
-                        </div>
-                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground py-2">
-                      No performance guarantee required for this LOA
-                    </div>
-                  )}
+                    {loa.performanceGuaranteeDocumentUrl && (
+                      <div className="mt-2">
+                        <a
+                          href={loa.performanceGuaranteeDocumentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          View Performance Guarantee Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Order Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Additional Order Information</h3>
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  {/* Tender Number */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Tender Number</div>
+                    <div className="text-sm">{loa.tenderNo || '-'}</div>
+                  </div>
+
+                  {/* Order Point of Contact */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Order Point of Contact</div>
+                    <div className="text-sm">{loa.orderPOC || '-'}</div>
+                  </div>
+
+                  {/* FD/BG Details */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">FD/BG Details</div>
+                    <div className="text-sm whitespace-pre-wrap">{loa.fdBgDetails || '-'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Remarks */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Remarks</h3>
+                <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap">
+                  {loa.remarks || '-'}
                 </div>
               </div>
             </CardContent>
@@ -524,20 +559,17 @@ export function LOADetail() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!loa.invoices || loa.invoices.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  No billing information available for this LOA
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {loa.invoices.map((invoice) => (
+              <div className="space-y-6">
+                {/* Show invoice if exists, otherwise show empty state with all fields */}
+                {loa.invoices && loa.invoices.length > 0 ? (
+                  loa.invoices.map((invoice) => (
                     <div key={invoice.id} className="border rounded-lg overflow-hidden">
                       {/* Invoice Header */}
                       <div className="bg-muted px-4 py-3 border-b">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-semibold text-lg">
-                              {invoice.invoiceNumber || 'Invoice'}
+                              {invoice.invoiceNumber || '-'}
                             </h3>
                             <p className="text-sm text-muted-foreground">
                               Last updated: {format(new Date(invoice.updatedAt), "PPP")}
@@ -548,99 +580,77 @@ export function LOADetail() {
 
                       {/* Invoice Details */}
                       <div className="p-4 space-y-6">
-                        {/* Financial Summary Grid */}
+                        {/* Financial Summary Grid - ALWAYS SHOW ALL FIELDS */}
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                           {/* Last Invoice Amount */}
-                          {invoice.invoiceAmount !== undefined && invoice.invoiceAmount !== null && (
-                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                                Last Invoice Amount
-                              </h4>
-                              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                                {formatCurrency(invoice.invoiceAmount)}
-                              </p>
-                            </div>
-                          )}
+                          <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                              Last Invoice Amount
+                            </h4>
+                            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                              {formatCurrency(invoice.invoiceAmount || 0)}
+                            </p>
+                          </div>
 
                           {/* Total Receivables */}
-                          {invoice.totalReceivables !== undefined && invoice.totalReceivables !== null && (
-                            <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                                Total Receivables
-                              </h4>
-                              <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                                {formatCurrency(invoice.totalReceivables)}
-                              </p>
-                            </div>
-                          )}
+                          <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                              Total Receivables
+                            </h4>
+                            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                              {formatCurrency(invoice.totalReceivables || 0)}
+                            </p>
+                          </div>
 
                           {/* Actual Amount Received */}
-                          {invoice.actualAmountReceived !== undefined && invoice.actualAmountReceived !== null && (
-                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                                Actual Amount Received
-                              </h4>
-                              <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                                {formatCurrency(invoice.actualAmountReceived)}
-                              </p>
-                            </div>
-                          )}
+                          <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                              Actual Amount Received
+                            </h4>
+                            <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                              {formatCurrency(invoice.actualAmountReceived || 0)}
+                            </p>
+                          </div>
 
                           {/* Amount Pending */}
-                          {invoice.amountPending !== undefined && invoice.amountPending !== null && (
-                            <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
-                              <h4 className="text-sm font-medium text-muted-foreground mb-1">
-                                Amount Pending
-                              </h4>
-                              <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
-                                {formatCurrency(invoice.amountPending)}
-                              </p>
-                            </div>
-                          )}
+                          <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                              Amount Pending
+                            </h4>
+                            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                              {formatCurrency(invoice.amountPending || 0)}
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Deduction Information */}
-                        {invoice.amountDeducted !== undefined && invoice.amountDeducted !== null && invoice.amountDeducted > 0 && (
-                          <div className="bg-red-50 dark:bg-red-950 border-l-4 border-red-500 p-4 rounded-lg">
-                            <h4 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2">
-                              Deduction Information
-                            </h4>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Amount Deducted</span>
-                                <span className="text-lg font-bold text-red-700 dark:text-red-300">
-                                  {formatCurrency(invoice.amountDeducted)}
-                                </span>
-                              </div>
-                              {invoice.deductionReason && invoice.deductionReason !== '-' && (
-                                <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
-                                  <h5 className="text-sm font-medium text-muted-foreground mb-1">
-                                    Reason for Deduction
-                                  </h5>
-                                  <p className="text-sm">{invoice.deductionReason}</p>
-                                </div>
-                              )}
+                        {/* Deduction Information - ALWAYS SHOW */}
+                        <div className={`border-l-4 p-4 rounded-lg ${invoice.amountDeducted && invoice.amountDeducted > 0 ? 'bg-red-50 dark:bg-red-950 border-red-500' : 'bg-gray-50 dark:bg-gray-950 border-gray-500'}`}>
+                          <h4 className={`text-sm font-semibold mb-2 ${invoice.amountDeducted && invoice.amountDeducted > 0 ? 'text-red-800 dark:text-red-300' : 'text-gray-800 dark:text-gray-300'}`}>
+                            Deduction Information
+                          </h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">Amount Deducted</span>
+                              <span className={`text-lg font-bold ${invoice.amountDeducted && invoice.amountDeducted > 0 ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                                {formatCurrency(invoice.amountDeducted || 0)}
+                              </span>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+                              <h5 className="text-sm font-medium text-muted-foreground mb-1">
+                                Reason for Deduction
+                              </h5>
+                              <p className="text-sm">{invoice.deductionReason || "-"}</p>
                             </div>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Remarks */}
-                        {invoice.remarks && (
-                          <div className="bg-muted p-4 rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                              Remarks
-                            </h4>
-                            <p className="text-sm whitespace-pre-wrap">{invoice.remarks}</p>
-                          </div>
-                        )}
-
-                        {/* Bill Links */}
-                        {invoice.billLinks && (
-                          <div className="bg-muted p-4 rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                              Bill Links
-                            </h4>
-                            <div className="flex items-center gap-2">
+                        {/* Bill Links - ALWAYS SHOW */}
+                        <div className="bg-muted p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                            Bill Links
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            {invoice.billLinks ? (
                               <a
                                 href={invoice.billLinks}
                                 target="_blank"
@@ -650,14 +660,66 @@ export function LOADetail() {
                                 <FileText className="h-4 w-4" />
                                 View Bill Document
                               </a>
-                            </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                ) : (
+                  /* Empty state showing all fields with ₹0 or "-" */
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted px-4 py-3 border-b">
+                      <h3 className="font-semibold text-lg">No Invoice Data</h3>
+                      <p className="text-sm text-muted-foreground">All fields are displayed below</p>
+                    </div>
+                    <div className="p-4 space-y-6">
+                      {/* Financial Summary Grid */}
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Last Invoice Amount</h4>
+                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(0)}</p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Receivables</h4>
+                          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{formatCurrency(0)}</p>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Actual Amount Received</h4>
+                          <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(0)}</p>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Amount Pending</h4>
+                          <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{formatCurrency(0)}</p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-gray-950 border-l-4 border-gray-500 p-4 rounded-lg">
+                        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-300 mb-2">Deduction Information</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Amount Deducted</span>
+                            <span className="text-lg font-bold text-gray-700 dark:text-gray-300">{formatCurrency(0)}</span>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+                            <h5 className="text-sm font-medium text-muted-foreground mb-1">Reason for Deduction</h5>
+                            <p className="text-sm">-</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-muted p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Remarks</h4>
+                        <p className="text-sm">-</p>
+                      </div>
+                      <div className="bg-muted p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Bill Links</h4>
+                        <span className="text-sm text-muted-foreground">-</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

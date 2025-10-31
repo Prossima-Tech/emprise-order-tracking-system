@@ -1,16 +1,16 @@
-// interfaces/http/routes/emd.routes.ts
+// interfaces/http/routes/fdr.routes.ts
 import { Router } from 'express';
 import multer from 'multer';
-import { EmdController } from '../controllers/EmdController';
+import { FdrController } from '../controllers/FdrController';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { UserRole } from '../../../domain/entities/User';
 
 /**
  * @swagger
- * /emds:
+ * /fdrs:
  *   post:
- *     tags: [EMD]
- *     summary: Create new EMD
+ *     tags: [FDR]
+ *     summary: Create new FDR
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -20,30 +20,53 @@ import { UserRole } from '../../../domain/entities/User';
  *           schema:
  *             type: object
  *             required:
- *               - amount
- *               - submissionDate
- *               - maturityDate
+ *               - depositAmount
+ *               - dateOfDeposit
  *             properties:
- *               amount:
- *                 type: number
- *               paymentMode:
+ *               category:
  *                 type: string
- *                 default: FDR
- *               submissionDate:
- *                 type: string
- *                 format: date
- *               maturityDate:
- *                 type: string
- *                 format: date
+ *                 enum: [FD, BG]
+ *                 default: FD
  *               bankName:
  *                 type: string
  *                 default: IDBI
+ *               accountNo:
+ *                 type: string
+ *               fdrNumber:
+ *                 type: string
+ *               accountName:
+ *                 type: string
+ *               depositAmount:
+ *                 type: number
+ *               dateOfDeposit:
+ *                 type: string
+ *                 format: date
+ *               maturityValue:
+ *                 type: number
+ *               maturityDate:
+ *                 type: string
+ *                 format: date
+ *               contractNo:
+ *                 type: string
+ *               contractDetails:
+ *                 type: string
+ *               poc:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               emdAmount:
+ *                 type: number
+ *               sdAmount:
+ *                 type: number
  *               documentFile:
  *                 type: string
  *                 format: binary
  *               extractedData:
  *                 type: string
  *                 description: JSON string of extracted data
+ *               status:
+ *                 type: string
+ *                 enum: [RUNNING, COMPLETED, CANCELLED, RETURNED]
  *               offerId:
  *                 type: string
  *               loaId:
@@ -55,13 +78,13 @@ import { UserRole } from '../../../domain/entities/User';
  *                 description: JSON array of tags
  *     responses:
  *       201:
- *         description: EMD created successfully
+ *         description: FDR created successfully
  *       400:
  *         description: Invalid input data
  *
  *   get:
- *     tags: [EMD]
- *     summary: Get all EMDs
+ *     tags: [FDR]
+ *     summary: Get all FDRs
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -80,10 +103,15 @@ import { UserRole } from '../../../domain/entities/User';
  *         schema:
  *           type: string
  *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [FD, BG]
+ *       - in: query
  *         name: status
  *         schema:
  *           type: string
- *           enum: [ACTIVE, EXPIRED, RELEASED]
+ *           enum: [RUNNING, COMPLETED, CANCELLED, RETURNED]
  *       - in: query
  *         name: offerId
  *         schema:
@@ -98,12 +126,37 @@ import { UserRole } from '../../../domain/entities/User';
  *           type: string
  *     responses:
  *       200:
- *         description: List of EMDs
+ *         description: List of FDRs
  *
- * /emds/{id}:
+ * /fdrs/bulk-import:
+ *   post:
+ *     tags: [FDR]
+ *     summary: Bulk import FDRs from Excel
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Excel file with FDR data
+ *     responses:
+ *       200:
+ *         description: FDRs imported successfully
+ *       400:
+ *         description: Import failed
+ *
+ * /fdrs/{id}:
  *   get:
- *     tags: [EMD]
- *     summary: Get EMD by ID
+ *     tags: [FDR]
+ *     summary: Get FDR by ID
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -114,13 +167,13 @@ import { UserRole } from '../../../domain/entities/User';
  *           type: string
  *     responses:
  *       200:
- *         description: EMD details
+ *         description: FDR details
  *       404:
- *         description: EMD not found
+ *         description: FDR not found
  *
  *   put:
- *     tags: [EMD]
- *     summary: Update EMD
+ *     tags: [FDR]
+ *     summary: Update FDR
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -135,18 +188,39 @@ import { UserRole } from '../../../domain/entities/User';
  *           schema:
  *             type: object
  *             properties:
- *               amount:
- *                 type: number
- *               paymentMode:
+ *               category:
  *                 type: string
- *               submissionDate:
+ *                 enum: [FD, BG]
+ *               bankName:
+ *                 type: string
+ *               accountNo:
+ *                 type: string
+ *               fdrNumber:
+ *                 type: string
+ *               accountName:
+ *                 type: string
+ *               depositAmount:
+ *                 type: number
+ *               dateOfDeposit:
  *                 type: string
  *                 format: date
+ *               maturityValue:
+ *                 type: number
  *               maturityDate:
  *                 type: string
  *                 format: date
- *               bankName:
+ *               contractNo:
  *                 type: string
+ *               contractDetails:
+ *                 type: string
+ *               poc:
+ *                 type: string
+ *               location:
+ *                 type: string
+ *               emdAmount:
+ *                 type: number
+ *               sdAmount:
+ *                 type: number
  *               documentFile:
  *                 type: string
  *                 format: binary
@@ -154,7 +228,7 @@ import { UserRole } from '../../../domain/entities/User';
  *                 type: string
  *               status:
  *                 type: string
- *                 enum: [ACTIVE, EXPIRED, RELEASED]
+ *                 enum: [RUNNING, COMPLETED, CANCELLED, RETURNED]
  *               offerId:
  *                 type: string
  *               loaId:
@@ -165,11 +239,11 @@ import { UserRole } from '../../../domain/entities/User';
  *                 type: string
  *     responses:
  *       200:
- *         description: EMD updated successfully
+ *         description: FDR updated successfully
  *
  *   delete:
- *     tags: [EMD]
- *     summary: Delete EMD
+ *     tags: [FDR]
+ *     summary: Delete FDR
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -180,12 +254,12 @@ import { UserRole } from '../../../domain/entities/User';
  *           type: string
  *     responses:
  *       200:
- *         description: EMD deleted successfully
+ *         description: FDR deleted successfully
  *
- * /emds/{id}/status:
+ * /fdrs/{id}/status:
  *   patch:
- *     tags: [EMD]
- *     summary: Update EMD status
+ *     tags: [FDR]
+ *     summary: Update FDR status
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -205,15 +279,15 @@ import { UserRole } from '../../../domain/entities/User';
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [ACTIVE, EXPIRED, RELEASED]
+ *                 enum: [RUNNING, COMPLETED, CANCELLED, RETURNED]
  *     responses:
  *       200:
- *         description: EMD status updated successfully
+ *         description: FDR status updated successfully
  *
- * /emds/expiring/list:
+ * /fdrs/expiring/list:
  *   get:
- *     tags: [EMD]
- *     summary: Get expiring EMDs
+ *     tags: [FDR]
+ *     summary: Get expiring FDRs
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -224,11 +298,11 @@ import { UserRole } from '../../../domain/entities/User';
  *           default: 30
  *     responses:
  *       200:
- *         description: List of expiring EMDs
+ *         description: List of expiring FDRs
  *
- * /emds/extract:
+ * /fdrs/extract:
  *   post:
- *     tags: [EMD]
+ *     tags: [FDR]
  *     summary: Extract data from document using AI
  *     security:
  *       - bearerAuth: []
@@ -251,7 +325,7 @@ import { UserRole } from '../../../domain/entities/User';
  *         description: Extraction failed
  */
 
-// Configure multer for file uploads
+// Configure multer for file uploads (FDR documents)
 const upload = multer({
   dest: 'uploads/',
   limits: {
@@ -266,16 +340,34 @@ const upload = multer({
   },
 });
 
+// Configure multer for Excel file uploads (bulk import)
+const excelUpload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.mimetype === 'application/vnd.ms-excel'
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed!'));
+    }
+  },
+});
+
 // Setup routes
-export function emdRoutes(controller: EmdController) {
+export function fdrRoutes(controller: FdrController) {
   const router = Router();
 
-  // Create EMD
+  // Create FDR
   router.post(
     '/',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     upload.single('documentFile'),
-    controller.createEmd
+    controller.createFdr
   );
 
   // AI extraction endpoint (called by frontend with text)
@@ -293,43 +385,51 @@ export function emdRoutes(controller: EmdController) {
     controller.extractFromFile
   );
 
-  // Get expiring EMDs (must be before /:id route)
+  // Bulk import FDRs from Excel (must be before /:id route)
+  router.post(
+    '/bulk-import',
+    authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
+    excelUpload.single('file'),
+    controller.bulkImport
+  );
+
+  // Get expiring FDRs (must be before /:id route)
   router.get(
     '/expiring/list',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER]),
-    controller.getExpiringEmds
+    controller.getExpiringFdrs
   );
 
-  // Get all EMDs
+  // Get all FDRs
   router.get(
     '/',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER]),
-    controller.getAllEmds
+    controller.getAllFdrs
   );
 
-  // Get EMD by ID
+  // Get FDR by ID
   router.get(
     '/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER]),
-    controller.getEmdById
+    controller.getFdrById
   );
 
-  // Update EMD
+  // Update FDR
   router.put(
     '/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),
     upload.single('documentFile'),
-    controller.updateEmd
+    controller.updateFdr
   );
 
-  // Delete EMD
+  // Delete FDR
   router.delete(
     '/:id',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER]),
-    controller.deleteEmd
+    controller.deleteFdr
   );
 
-  // Update EMD status
+  // Update FDR status
   router.patch(
     '/:id/status',
     authMiddleware([UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF]),

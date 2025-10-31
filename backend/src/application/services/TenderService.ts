@@ -3,7 +3,7 @@ import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreateTenderDto } from '../dtos/tender/CreateTenderDto';
 import { UpdateTenderDto } from '../dtos/tender/UpdateTenderDto';
 import { TenderResponseDto } from '../dtos/tender/TenderResponseDto';
-import { TenderStatus } from '../../domain/entities/constants';
+import { TenderStatus } from '@prisma/client';
 import { AppError } from '../../shared/errors/AppError';
 import { Tender } from '../../domain/entities/Tender';
 

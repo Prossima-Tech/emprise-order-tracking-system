@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TenderStatus } from '@prisma/client';
 import { Tender } from '../../../domain/entities/Tender';
-import { TenderStatus } from '../../../domain/entities/constants';
 
 export class PrismaTenderRepository {
   constructor(private prisma: PrismaClient) {}
@@ -13,7 +12,7 @@ export class PrismaTenderRepository {
       description: prismaTender.description,
       hasEMD: prismaTender.hasEMD,
       emdAmount: prismaTender.emdAmount,
-      status: prismaTender.status as TenderStatus,
+      status: prismaTender.status,
       documentUrl: prismaTender.documentUrl,
       tags: prismaTender.tags || [],
       createdAt: prismaTender.createdAt,
@@ -40,7 +39,7 @@ export class PrismaTenderRepository {
         description: tender.description,
         hasEMD: tender.hasEMD,
         emdAmount: tender.emdAmount,
-        status: tender.status as any,
+        status: tender.status,
         documentUrl: tender.documentUrl,
         tags: tags
       }
@@ -69,7 +68,7 @@ export class PrismaTenderRepository {
         description: tender.description,
         hasEMD: tender.hasEMD,
         emdAmount: tender.emdAmount,
-        status: tender.status as any,
+        status: tender.status,
         documentUrl: tender.documentUrl,
         tags: tags
       }

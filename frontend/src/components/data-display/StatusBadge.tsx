@@ -12,9 +12,10 @@ const statusColors = {
   RELEASED: 'bg-green-500',
   RETURNED: 'bg-red-500',
   ACTIVE: 'bg-green-500',
-  CLOSED: 'bg-gray-500',
+  RETENDERED: 'bg-yellow-500',
   CANCELLED: 'bg-red-500',
   AWARDED: 'bg-blue-500',
+  NOT_AWARDED: 'bg-gray-500',
 } as const;
 
 export const StatusBadge = ({ status }: StatusBadgeProps) => {

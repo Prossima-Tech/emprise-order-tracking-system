@@ -88,10 +88,21 @@ export class SiteService {
     status?: string;
     zoneId?: string;
     searchTerm?: string;
+    page?: number;
+    limit?: number;
   }): Promise<Result<{ sites: Site[]; total: number }>> {
     try {
+      // Convert page/limit to skip/take for repository
+      const page = params.page || 1;
+      const limit = params.limit || 10;
+      const skip = (page - 1) * limit;
+
       const [sites, total] = await Promise.all([
-        this.repository.findAll(params),
+        this.repository.findAll({
+          ...params,
+          skip,
+          take: limit
+        }),
         this.repository.count(params)
       ]);
 
@@ -178,7 +189,7 @@ export class SiteService {
     }
   }
 
-  async getSiteCountsByZone(): Promise<Result<{ zoneId: string; count: number }[]>> {
+  async getSiteCountsByZone(): Promise<Result<Record<string, number>>> {
     try {
       const counts = await this.repository.getSiteCountsByZone();
       return ResultUtils.ok(counts);

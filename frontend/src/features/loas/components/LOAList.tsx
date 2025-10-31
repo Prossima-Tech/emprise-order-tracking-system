@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, isAfter } from "date-fns";
+import { format } from "date-fns";
 import {
   MoreHorizontal,
 } from "lucide-react";
@@ -58,11 +58,14 @@ const statusOptions = [
 
 export function LOAList() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState({
-    loaNumber: "",
-    siteName: "",
-  });
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [minValue, setMinValue] = useState<string>("");
+  const [maxValue, setMaxValue] = useState<string>("");
+  const [hasEMD, setHasEMD] = useState<string>("all");
+  const [hasSecurity, setHasSecurity] = useState<string>("all");
+  const [hasPerformanceGuarantee, setHasPerformanceGuarantee] = useState<string>("all");
+
   const [loas, setLOAs] = useState<LOA[]>([]);
   const { loading, getLOAs, deleteLOA } = useLOAs();
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +77,7 @@ export function LOAList() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     const fetchLOAs = async () => {
@@ -81,6 +85,13 @@ export function LOAList() {
         const data = await getLOAs({
           page: currentPage,
           limit: pageSize,
+          search: searchQuery || undefined,
+          status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+          minValue: minValue ? parseFloat(minValue) : undefined,
+          maxValue: maxValue ? parseFloat(maxValue) : undefined,
+          hasEMD: hasEMD === "true" ? true : hasEMD === "false" ? false : undefined,
+          hasSecurity: hasSecurity === "true" ? true : hasSecurity === "false" ? false : undefined,
+          hasPerformanceGuarantee: hasPerformanceGuarantee === "true" ? true : hasPerformanceGuarantee === "false" ? false : undefined,
           sortBy,
           sortOrder
         });
@@ -97,7 +108,7 @@ export function LOAList() {
     };
 
     fetchLOAs();
-  }, [currentPage, pageSize, sortBy, sortOrder]);
+  }, [currentPage, pageSize, searchQuery, statusFilter, minValue, maxValue, hasEMD, hasSecurity, hasPerformanceGuarantee, sortBy, sortOrder]);
 
   const handleDeleteClick = async (loa: LOA) => {
     try {
@@ -154,39 +165,34 @@ export function LOAList() {
     }
   };
 
-  const columns = useMemo<Column<LOA>[]>(() => [
+  // Helper function to calculate days till due date
+  const calculateDaysTillDueDate = (dueDate?: Date | string | null) => {
+    if (!dueDate) return '-';
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return <span className="text-red-600 font-semibold">Overdue ({Math.abs(diffDays)} days)</span>;
+    } else if (diffDays === 0) {
+      return <span className="text-orange-600 font-semibold">Due Today</span>;
+    } else if (diffDays <= 7) {
+      return <span className="text-yellow-600 font-semibold">{diffDays} days</span>;
+    } else {
+      return <span className="text-green-600">{diffDays} days</span>;
+    }
+  };
+
+  const columns: Column<LOA>[] = [
     {
       header: "Sr. No.",
       accessor: (_row: LOA, index?: number) => {
-        // Calculate serial number based on current page and position
         return (currentPage - 1) * pageSize + (index || 0) + 1;
       },
     },
     {
-      header: "LOA Number",
-      accessor: "loaNumber",
-    },
-    {
-      header: "Site",
-      accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          <span>{row.site?.name}</span>
-          <span className="text-sm text-muted-foreground">
-            {row.site?.location}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Value",
-      accessor: (row: LOA) =>
-        new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-        }).format(row.loaValue),
-    },
-    {
-      header: "Status",
+      header: "Order Status",
       accessor: (row: LOA) => (
         <Badge className={cn("px-2 py-1", getStatusBadgeStyle(row.status))}>
           {getStatusDisplayText(row.status)}
@@ -194,49 +200,150 @@ export function LOAList() {
       ),
     },
     {
-      header: "Delivery Period",
+      header: "Days to Due Date",
+      accessor: (row: LOA) => calculateDaysTillDueDate(row.dueDate),
+    },
+    {
+      header: "Delivery Date",
+      accessor: (row: LOA) => format(new Date(row.deliveryPeriod.end), "PP"),
+    },
+    {
+      header: "Order Due Date",
+      accessor: (row: LOA) => row.dueDate ? format(new Date(row.dueDate), "PP") : "-",
+    },
+    {
+      header: "Order Received Date",
+      accessor: (row: LOA) => row.orderReceivedDate ? format(new Date(row.orderReceivedDate), "PP") : "-",
+    },
+    {
+      header: "Order Value",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.loaValue),
+    },
+    {
+      header: "PO/LOA Number",
+      accessor: "loaNumber",
+    },
+    {
+      header: "Site",
+      accessor: (row: LOA) => row.site?.name || "-",
+    },
+    {
+      header: "Description of Work",
       accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          <span>{format(new Date(row.deliveryPeriod.start), "PP")}</span>
-          <span className="text-muted-foreground">
-            to {format(new Date(row.deliveryPeriod.end), "PP")}
-          </span>
-          {isAfter(new Date(), new Date(row.deliveryPeriod.end)) && (
-            <span className="text-red-500 text-sm">Overdue</span>
-          )}
+        <div className="max-w-xs truncate" title={row.workDescription}>
+          {row.workDescription}
         </div>
       ),
     },
     {
-      header: "Due Date",
+      header: "EMD",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.emdAmount || 0),
+    },
+    {
+      header: "Security Deposit",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.securityDepositAmount || 0),
+    },
+    {
+      header: "Tender No.",
       accessor: (row: LOA) => (
-        <div className="flex flex-col">
-          {row.dueDate ? (
-            <>
-              <span>{format(new Date(row.dueDate), "PP")}</span>
-              {isAfter(new Date(), new Date(row.dueDate)) && (
-                <span className="text-red-500 text-sm">Overdue</span>
-              )}
-            </>
-          ) : (
-            <span className="text-muted-foreground text-sm">-</span>
-          )}
+        <div className="max-w-xs truncate" title={row.tenderNo || undefined}>
+          {row.tenderNo || "-"}
         </div>
       ),
     },
     {
-      header: "Amendments",
+      header: "Order POC",
       accessor: (row: LOA) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.amendments.length}</span>
+        <div className="max-w-xs truncate" title={row.orderPOC || undefined}>
+          {row.orderPOC || "-"}
         </div>
       ),
     },
     {
-      header: "Purchase Orders",
+      header: "FD/BG Details",
       accessor: (row: LOA) => (
-        <div className="flex items-center space-x-2">
-          <span>{row.purchaseOrders.length}</span>
+        <div className="max-w-xs truncate" title={row.fdBgDetails || undefined}>
+          {row.fdBgDetails || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "Remarks",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.remarks || undefined}>
+          {row.remarks || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "Last Invoice No.",
+      accessor: (row: LOA) => row.invoices?.[0]?.invoiceNumber || "-",
+    },
+    {
+      header: "Last Invoice Amount",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.invoiceAmount || 0),
+    },
+    {
+      header: "Total Receivables",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.totalReceivables || 0),
+    },
+    {
+      header: "Actual Amount Received",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.actualAmountReceived || 0),
+    },
+    {
+      header: "Amount Deducted",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.amountDeducted || 0),
+    },
+    {
+      header: "Amount Pending",
+      accessor: (row: LOA) =>
+        new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+        }).format(row.invoices?.[0]?.amountPending || 0),
+    },
+    {
+      header: "Reason for Deduction",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.invoices?.[0]?.deductionReason || undefined}>
+          {row.invoices?.[0]?.deductionReason || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "Bill Links",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.invoices?.[0]?.billLinks || undefined}>
+          {row.invoices?.[0]?.billLinks || "-"}
         </div>
       ),
     },
@@ -257,23 +364,19 @@ export function LOAList() {
         </DropdownMenu>
       ),
     },
-  ], [navigate, currentPage, pageSize]);
+  ];
 
-  const filteredData = useMemo(() => {
-    const loasArray = Array.isArray(loas) ? loas : [];
-    
-    return loasArray.filter((loa) => {
-      const matchesLOANumber = searchQuery.loaNumber === "" ||
-        loa.loaNumber.toLowerCase().includes(searchQuery.loaNumber.toLowerCase());
-
-      const matchesSiteName = searchQuery.siteName === "" ||
-        loa.site?.name.toLowerCase().includes(searchQuery.siteName.toLowerCase());
-
-      const matchesStatus = statusFilter === "ALL" || loa.status === statusFilter;
-
-      return matchesLOANumber && matchesSiteName && matchesStatus;
-    });
-  }, [loas, searchQuery, statusFilter]);
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setMinValue("");
+    setMaxValue("");
+    setHasEMD("all");
+    setHasSecurity("all");
+    setHasPerformanceGuarantee("all");
+    setCurrentPage(1);
+  };
 
   if (error) {
     return (
@@ -294,77 +397,148 @@ export function LOAList() {
     <div className="space-y-6">
       {/* Filter Section */}
       <Card className="p-4">
-        <div className="grid gap-4 md:grid-cols-5">
-          <div>
-            <Input
-              placeholder="Search by LOA number..."
-              value={searchQuery.loaNumber}
-              onChange={(e) => setSearchQuery(prev => ({
-                ...prev,
-                loaNumber: e.target.value
-              }))}
-              className="w-full"
-            />
+        <div className="space-y-4">
+          {/* Basic Filters */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <div>
+              <Input
+                placeholder="Search LOA number, site, work..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {statusOptions.slice(1).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={(value) => {
+                  const [field, order] = value.split('-');
+                  setSortBy(field);
+                  setSortOrder(order as 'asc' | 'desc');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
+                  <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
+                  <SelectItem value="loaValue-desc">Value (High to Low)</SelectItem>
+                  <SelectItem value="loaValue-asc">Value (Low to High)</SelectItem>
+                  <SelectItem value="deliveryStartDate-asc">Start Date (Early)</SelectItem>
+                  <SelectItem value="deliveryStartDate-desc">Start Date (Late)</SelectItem>
+                  <SelectItem value="deliveryEndDate-asc">End Date (Early)</SelectItem>
+                  <SelectItem value="deliveryEndDate-desc">End Date (Late)</SelectItem>
+                  <SelectItem value="dueDate-asc">Due Date (Early)</SelectItem>
+                  <SelectItem value="dueDate-desc">Due Date (Late)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="w-full"
+              >
+                {showAdvancedFilters ? "Hide" : "Show"} Advanced Filters
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClearFilters}
+                className="flex-1"
+              >
+                Clear All
+              </Button>
+              <Button onClick={() => navigate("/loas/new")} className="flex-1">
+                Create New
+              </Button>
+            </div>
           </div>
-          <div>
-            <Input
-              placeholder="Search by site name..."
-              value={searchQuery.siteName}
-              onChange={(e) => setSearchQuery(prev => ({
-                ...prev,
-                siteName: e.target.value
-              }))}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={`${sortBy}-${sortOrder}`}
-              onValueChange={(value) => {
-                const [field, order] = value.split('-');
-                setSortBy(field);
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
-                <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
-                <SelectItem value="loaValue-desc">Value (High to Low)</SelectItem>
-                <SelectItem value="loaValue-asc">Value (Low to High)</SelectItem>
-                <SelectItem value="deliveryStartDate-asc">Start Date (Early)</SelectItem>
-                <SelectItem value="deliveryStartDate-desc">Start Date (Late)</SelectItem>
-                <SelectItem value="deliveryEndDate-asc">End Date (Early)</SelectItem>
-                <SelectItem value="deliveryEndDate-desc">End Date (Late)</SelectItem>
-                <SelectItem value="dueDate-asc">Due Date (Early)</SelectItem>
-                <SelectItem value="dueDate-desc">Due Date (Late)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => navigate("/loas/new")}>
-              Create New LOA
-            </Button>
-          </div>
+
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <div className="grid gap-4 md:grid-cols-4 pt-4 border-t">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Min Value (₹)</label>
+                <Input
+                  type="number"
+                  placeholder="Min amount"
+                  value={minValue}
+                  onChange={(e) => setMinValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Max Value (₹)</label>
+                <Input
+                  type="number"
+                  placeholder="Max amount"
+                  value={maxValue}
+                  onChange={(e) => setMaxValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has EMD</label>
+                <Select value={hasEMD} onValueChange={setHasEMD}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has Security Deposit</label>
+                <Select value={hasSecurity} onValueChange={setHasSecurity}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has Performance Guarantee</label>
+                <Select value={hasPerformanceGuarantee} onValueChange={setHasPerformanceGuarantee}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -373,7 +547,7 @@ export function LOAList() {
         <LoadingSpinner />
       ) : (
         <div className="space-y-4">
-          {filteredData.length === 0 ? (
+          {loas.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               No LOAs found
             </div>
@@ -381,7 +555,7 @@ export function LOAList() {
             <>
               <DataTable
                 columns={columns}
-                data={filteredData}
+                data={loas}
                 onRowClick={(row) => navigate(`/loas/${row.id}`)}
               />
 

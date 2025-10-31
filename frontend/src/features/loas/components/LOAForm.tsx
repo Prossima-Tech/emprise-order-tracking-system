@@ -63,8 +63,13 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
         end: initialData?.deliveryPeriod?.end ? new Date(initialData.deliveryPeriod.end) : new Date(),
       },
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : null,
+      orderReceivedDate: initialData?.orderReceivedDate ? new Date(initialData.orderReceivedDate) : null,
       workDescription: initialData?.workDescription || '',
       tags: initialData?.tags || [],
+      remarks: initialData?.remarks || '',
+      tenderNo: initialData?.tenderNo || '',
+      orderPOC: initialData?.orderPOC || '',
+      fdBgDetails: initialData?.fdBgDetails || '',
       hasEmd: initialData?.hasEmd || false,
       emdAmount: initialData?.emdAmount || null,
       hasSecurityDeposit: initialData?.hasSecurityDeposit || false,
@@ -85,7 +90,6 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       amountPending: initialData?.amountPending || null,
       deductionReason: initialData?.deductionReason || '',
       billLinks: initialData?.billLinks || '',
-      remarks: initialData?.remarks || '',
     },
   });
   // Fetch available sites on component mount
@@ -228,6 +232,52 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
               <FormControl>
                 <Input placeholder="Enter LOA number" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Order Received Date */}
+        <FormField
+          control={form.control}
+          name="orderReceivedDate"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Order Received Date</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick order received date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date < new Date("1900-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <FormDescription>
+                Date when this order/LOA was received
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -977,24 +1027,97 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
             )}
           />
 
-          {/* Remarks */}
-          <FormField
-            control={form.control}
-            name="remarks"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Remarks</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Additional notes or comments"
-                    className="min-h-[80px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Additional Order Information Section */}
+          <div className="space-y-4 border p-4 rounded-md">
+            <h3 className="text-lg font-semibold">Additional Order Information</h3>
+            <p className="text-sm text-muted-foreground">Optional tender and point of contact details</p>
+
+            {/* Tender Number */}
+            <FormField
+              control={form.control}
+              name="tenderNo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tender Number</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter tender number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Reference number for the tender associated with this LOA
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Order Point of Contact */}
+            <FormField
+              control={form.control}
+              name="orderPOC"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Order Point of Contact</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter contact person name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Primary contact person for this order
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* FD/BG Details */}
+            <FormField
+              control={form.control}
+              name="fdBgDetails"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>FD/BG Details</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter fixed deposit or bank guarantee details"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Details about fixed deposits or bank guarantees
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Remarks */}
+            <FormField
+              control={form.control}
+              name="remarks"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Remarks</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="General remarks about this LOA"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    General notes and remarks for this LOA
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         {/* Form Actions */}

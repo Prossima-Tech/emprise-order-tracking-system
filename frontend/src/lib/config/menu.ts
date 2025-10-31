@@ -45,8 +45,8 @@ export const MENU_ITEMS = [
     section: 'main'
   },
   {
-    title: 'EMD Management',
-    path: ROUTES.EMDS,
+    title: 'FDR Management',
+    path: ROUTES.FDRS,
     icon: Wallet,
     section: 'main'
   },

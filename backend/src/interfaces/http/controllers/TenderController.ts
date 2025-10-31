@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { TenderService } from '../../../application/services/TenderService';
 import { AppError } from '../../../shared/errors/AppError';
-import { TenderStatus } from '../../../domain/entities/constants';
+import { TenderStatus } from '@prisma/client';
 
 export class TenderController {
   constructor(private service: TenderService) {}

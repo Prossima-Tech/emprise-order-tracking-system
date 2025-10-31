@@ -1,38 +1,56 @@
-// infrastructure/persistence/repositories/PrismaEmdRepository.ts
-import { PrismaClient, EMD, EMDStatus } from '@prisma/client';
-import { CreateEmdDto } from '../../../application/dtos/emd/CreateEmdDto';
-import { UpdateEmdDto } from '../../../application/dtos/emd/UpdateEmdDto';
+// infrastructure/persistence/repositories/PrismaFdrRepository.ts
+import { PrismaClient, FDR, FDRStatus, FDRCategory } from '@prisma/client';
 
-export class PrismaEmdRepository {
+export class PrismaFdrRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
-   * Create a new EMD record
+   * Create a new FDR record
    */
   async create(data: {
-    amount: number;
-    paymentMode: string;
-    submissionDate: Date;
-    maturityDate: Date;
+    category?: FDRCategory;
     bankName: string;
+    accountNo?: string;
+    fdrNumber?: string;
+    accountName?: string;
+    depositAmount: number;
+    dateOfDeposit: Date;
+    maturityValue?: number;
+    maturityDate?: Date;
+    contractNo?: string;
+    contractDetails?: string;
+    poc?: string;
+    location?: string;
+    emdAmount?: number;
+    sdAmount?: number;
     documentUrl?: string;
     extractedData?: any;
-    status?: EMDStatus;
+    status?: FDRStatus;
     offerId?: string;
     loaId?: string;
     tenderId?: string;
     tags?: string[];
-  }): Promise<EMD> {
-    return this.prisma.eMD.create({
+  }): Promise<FDR> {
+    return this.prisma.fDR.create({
       data: {
-        amount: data.amount,
-        paymentMode: data.paymentMode || 'FDR',
-        submissionDate: data.submissionDate,
-        maturityDate: data.maturityDate,
+        category: data.category || 'FD',
         bankName: data.bankName || 'IDBI',
+        accountNo: data.accountNo,
+        fdrNumber: data.fdrNumber,
+        accountName: data.accountName,
+        depositAmount: data.depositAmount,
+        dateOfDeposit: data.dateOfDeposit,
+        maturityValue: data.maturityValue,
+        maturityDate: data.maturityDate,
+        contractNo: data.contractNo,
+        contractDetails: data.contractDetails,
+        poc: data.poc,
+        location: data.location,
+        emdAmount: data.emdAmount,
+        sdAmount: data.sdAmount,
         documentUrl: data.documentUrl,
         extractedData: data.extractedData,
-        status: data.status || EMDStatus.ACTIVE,
+        status: data.status || 'RUNNING',
         // Only set foreign keys if they have valid values (not empty strings)
         ...(data.offerId && data.offerId.trim() !== '' ? { offerId: data.offerId } : {}),
         ...(data.loaId && data.loaId.trim() !== '' ? { loaId: data.loaId } : {}),
@@ -66,10 +84,10 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find EMD by ID
+   * Find FDR by ID
    */
-  async findById(id: string): Promise<EMD | null> {
-    return this.prisma.eMD.findUnique({
+  async findById(id: string): Promise<FDR | null> {
+    return this.prisma.fDR.findUnique({
       where: { id },
       include: {
         offer: {
@@ -98,11 +116,12 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find all EMDs with optional filtering and pagination
+   * Find all FDRs with optional filtering and pagination
    */
   async findAll(params?: {
     searchTerm?: string;
-    status?: EMDStatus;
+    category?: FDRCategory;
+    status?: FDRStatus;
     offerId?: string;
     loaId?: string;
     tenderId?: string;
@@ -110,8 +129,12 @@ export class PrismaEmdRepository {
     take?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<EMD[]> {
+  }): Promise<FDR[]> {
     const where: any = {};
+
+    if (params?.category) {
+      where.category = params.category;
+    }
 
     if (params?.status) {
       where.status = params.status;
@@ -132,7 +155,10 @@ export class PrismaEmdRepository {
     if (params?.searchTerm) {
       where.OR = [
         { bankName: { contains: params.searchTerm, mode: 'insensitive' } },
-        { paymentMode: { contains: params.searchTerm, mode: 'insensitive' } },
+        { accountName: { contains: params.searchTerm, mode: 'insensitive' } },
+        { fdrNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+        { location: { contains: params.searchTerm, mode: 'insensitive' } },
+        { poc: { contains: params.searchTerm, mode: 'insensitive' } },
       ];
     }
 
@@ -143,7 +169,7 @@ export class PrismaEmdRepository {
       orderBy.createdAt = 'desc';
     }
 
-    return this.prisma.eMD.findMany({
+    return this.prisma.fDR.findMany({
       where,
       skip: params?.skip,
       take: params?.take,
@@ -175,16 +201,21 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Count EMDs with optional filtering
+   * Count FDRs with optional filtering
    */
   async count(params?: {
     searchTerm?: string;
-    status?: EMDStatus;
+    category?: FDRCategory;
+    status?: FDRStatus;
     offerId?: string;
     loaId?: string;
     tenderId?: string;
   }): Promise<number> {
     const where: any = {};
+
+    if (params?.category) {
+      where.category = params.category;
+    }
 
     if (params?.status) {
       where.status = params.status;
@@ -205,31 +236,44 @@ export class PrismaEmdRepository {
     if (params?.searchTerm) {
       where.OR = [
         { bankName: { contains: params.searchTerm, mode: 'insensitive' } },
-        { paymentMode: { contains: params.searchTerm, mode: 'insensitive' } },
+        { accountName: { contains: params.searchTerm, mode: 'insensitive' } },
+        { fdrNumber: { contains: params.searchTerm, mode: 'insensitive' } },
+        { location: { contains: params.searchTerm, mode: 'insensitive' } },
+        { poc: { contains: params.searchTerm, mode: 'insensitive' } },
       ];
     }
 
-    return this.prisma.eMD.count({ where });
+    return this.prisma.fDR.count({ where });
   }
 
   /**
-   * Update an EMD
+   * Update an FDR
    */
   async update(id: string, data: Partial<{
-    amount: number;
-    paymentMode: string;
-    submissionDate: Date;
-    maturityDate: Date;
+    category: FDRCategory;
     bankName: string;
+    accountNo: string | null;
+    fdrNumber: string | null;
+    accountName: string | null;
+    depositAmount: number;
+    dateOfDeposit: Date;
+    maturityValue: number | null;
+    maturityDate: Date | null;
+    contractNo: string | null;
+    contractDetails: string | null;
+    poc: string | null;
+    location: string | null;
+    emdAmount: number | null;
+    sdAmount: number | null;
     documentUrl: string;
     extractedData: any;
-    status: EMDStatus;
+    status: FDRStatus;
     offerId: string | null;
     loaId: string | null;
     tenderId: string | null;
     tags: string[];
-  }>): Promise<EMD> {
-    return this.prisma.eMD.update({
+  }>): Promise<FDR> {
+    return this.prisma.fDR.update({
       where: { id },
       data,
       include: {
@@ -259,19 +303,19 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Delete an EMD
+   * Delete an FDR
    */
   async delete(id: string): Promise<void> {
-    await this.prisma.eMD.delete({
+    await this.prisma.fDR.delete({
       where: { id },
     });
   }
 
   /**
-   * Update EMD status
+   * Update FDR status
    */
-  async updateStatus(id: string, status: EMDStatus): Promise<EMD> {
-    return this.prisma.eMD.update({
+  async updateStatus(id: string, status: FDRStatus): Promise<FDR> {
+    return this.prisma.fDR.update({
       where: { id },
       data: { status },
       include: {
@@ -301,10 +345,10 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find EMDs by Offer ID
+   * Find FDRs by Offer ID
    */
-  async findByOfferId(offerId: string): Promise<EMD[]> {
-    return this.prisma.eMD.findMany({
+  async findByOfferId(offerId: string): Promise<FDR[]> {
+    return this.prisma.fDR.findMany({
       where: { offerId },
       include: {
         offer: {
@@ -319,10 +363,10 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find EMDs by LOA ID
+   * Find FDRs by LOA ID
    */
-  async findByLoaId(loaId: string): Promise<EMD[]> {
-    return this.prisma.eMD.findMany({
+  async findByLoaId(loaId: string): Promise<FDR[]> {
+    return this.prisma.fDR.findMany({
       where: { loaId },
       include: {
         loa: {
@@ -337,10 +381,10 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find EMDs by Tender ID
+   * Find FDRs by Tender ID
    */
-  async findByTenderId(tenderId: string): Promise<EMD[]> {
-    return this.prisma.eMD.findMany({
+  async findByTenderId(tenderId: string): Promise<FDR[]> {
+    return this.prisma.fDR.findMany({
       where: { tenderId },
       include: {
         tender: {
@@ -355,16 +399,16 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find expiring EMDs (within specified days)
+   * Find expiring FDRs (within specified days)
    */
-  async findExpiring(days: number = 30): Promise<EMD[]> {
+  async findExpiring(days: number = 30): Promise<FDR[]> {
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + days);
 
-    return this.prisma.eMD.findMany({
+    return this.prisma.fDR.findMany({
       where: {
-        status: EMDStatus.ACTIVE,
+        status: 'RUNNING',
         maturityDate: {
           gte: today,
           lte: futureDate,
@@ -400,14 +444,14 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Find expired EMDs
+   * Find expired FDRs
    */
-  async findExpired(): Promise<EMD[]> {
+  async findExpired(): Promise<FDR[]> {
     const today = new Date();
 
-    return this.prisma.eMD.findMany({
+    return this.prisma.fDR.findMany({
       where: {
-        status: EMDStatus.ACTIVE,
+        status: 'RUNNING',
         maturityDate: {
           lt: today,
         },
@@ -442,20 +486,20 @@ export class PrismaEmdRepository {
   }
 
   /**
-   * Auto-update expired EMDs
+   * Auto-update expired FDR statuses
    */
   async updateExpiredStatuses(): Promise<number> {
     const today = new Date();
 
-    const result = await this.prisma.eMD.updateMany({
+    const result = await this.prisma.fDR.updateMany({
       where: {
-        status: EMDStatus.ACTIVE,
+        status: 'RUNNING',
         maturityDate: {
           lt: today,
         },
       },
       data: {
-        status: EMDStatus.EXPIRED,
+        status: 'COMPLETED',
       },
     });
 

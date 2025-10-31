@@ -1,0 +1,12 @@
+-- AlterEnum
+-- Add new status values to LOAStatus enum
+ALTER TYPE "LOAStatus" ADD VALUE 'SUPPLY_WORK_DELAYED';
+ALTER TYPE "LOAStatus" ADD VALUE 'APPLICATION_PENDING';
+ALTER TYPE "LOAStatus" ADD VALUE 'UPLOAD_BILL';
+ALTER TYPE "LOAStatus" ADD VALUE 'RETRIEVE_EMD_SECURITY';
+
+-- AlterTable
+-- Add new fields to LOA table
+ALTER TABLE "LOA" ADD COLUMN     "tenderNo" TEXT,
+ADD COLUMN     "orderPOC" TEXT,
+ADD COLUMN     "fdBgDetails" TEXT;

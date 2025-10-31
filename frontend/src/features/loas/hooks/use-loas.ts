@@ -27,6 +27,14 @@ export function useLOAs() {
     page?: number;
     limit?: number;
     search?: string;
+    siteId?: string;
+    zoneId?: string;
+    status?: string;
+    minValue?: number;
+    maxValue?: number;
+    hasEMD?: boolean;
+    hasSecurity?: boolean;
+    hasPerformanceGuarantee?: boolean;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }) => {
@@ -37,6 +45,14 @@ export function useLOAs() {
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.search) queryParams.append('search', params.search);
+      if (params?.siteId) queryParams.append('siteId', params.siteId);
+      if (params?.zoneId) queryParams.append('zoneId', params.zoneId);
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.minValue !== undefined) queryParams.append('minValue', params.minValue.toString());
+      if (params?.maxValue !== undefined) queryParams.append('maxValue', params.maxValue.toString());
+      if (params?.hasEMD !== undefined) queryParams.append('hasEMD', params.hasEMD.toString());
+      if (params?.hasSecurity !== undefined) queryParams.append('hasSecurity', params.hasSecurity.toString());
+      if (params?.hasPerformanceGuarantee !== undefined) queryParams.append('hasPerformanceGuarantee', params.hasPerformanceGuarantee.toString());
       if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
       if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
