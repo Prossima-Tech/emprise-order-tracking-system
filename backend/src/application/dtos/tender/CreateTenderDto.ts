@@ -1,4 +1,4 @@
-import { TenderStatus } from "../../../domain/entities/constants";
+import { TenderStatus } from "@prisma/client";
 
 export interface CreateTenderDto {
   tenderNumber: string;

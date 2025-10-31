@@ -13,13 +13,6 @@ export enum SiteStatus {
   UNDER_MAINTENANCE = 'UNDER_MAINTENANCE'
 }
 
-export enum TenderStatus {
-  ACTIVE = 'ACTIVE',
-  CLOSED = 'CLOSED',
-  CANCELLED = 'CANCELLED',
-  AWARDED = 'AWARDED'
-}
-
 export type ApprovalActionType = 'SUBMIT' | 'APPROVE' | 'REJECT';
 
 export interface ApprovalAction {

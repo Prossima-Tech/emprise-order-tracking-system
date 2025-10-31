@@ -21,7 +21,10 @@ export interface LOA {
     documentUrl: string;
     amendments?: Amendment[];
     invoices?: any[]; // Invoice records for billing
-    remarks2?: string;
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     hasEmd: boolean;
     emdAmount?: number;
     hasSecurityDeposit: boolean;

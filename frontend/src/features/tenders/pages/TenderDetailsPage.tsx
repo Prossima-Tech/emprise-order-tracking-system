@@ -75,12 +75,14 @@ export function TenderDetailsPage() {
     switch (status) {
       case 'ACTIVE':
         return <Badge>Active</Badge>;
-      case 'CLOSED':
-        return <Badge variant="secondary">Closed</Badge>;
+      case 'RETENDERED':
+        return <Badge variant="secondary">Retendered</Badge>;
       case 'CANCELLED':
         return <Badge variant="destructive">Cancelled</Badge>;
       case 'AWARDED':
         return <Badge variant="outline">Awarded</Badge>;
+      case 'NOT_AWARDED':
+        return <Badge variant="secondary">Not Awarded</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -282,9 +284,10 @@ export function TenderDetailsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
+                  <SelectItem value="RETENDERED">Retendered</SelectItem>
                   <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   <SelectItem value="AWARDED">Awarded</SelectItem>
+                  <SelectItem value="NOT_AWARDED">Not Awarded</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -24,6 +24,15 @@ import { Column, DataTable } from '../../../components/data-display/DataTable';
 import { LoadingSpinner } from '../../../components/feedback/LoadingSpinner';
 import { useCustomers, Customer } from '../hooks/use-customers';
 import { toast } from '../../../hooks/use-toast';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '../../../components/ui/pagination';
 
 export function CustomerList() {
   const navigate = useNavigate();
@@ -32,6 +41,8 @@ export function CustomerList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
   useEffect(() => {
     loadCustomers();
@@ -79,9 +90,9 @@ export function CustomerList() {
       console.warn('Customers is not an array:', customers);
       return [];
     }
-    
+
     if (!searchTerm) return customers;
-    
+
     const query = searchTerm.toLowerCase();
     return customers.filter((customer) => (
       customer.name.toLowerCase().includes(query) ||
@@ -90,6 +101,17 @@ export function CustomerList() {
       (customer.region ? customer.region.toLowerCase().includes(query) : false)
     ));
   }, [customers, searchTerm]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentCustomers = filteredCustomers.slice(startIndex, endIndex);
 
   const columns: Column<Customer>[] = [
     {
@@ -209,12 +231,70 @@ export function CustomerList() {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <DataTable
-          columns={columns}
-          data={filteredCustomers}
-          onRowClick={(row) => navigate(`/customers/${row.id}`)}
-          loading={loading}
-        />
+        <>
+          <DataTable
+            columns={columns}
+            data={currentCustomers}
+            onRowClick={(row) => navigate(`/customers/${row.id}`)}
+            loading={loading}
+          />
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => currentPage > 1 && setCurrentPage(p => p - 1)}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const pageNumber = i + 1;
+                    // Show first page, last page, and pages around current page
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === totalPages ||
+                      (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNumber)}
+                            isActive={currentPage === pageNumber}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+
+                    // Add ellipsis
+                    if (pageNumber === 2 && currentPage > 3) {
+                      return <PaginationEllipsis key="ellipsis-start" />;
+                    }
+
+                    if (pageNumber === totalPages - 1 && currentPage < totalPages - 2) {
+                      return <PaginationEllipsis key="ellipsis-end" />;
+                    }
+
+                    return null;
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => currentPage < totalPages && setCurrentPage(p => p + 1)}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

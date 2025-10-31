@@ -220,26 +220,26 @@ export function BulkImportDialog({ open, onOpenChange, onSuccess }: BulkImportDi
 
               {/* Errors */}
               {importResult.errors.length > 0 && (
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div>
                   <h4 className="text-sm font-semibold mb-2 flex items-center">
                     <AlertCircle className="h-4 w-4 mr-2 text-red-600" />
                     Errors ({importResult.errors.length})
                   </h4>
-                  <ScrollArea className="flex-1 border rounded-lg">
+                  <ScrollArea className="h-[300px] border rounded-lg">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Row</TableHead>
-                          <TableHead>LOA Number</TableHead>
+                          <TableHead className="w-[80px]">Row</TableHead>
+                          <TableHead className="w-[200px]">LOA Number</TableHead>
                           <TableHead>Error</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {importResult.errors.map((error, index) => (
                           <TableRow key={index}>
-                            <TableCell>{error.row}</TableCell>
-                            <TableCell className="font-medium">{error.loaNumber}</TableCell>
-                            <TableCell className="text-red-600">{error.error}</TableCell>
+                            <TableCell className="w-[80px]">{error.row}</TableCell>
+                            <TableCell className="font-medium w-[200px]">{error.loaNumber}</TableCell>
+                            <TableCell className="text-red-600 text-sm break-words">{error.error}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

@@ -515,15 +515,37 @@ export function LOADetail() {
                 </div>
               </div>
 
-              {/* Additional Remarks (Remarks2) */}
-              {loa.remarks2 && (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Additional Remarks (Remarks2)</h3>
-                  <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap">
-                    {loa.remarks2}
+              {/* Additional Order Information */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Additional Order Information</h3>
+                <div className="bg-muted p-4 rounded-lg space-y-3">
+                  {/* Tender Number */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Tender Number</div>
+                    <div className="text-sm">{loa.tenderNo || '-'}</div>
+                  </div>
+
+                  {/* Order Point of Contact */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Order Point of Contact</div>
+                    <div className="text-sm">{loa.orderPOC || '-'}</div>
+                  </div>
+
+                  {/* FD/BG Details */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">FD/BG Details</div>
+                    <div className="text-sm whitespace-pre-wrap">{loa.fdBgDetails || '-'}</div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* Remarks */}
+              <div>
+                <h3 className="text-lg font-medium mb-2">Remarks</h3>
+                <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap">
+                  {loa.remarks || '-'}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -620,14 +642,6 @@ export function LOADetail() {
                               <p className="text-sm">{invoice.deductionReason || "-"}</p>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Remarks - ALWAYS SHOW */}
-                        <div className="bg-muted p-4 rounded-lg">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-2">
-                            Remarks
-                          </h4>
-                          <p className="text-sm whitespace-pre-wrap">{invoice.remarks || "-"}</p>
                         </div>
 
                         {/* Bill Links - ALWAYS SHOW */}

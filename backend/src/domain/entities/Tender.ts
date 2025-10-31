@@ -1,4 +1,4 @@
-import { TenderStatus } from "./constants";
+import { TenderStatus } from "@prisma/client";
 
 export interface Tender {
   id: string;

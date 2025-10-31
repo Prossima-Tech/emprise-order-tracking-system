@@ -17,7 +17,7 @@ import { PrismaPurchaseOrderRepository } from './infrastructure/persistence/repo
 import { PrismaVendorItemRepository } from './infrastructure/persistence/repositories/PrismaVendorItemRepository';
 import { PrismaTenderRepository } from './infrastructure/persistence/repositories/PrismaTenderRepository';
 import { PrismaShippingAddressRepository } from './infrastructure/persistence/repositories/PrismaShippingAddressRepository';
-import { PrismaEmdRepository } from './infrastructure/persistence/repositories/PrismaEmdRepository';
+import { PrismaFdrRepository } from './infrastructure/persistence/repositories/PrismaFdrRepository';
 
 // Import services
 import { AuthService } from './application/services/AuthService';
@@ -41,7 +41,8 @@ import { SiteController } from './interfaces/http/controllers/SiteController';
 import { CustomerService } from './application/services/CustomerService';
 import { TenderService } from './application/services/TenderService';
 import { ShippingAddressService } from './application/services/ShippingAddressService';
-import { EmdService } from './application/services/EmdService';
+import { FdrService } from './application/services/FdrService';
+import { BulkImportFdrService } from './application/services/BulkImportFdrService';
 // Import controllers
 import { AuthController } from './interfaces/http/controllers/AuthController';
 import { BudgetaryOfferController } from './interfaces/http/controllers/BudgetaryOfferController';
@@ -53,7 +54,7 @@ import { UserController } from './interfaces/http/controllers/UserController';
 import { CustomerController } from './interfaces/http/controllers/CustomerController';
 import { TenderController } from './interfaces/http/controllers/TenderController';
 import { ShippingAddressController } from './interfaces/http/controllers/ShippingAddressController';
-import { EmdController } from './interfaces/http/controllers/EmdController';
+import { FdrController } from './interfaces/http/controllers/FdrController';
 
 // Import routes
 import { authRoutes } from './interfaces/http/routes/auth.routes';
@@ -68,7 +69,7 @@ import { siteRoutes } from './interfaces/http/routes/site.routes';
 import { customerRoutes } from './interfaces/http/routes/customer.routes';
 import { tenderRoutes } from './interfaces/http/routes/tender.routes';
 import { shippingAddressRoutes } from './interfaces/http/routes/shippingAddress.routes';
-import { emdRoutes } from './interfaces/http/routes/emd.routes';
+import { fdrRoutes } from './interfaces/http/routes/fdr.routes';
 import { BudgetaryOfferValidator } from './application/validators/budgetaryOffer.validator';
 import { mkdirSync } from 'fs';
 import { unlinkSync, readdirSync, statSync } from 'fs';
@@ -117,7 +118,7 @@ async function startServer() {
   const siteRepository = new PrismaSiteRepository(prisma);
   const tenderRepository = new PrismaTenderRepository(prisma);
   const shippingAddressRepository = new PrismaShippingAddressRepository(prisma);
-  const emdRepository = new PrismaEmdRepository(prisma);
+  const fdrRepository = new PrismaFdrRepository(prisma);
 
   const s3Service = new S3Service({
     region: config.aws.region,
@@ -176,7 +177,8 @@ async function startServer() {
   const tenderService = new TenderService(tenderRepository, s3Service);
   const shippingAddressService = new ShippingAddressService(shippingAddressRepository);
   const bulkImportService = new BulkImportService(prisma);
-  const emdService = new EmdService(emdRepository, s3Service, ocrService, config.openRouterApiKey);
+  const bulkImportFdrService = new BulkImportFdrService(prisma);
+  const fdrService = new FdrService(fdrRepository, s3Service, ocrService, config.openRouterApiKey);
 
   // Initialize controllers
   const authController = new AuthController(authService);
@@ -190,7 +192,7 @@ async function startServer() {
   const customerController = new CustomerController(customerService);
   const tenderController = new TenderController(tenderService);
   const shippingAddressController = new ShippingAddressController(shippingAddressService);
-  const emdController = new EmdController(emdService);
+  const fdrController = new FdrController(fdrService, bulkImportFdrService);
 
   // Initialize Dashboard services and controller
   const dashboardService = new DashboardService(prisma);
@@ -269,8 +271,8 @@ async function startServer() {
   );
 
   app.use(
-    '/api/emds',
-    emdRoutes(emdController)
+    '/api/fdrs',
+    fdrRoutes(fdrController)
   );
 
   // Create uploads directory if it doesn't exist

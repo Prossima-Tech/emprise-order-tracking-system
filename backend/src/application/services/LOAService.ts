@@ -94,13 +94,14 @@ export class LoaService {
                     start: new Date(dto.deliveryPeriod.start).toISOString(),
                     end: new Date(dto.deliveryPeriod.end).toISOString()
                 },
-                dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-                orderReceivedDate: dto.orderReceivedDate ? new Date(dto.orderReceivedDate) : undefined,
                 siteId: dto.siteId,
                 workDescription: dto.workDescription,
                 documentUrl: documentUrls.documentUrl || 'pending',
                 tags,
-                remarks2: dto.remarks2,
+                remarks: dto.remarks,
+                tenderNo: dto.tenderNo,
+                orderPOC: dto.orderPOC,
+                fdBgDetails: dto.fdBgDetails,
                 hasEmd: dto.hasEmd || false,
                 emdAmount: dto.emdAmount,
                 hasSecurityDeposit: dto.hasSecurityDeposit || false,
@@ -119,8 +120,7 @@ export class LoaService {
                                    dto.amountDeducted ||
                                    dto.amountPending ||
                                    dto.deductionReason ||
-                                   dto.billLinks ||
-                                   dto.remarks;
+                                   dto.billLinks;
 
             if (hasBillingData) {
                 await this.repository.createInvoice({
@@ -134,7 +134,6 @@ export class LoaService {
                     deductionReason: dto.deductionReason,
                     billLinks: dto.billLinks,
                     invoicePdfUrl: documentUrls.invoicePdfUrl,
-                    remarks: dto.remarks,
                 });
             }
 
@@ -316,6 +315,10 @@ export class LoaService {
                 documentUrl,
                 tags,
                 deliveryPeriod,
+                remarks: dto.remarks,
+                tenderNo: dto.tenderNo,
+                orderPOC: dto.orderPOC,
+                fdBgDetails: dto.fdBgDetails,
                 hasEmd: dto.hasEmd,
                 emdAmount: dto.emdAmount,
                 hasSecurityDeposit: dto.hasSecurityDeposit,
@@ -337,8 +340,7 @@ export class LoaService {
                                    dto.amountDeducted ||
                                    dto.amountPending ||
                                    dto.deductionReason ||
-                                   dto.billLinks ||
-                                   dto.remarks;
+                                   dto.billLinks;
 
             if (hasBillingData) {
                 // Check if invoice already exists for this LOA
@@ -356,7 +358,6 @@ export class LoaService {
                         deductionReason: dto.deductionReason,
                         billLinks: dto.billLinks,
                         invoicePdfUrl: invoicePdfUrl || existingInvoice.invoicePdfUrl,
-                        remarks: dto.remarks,
                     });
                 } else {
                     // Create new invoice
@@ -371,7 +372,6 @@ export class LoaService {
                         deductionReason: dto.deductionReason,
                         billLinks: dto.billLinks,
                         invoicePdfUrl,
-                        remarks: dto.remarks,
                     });
                 }
             }
@@ -448,6 +448,14 @@ export class LoaService {
         searchTerm?: string;
         page?: number;
         limit?: number;
+        siteId?: string;
+        zoneId?: string;
+        status?: string;
+        minValue?: number;
+        maxValue?: number;
+        hasEMD?: boolean;
+        hasSecurity?: boolean;
+        hasPerformanceGuarantee?: boolean;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
     }): Promise<Result<{ loas: any[]; total: number; page: number; limit: number; totalPages: number }>> {
@@ -457,17 +465,27 @@ export class LoaService {
             const limit = params.limit || 10;
             const skip = (page - 1) * limit;
 
+            const filterParams = {
+                searchTerm: params.searchTerm,
+                siteId: params.siteId,
+                zoneId: params.zoneId,
+                status: params.status,
+                minValue: params.minValue,
+                maxValue: params.maxValue,
+                hasEMD: params.hasEMD,
+                hasSecurity: params.hasSecurity,
+                hasPerformanceGuarantee: params.hasPerformanceGuarantee
+            };
+
             const [loas, total] = await Promise.all([
                 this.repository.findAll({
-                    searchTerm: params.searchTerm,
+                    ...filterParams,
                     skip,
                     take: limit,
                     sortBy: params.sortBy,
                     sortOrder: params.sortOrder
                 }),
-                this.repository.count({
-                    searchTerm: params.searchTerm
-                })
+                this.repository.count(filterParams)
             ]);
 
             const totalPages = Math.ceil(total / limit);

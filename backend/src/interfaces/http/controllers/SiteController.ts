@@ -112,12 +112,14 @@ export class SiteController {
 
   getAllSites = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { status, zoneId, search } = req.query;
+      const { status, zoneId, search, page, limit } = req.query;
 
       const result = await this.service.getAllSites({
         status: status as string,
         zoneId: zoneId as string,
-        searchTerm: search as string
+        searchTerm: search as string,
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined
       });
 
       if (!result.isSuccess) {

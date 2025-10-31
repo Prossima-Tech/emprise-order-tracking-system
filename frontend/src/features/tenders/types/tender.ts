@@ -13,7 +13,7 @@ export const tenderSchema = z.object({
 
 export type TenderFormData = z.infer<typeof tenderSchema>;
 
-export type TenderStatus = 'ACTIVE' | 'CLOSED' | 'CANCELLED' | 'AWARDED';
+export type TenderStatus = 'ACTIVE' | 'RETENDERED' | 'CANCELLED' | 'AWARDED' | 'NOT_AWARDED';
 
 export interface Tender {
   id: string;

@@ -1,27 +1,42 @@
-// interfaces/http/controllers/EmdController.ts
+// interfaces/http/controllers/FdrController.ts
 import { Request, Response } from 'express';
-import { EMDStatus } from '@prisma/client';
-import { EmdService } from '../../../application/services/EmdService';
-import { CreateEmdDto } from '../../../application/dtos/emd/CreateEmdDto';
-import { UpdateEmdDto } from '../../../application/dtos/emd/UpdateEmdDto';
+import { FDRStatus, FDRCategory } from '@prisma/client';
+import { FdrService } from '../../../application/services/FdrService';
+import { BulkImportFdrService } from '../../../application/services/BulkImportFdrService';
+import { CreateFdrDto } from '../../../application/dtos/fdr/CreateFdrDto';
+import { UpdateFdrDto } from '../../../application/dtos/fdr/UpdateFdrDto';
 
-export class EmdController {
-  constructor(private service: EmdService) {}
+export class FdrController {
+  constructor(
+    private service: FdrService,
+    private bulkImportService: BulkImportFdrService
+  ) {}
 
   /**
-   * Create a new EMD
-   * POST /api/emds
+   * Create a new FDR
+   * POST /api/fdrs
    */
-  createEmd = async (req: Request, res: Response): Promise<void> => {
+  createFdr = async (req: Request, res: Response): Promise<void> => {
     try {
-      const dto: CreateEmdDto = {
-        amount: parseFloat(req.body.amount),
-        paymentMode: req.body.paymentMode || 'FDR',
-        submissionDate: req.body.submissionDate,
-        maturityDate: req.body.maturityDate,
+      const dto: CreateFdrDto = {
+        category: req.body.category as 'FD' | 'BG' || 'FD',
         bankName: req.body.bankName || 'IDBI',
+        accountNo: req.body.accountNo,
+        fdrNumber: req.body.fdrNumber,
+        accountName: req.body.accountName,
+        depositAmount: parseFloat(req.body.depositAmount),
+        dateOfDeposit: req.body.dateOfDeposit,
+        maturityValue: req.body.maturityValue ? parseFloat(req.body.maturityValue) : undefined,
+        maturityDate: req.body.maturityDate,
+        contractNo: req.body.contractNo,
+        contractDetails: req.body.contractDetails,
+        poc: req.body.poc,
+        location: req.body.location,
+        emdAmount: req.body.emdAmount ? parseFloat(req.body.emdAmount) : undefined,
+        sdAmount: req.body.sdAmount ? parseFloat(req.body.sdAmount) : undefined,
         documentFile: req.file,
         extractedData: req.body.extractedData ? JSON.parse(req.body.extractedData) : undefined,
+        status: req.body.status as FDRStatus,
         // Filter out empty strings, "undefined" string, and whitespace
         offerId: req.body.offerId && req.body.offerId.trim() !== '' && req.body.offerId !== 'undefined' ? req.body.offerId : undefined,
         loaId: req.body.loaId && req.body.loaId.trim() !== '' && req.body.loaId !== 'undefined' ? req.body.loaId : undefined,
@@ -29,12 +44,12 @@ export class EmdController {
         tags: req.body.tags,
       };
 
-      const result = await this.service.createEmd(dto);
+      const result = await this.service.createFdr(dto);
 
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to create EMD',
+          message: result.error || 'Failed to create FDR',
           errors: result.data,
         });
         return;
@@ -42,11 +57,11 @@ export class EmdController {
 
       res.status(201).json({
         status: 'success',
-        message: 'EMD created successfully',
+        message: 'FDR created successfully',
         data: result.data,
       });
     } catch (error) {
-      console.error('Create EMD Error:', error);
+      console.error('Create FDR Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -55,14 +70,15 @@ export class EmdController {
   };
 
   /**
-   * Get all EMDs
-   * GET /api/emds
+   * Get all FDRs
+   * GET /api/fdrs
    */
-  getAllEmds = async (req: Request, res: Response): Promise<void> => {
+  getAllFdrs = async (req: Request, res: Response): Promise<void> => {
     try {
       const params = {
         searchTerm: req.query.searchTerm as string,
-        status: req.query.status as EMDStatus,
+        category: req.query.category as FDRCategory,
+        status: req.query.status as FDRStatus,
         offerId: req.query.offerId as string,
         loaId: req.query.loaId as string,
         tenderId: req.query.tenderId as string,
@@ -72,12 +88,12 @@ export class EmdController {
         sortOrder: (req.query.sortOrder as 'asc' | 'desc') || 'desc',
       };
 
-      const result = await this.service.getAllEmds(params);
+      const result = await this.service.getAllFdrs(params);
 
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to fetch EMDs',
+          message: result.error || 'Failed to fetch FDRs',
         });
         return;
       }
@@ -87,7 +103,7 @@ export class EmdController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Get All EMDs Error:', error);
+      console.error('Get All FDRs Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -96,18 +112,18 @@ export class EmdController {
   };
 
   /**
-   * Get EMD by ID
-   * GET /api/emds/:id
+   * Get FDR by ID
+   * GET /api/fdrs/:id
    */
-  getEmdById = async (req: Request, res: Response): Promise<void> => {
+  getFdrById = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const result = await this.service.getEmdById(id);
+      const result = await this.service.getFdrById(id);
 
       if (!result.isSuccess) {
         res.status(404).json({
           status: 'error',
-          message: result.error || 'EMD not found',
+          message: result.error || 'FDR not found',
         });
         return;
       }
@@ -117,7 +133,7 @@ export class EmdController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Get EMD By ID Error:', error);
+      console.error('Get FDR By ID Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -126,34 +142,44 @@ export class EmdController {
   };
 
   /**
-   * Update an EMD
-   * PUT /api/emds/:id
+   * Update an FDR
+   * PUT /api/fdrs/:id
    */
-  updateEmd = async (req: Request, res: Response): Promise<void> => {
+  updateFdr = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
 
-      const dto: UpdateEmdDto = {
-        amount: req.body.amount ? parseFloat(req.body.amount) : undefined,
-        paymentMode: req.body.paymentMode,
-        submissionDate: req.body.submissionDate,
-        maturityDate: req.body.maturityDate,
+      const dto: UpdateFdrDto = {
+        category: req.body.category as 'FD' | 'BG',
         bankName: req.body.bankName,
+        accountNo: req.body.accountNo,
+        fdrNumber: req.body.fdrNumber,
+        accountName: req.body.accountName,
+        depositAmount: req.body.depositAmount ? parseFloat(req.body.depositAmount) : undefined,
+        dateOfDeposit: req.body.dateOfDeposit,
+        maturityValue: req.body.maturityValue ? parseFloat(req.body.maturityValue) : undefined,
+        maturityDate: req.body.maturityDate,
+        contractNo: req.body.contractNo,
+        contractDetails: req.body.contractDetails,
+        poc: req.body.poc,
+        location: req.body.location,
+        emdAmount: req.body.emdAmount ? parseFloat(req.body.emdAmount) : undefined,
+        sdAmount: req.body.sdAmount ? parseFloat(req.body.sdAmount) : undefined,
         documentFile: req.file,
         extractedData: req.body.extractedData ? JSON.parse(req.body.extractedData) : undefined,
-        status: req.body.status as EMDStatus,
+        status: req.body.status as FDRStatus,
         offerId: req.body.offerId,
         loaId: req.body.loaId,
         tenderId: req.body.tenderId,
         tags: req.body.tags,
       };
 
-      const result = await this.service.updateEmd(id, dto);
+      const result = await this.service.updateFdr(id, dto);
 
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to update EMD',
+          message: result.error || 'Failed to update FDR',
           errors: result.data,
         });
         return;
@@ -161,11 +187,11 @@ export class EmdController {
 
       res.status(200).json({
         status: 'success',
-        message: 'EMD updated successfully',
+        message: 'FDR updated successfully',
         data: result.data,
       });
     } catch (error) {
-      console.error('Update EMD Error:', error);
+      console.error('Update FDR Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -174,28 +200,28 @@ export class EmdController {
   };
 
   /**
-   * Delete an EMD
-   * DELETE /api/emds/:id
+   * Delete an FDR
+   * DELETE /api/fdrs/:id
    */
-  deleteEmd = async (req: Request, res: Response): Promise<void> => {
+  deleteFdr = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const result = await this.service.deleteEmd(id);
+      const result = await this.service.deleteFdr(id);
 
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to delete EMD',
+          message: result.error || 'Failed to delete FDR',
         });
         return;
       }
 
       res.status(200).json({
         status: 'success',
-        message: 'EMD deleted successfully',
+        message: 'FDR deleted successfully',
       });
     } catch (error) {
-      console.error('Delete EMD Error:', error);
+      console.error('Delete FDR Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -204,15 +230,15 @@ export class EmdController {
   };
 
   /**
-   * Update EMD status
-   * PATCH /api/emds/:id/status
+   * Update FDR status
+   * PATCH /api/fdrs/:id/status
    */
   updateStatus = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { status } = req.body;
 
-      if (!Object.values(EMDStatus).includes(status)) {
+      if (!Object.values(FDRStatus).includes(status)) {
         res.status(400).json({
           status: 'error',
           message: 'Invalid status value',
@@ -225,18 +251,18 @@ export class EmdController {
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to update EMD status',
+          message: result.error || 'Failed to update FDR status',
         });
         return;
       }
 
       res.status(200).json({
         status: 'success',
-        message: 'EMD status updated successfully',
+        message: 'FDR status updated successfully',
         data: result.data,
       });
     } catch (error) {
-      console.error('Update EMD Status Error:', error);
+      console.error('Update FDR Status Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -245,18 +271,18 @@ export class EmdController {
   };
 
   /**
-   * Get expiring EMDs
-   * GET /api/emds/expiring/list
+   * Get expiring FDRs
+   * GET /api/fdrs/expiring/list
    */
-  getExpiringEmds = async (req: Request, res: Response): Promise<void> => {
+  getExpiringFdrs = async (req: Request, res: Response): Promise<void> => {
     try {
       const days = req.query.days ? parseInt(req.query.days as string) : 30;
-      const result = await this.service.getExpiringEmds(days);
+      const result = await this.service.getExpiringFdrs(days);
 
       if (!result.isSuccess) {
         res.status(400).json({
           status: 'error',
-          message: result.error || 'Failed to fetch expiring EMDs',
+          message: result.error || 'Failed to fetch expiring FDRs',
         });
         return;
       }
@@ -266,7 +292,7 @@ export class EmdController {
         data: result.data,
       });
     } catch (error) {
-      console.error('Get Expiring EMDs Error:', error);
+      console.error('Get Expiring FDRs Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',
@@ -276,7 +302,7 @@ export class EmdController {
 
   /**
    * Extract data from document using AI
-   * POST /api/emds/extract
+   * POST /api/fdrs/extract
    */
   extractData = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -315,7 +341,7 @@ export class EmdController {
 
   /**
    * Extract data from file (PDF or image) - Complete OCR + AI pipeline
-   * POST /api/emds/extract-from-file
+   * POST /api/fdrs/extract-from-file
    */
   extractFromFile = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -343,6 +369,44 @@ export class EmdController {
       });
     } catch (error) {
       console.error('Extract From File Error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Internal server error',
+      });
+    }
+  };
+
+  /**
+   * Bulk import FDRs from Excel file
+   * POST /api/fdrs/bulk-import
+   */
+  bulkImport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          status: 'error',
+          message: 'Excel file is required',
+        });
+        return;
+      }
+
+      const result = await this.bulkImportService.bulkImport(req.file);
+
+      if (!result.isSuccess) {
+        res.status(400).json({
+          status: 'error',
+          message: result.error || 'Failed to import FDRs',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        status: 'success',
+        message: `Successfully imported ${result.data?.successCount} FDRs`,
+        data: result.data,
+      });
+    } catch (error) {
+      console.error('Bulk Import FDRs Error:', error);
       res.status(500).json({
         status: 'error',
         message: 'Internal server error',

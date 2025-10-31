@@ -18,7 +18,10 @@ export const loaSchema = z.object({
   documentFile: z.any().refine((val) => !!val, { message: 'Document file is required' }), // File is required
   emdId: z.string().optional(), // EMD ID field
   siteId: z.string().min(1, 'Site is required'), // Add site field
-  remarks2: z.string().optional(),
+  remarks: z.string().optional(),
+  tenderNo: z.string().optional(),
+  orderPOC: z.string().optional(),
+  fdBgDetails: z.string().optional(),
   hasEmd: z.boolean().default(false),
   emdAmount: z.number().optional().nullable(),
   hasSecurityDeposit: z.boolean().default(false),
@@ -42,7 +45,6 @@ export const loaSchema = z.object({
   deductionReason: z.string().optional(),
   billLinks: z.string().optional(),
   invoicePdfFile: z.any().optional(),
-  remarks: z.string().optional(),
 });
 
 // Schema for creating an amendment

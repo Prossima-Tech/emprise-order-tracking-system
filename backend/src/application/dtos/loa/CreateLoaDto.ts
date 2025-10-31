@@ -13,7 +13,10 @@ export interface CreateLoaDto {
     documentFile?: Express.Multer.File;
     tags?: string[];
     siteId: string;
-    remarks2?: string;
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     hasEmd?: boolean;
     emdAmount?: number;
     hasSecurityDeposit?: boolean;
@@ -32,5 +35,4 @@ export interface CreateLoaDto {
     deductionReason?: string;
     billLinks?: string;
     invoicePdfFile?: Express.Multer.File;
-    remarks?: string;
 }

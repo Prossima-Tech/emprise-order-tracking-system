@@ -10,7 +10,10 @@ export interface UpdateLoaDto {
     documentFile?: Express.Multer.File;
     tags?: string[];
     siteId?: string;
-    remarks2?: string;
+    remarks?: string;
+    tenderNo?: string;
+    orderPOC?: string;
+    fdBgDetails?: string;
     // New fields for EMD
     hasEmd?: boolean;
     emdAmount?: number;
@@ -32,5 +35,4 @@ export interface UpdateLoaDto {
     deductionReason?: string;
     billLinks?: string;
     invoicePdfFile?: Express.Multer.File;
-    remarks?: string;
 }

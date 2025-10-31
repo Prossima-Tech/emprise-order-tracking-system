@@ -208,9 +208,10 @@ export function TenderList() {
               <SelectContent>
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
+                <SelectItem value="RETENDERED">Retendered</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 <SelectItem value="AWARDED">Awarded</SelectItem>
+                <SelectItem value="NOT_AWARDED">Not Awarded</SelectItem>
               </SelectContent>
             </Select>
           </div>

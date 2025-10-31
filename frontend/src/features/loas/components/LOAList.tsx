@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, isAfter } from "date-fns";
+import { format } from "date-fns";
 import {
   MoreHorizontal,
 } from "lucide-react";
@@ -58,11 +58,14 @@ const statusOptions = [
 
 export function LOAList() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState({
-    loaNumber: "",
-    siteName: "",
-  });
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [minValue, setMinValue] = useState<string>("");
+  const [maxValue, setMaxValue] = useState<string>("");
+  const [hasEMD, setHasEMD] = useState<string>("all");
+  const [hasSecurity, setHasSecurity] = useState<string>("all");
+  const [hasPerformanceGuarantee, setHasPerformanceGuarantee] = useState<string>("all");
+
   const [loas, setLOAs] = useState<LOA[]>([]);
   const { loading, getLOAs, deleteLOA } = useLOAs();
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +77,7 @@ export function LOAList() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortBy, setSortBy] = useState<string>("createdAt");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   useEffect(() => {
     const fetchLOAs = async () => {
@@ -81,6 +85,13 @@ export function LOAList() {
         const data = await getLOAs({
           page: currentPage,
           limit: pageSize,
+          search: searchQuery || undefined,
+          status: statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+          minValue: minValue ? parseFloat(minValue) : undefined,
+          maxValue: maxValue ? parseFloat(maxValue) : undefined,
+          hasEMD: hasEMD === "true" ? true : hasEMD === "false" ? false : undefined,
+          hasSecurity: hasSecurity === "true" ? true : hasSecurity === "false" ? false : undefined,
+          hasPerformanceGuarantee: hasPerformanceGuarantee === "true" ? true : hasPerformanceGuarantee === "false" ? false : undefined,
           sortBy,
           sortOrder
         });
@@ -97,7 +108,7 @@ export function LOAList() {
     };
 
     fetchLOAs();
-  }, [currentPage, pageSize, sortBy, sortOrder]);
+  }, [currentPage, pageSize, searchQuery, statusFilter, minValue, maxValue, hasEMD, hasSecurity, hasPerformanceGuarantee, sortBy, sortOrder]);
 
   const handleDeleteClick = async (loa: LOA) => {
     try {
@@ -155,7 +166,7 @@ export function LOAList() {
   };
 
   // Helper function to calculate days till due date
-  const calculateDaysTillDueDate = (dueDate?: string | null) => {
+  const calculateDaysTillDueDate = (dueDate?: Date | string | null) => {
     if (!dueDate) return '-';
     const today = new Date();
     const due = new Date(dueDate);
@@ -173,7 +184,7 @@ export function LOAList() {
     }
   };
 
-  const columns = useMemo<Column<LOA>[]>(() => [
+  const columns: Column<LOA>[] = [
     {
       header: "Sr. No.",
       accessor: (_row: LOA, index?: number) => {
@@ -245,10 +256,34 @@ export function LOAList() {
         }).format(row.securityDepositAmount || 0),
     },
     {
-      header: "Remarks2",
+      header: "Tender No.",
       accessor: (row: LOA) => (
-        <div className="max-w-xs truncate" title={row.remarks2 || undefined}>
-          {row.remarks2 || "-"}
+        <div className="max-w-xs truncate" title={row.tenderNo || undefined}>
+          {row.tenderNo || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "Order POC",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.orderPOC || undefined}>
+          {row.orderPOC || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "FD/BG Details",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.fdBgDetails || undefined}>
+          {row.fdBgDetails || "-"}
+        </div>
+      ),
+    },
+    {
+      header: "Remarks",
+      accessor: (row: LOA) => (
+        <div className="max-w-xs truncate" title={row.remarks || undefined}>
+          {row.remarks || "-"}
         </div>
       ),
     },
@@ -329,23 +364,19 @@ export function LOAList() {
         </DropdownMenu>
       ),
     },
-  ], [navigate, currentPage, pageSize]);
+  ];
 
-  const filteredData = useMemo(() => {
-    const loasArray = Array.isArray(loas) ? loas : [];
-    
-    return loasArray.filter((loa) => {
-      const matchesLOANumber = searchQuery.loaNumber === "" ||
-        loa.loaNumber.toLowerCase().includes(searchQuery.loaNumber.toLowerCase());
-
-      const matchesSiteName = searchQuery.siteName === "" ||
-        loa.site?.name.toLowerCase().includes(searchQuery.siteName.toLowerCase());
-
-      const matchesStatus = statusFilter === "ALL" || loa.status === statusFilter;
-
-      return matchesLOANumber && matchesSiteName && matchesStatus;
-    });
-  }, [loas, searchQuery, statusFilter]);
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setMinValue("");
+    setMaxValue("");
+    setHasEMD("all");
+    setHasSecurity("all");
+    setHasPerformanceGuarantee("all");
+    setCurrentPage(1);
+  };
 
   if (error) {
     return (
@@ -366,77 +397,148 @@ export function LOAList() {
     <div className="space-y-6">
       {/* Filter Section */}
       <Card className="p-4">
-        <div className="grid gap-4 md:grid-cols-5">
-          <div>
-            <Input
-              placeholder="Search by LOA number..."
-              value={searchQuery.loaNumber}
-              onChange={(e) => setSearchQuery(prev => ({
-                ...prev,
-                loaNumber: e.target.value
-              }))}
-              className="w-full"
-            />
+        <div className="space-y-4">
+          {/* Basic Filters */}
+          <div className="grid gap-4 md:grid-cols-5">
+            <div>
+              <Input
+                placeholder="Search LOA number, site, work..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <Select
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {statusOptions.slice(1).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select
+                value={`${sortBy}-${sortOrder}`}
+                onValueChange={(value) => {
+                  const [field, order] = value.split('-');
+                  setSortBy(field);
+                  setSortOrder(order as 'asc' | 'desc');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
+                  <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
+                  <SelectItem value="loaValue-desc">Value (High to Low)</SelectItem>
+                  <SelectItem value="loaValue-asc">Value (Low to High)</SelectItem>
+                  <SelectItem value="deliveryStartDate-asc">Start Date (Early)</SelectItem>
+                  <SelectItem value="deliveryStartDate-desc">Start Date (Late)</SelectItem>
+                  <SelectItem value="deliveryEndDate-asc">End Date (Early)</SelectItem>
+                  <SelectItem value="deliveryEndDate-desc">End Date (Late)</SelectItem>
+                  <SelectItem value="dueDate-asc">Due Date (Early)</SelectItem>
+                  <SelectItem value="dueDate-desc">Due Date (Late)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="w-full"
+              >
+                {showAdvancedFilters ? "Hide" : "Show"} Advanced Filters
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClearFilters}
+                className="flex-1"
+              >
+                Clear All
+              </Button>
+              <Button onClick={() => navigate("/loas/new")} className="flex-1">
+                Create New
+              </Button>
+            </div>
           </div>
-          <div>
-            <Input
-              placeholder="Search by site name..."
-              value={searchQuery.siteName}
-              onChange={(e) => setSearchQuery(prev => ({
-                ...prev,
-                siteName: e.target.value
-              }))}
-              className="w-full"
-            />
-          </div>
-          <div>
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select
-              value={`${sortBy}-${sortOrder}`}
-              onValueChange={(value) => {
-                const [field, order] = value.split('-');
-                setSortBy(field);
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">Date (Newest)</SelectItem>
-                <SelectItem value="createdAt-asc">Date (Oldest)</SelectItem>
-                <SelectItem value="loaValue-desc">Value (High to Low)</SelectItem>
-                <SelectItem value="loaValue-asc">Value (Low to High)</SelectItem>
-                <SelectItem value="deliveryStartDate-asc">Start Date (Early)</SelectItem>
-                <SelectItem value="deliveryStartDate-desc">Start Date (Late)</SelectItem>
-                <SelectItem value="deliveryEndDate-asc">End Date (Early)</SelectItem>
-                <SelectItem value="deliveryEndDate-desc">End Date (Late)</SelectItem>
-                <SelectItem value="dueDate-asc">Due Date (Early)</SelectItem>
-                <SelectItem value="dueDate-desc">Due Date (Late)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => navigate("/loas/new")}>
-              Create New LOA
-            </Button>
-          </div>
+
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <div className="grid gap-4 md:grid-cols-4 pt-4 border-t">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Min Value (₹)</label>
+                <Input
+                  type="number"
+                  placeholder="Min amount"
+                  value={minValue}
+                  onChange={(e) => setMinValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Max Value (₹)</label>
+                <Input
+                  type="number"
+                  placeholder="Max amount"
+                  value={maxValue}
+                  onChange={(e) => setMaxValue(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has EMD</label>
+                <Select value={hasEMD} onValueChange={setHasEMD}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has Security Deposit</label>
+                <Select value={hasSecurity} onValueChange={setHasSecurity}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Has Performance Guarantee</label>
+                <Select value={hasPerformanceGuarantee} onValueChange={setHasPerformanceGuarantee}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -445,7 +547,7 @@ export function LOAList() {
         <LoadingSpinner />
       ) : (
         <div className="space-y-4">
-          {filteredData.length === 0 ? (
+          {loas.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               No LOAs found
             </div>
@@ -453,7 +555,7 @@ export function LOAList() {
             <>
               <DataTable
                 columns={columns}
-                data={filteredData}
+                data={loas}
                 onRowClick={(row) => navigate(`/loas/${row.id}`)}
               />
 

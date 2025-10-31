@@ -54,7 +54,7 @@ model BudgetaryOffer {
   approvalHistory  Json[]
   tags             String[]
   emailLogs        EmailLog[]
-  emds             EMD[]        // EMDs associated with this offer
+  fdrs             FDR[]        // FDRs associated with this offer
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   customerId       String?      @default("CR")
@@ -100,14 +100,18 @@ enum SiteStatus {
 enum LOAStatus {
   NOT_STARTED           // 1. Not Started
   IN_PROGRESS           // 2. In Progress
+  SUPPLY_WORK_DELAYED   // 3. Supply/Work Delayed
   SUPPLY_WORK_COMPLETED // 4. Supply/Work Completed
+  APPLICATION_PENDING   // 5. Application Pending
+  UPLOAD_BILL           // 6. Upload Bill
   CHASE_PAYMENT         // 7. Chase Payment
+  RETRIEVE_EMD_SECURITY // 8. Retrieve EMD/Security
   CLOSED                // 9. Closed
 }
 
 model Site {
   id              String           @id @default(uuid())
-  name            String           @unique
+  name            String           // Removed @unique - sites can have same name across different customers
   code            String           @unique  // For easy reference like MUM001, DEL002
   zoneId          String           // References customer id
   zone            Customer         @relation(fields: [zoneId], references: [id])
@@ -122,6 +126,7 @@ model Site {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
+  @@unique([name, zoneId])  // Composite unique: same site name allowed across different customers
   @@index([zoneId])
 }
 
@@ -141,9 +146,9 @@ model LOA {
   amendments                   Amendment[]
   purchaseOrders               PurchaseOrder[]
   invoices                     Invoice[]        // Billing/Invoice records
-  emds                         EMD[]            // EMDs associated with this LOA
+  fdrs                         FDR[]            // FDRs associated with this LOA
   tags                         String[]
-  remarks2                     String?          @db.Text // Additional remarks field
+  remarks                      String?          @db.Text // LOA-level remarks
   // Warranty period fields
   warrantyPeriodMonths         Int?             // Warranty period in months
   warrantyPeriodYears          Int?             // Warranty period in years
@@ -160,6 +165,10 @@ model LOA {
   hasPerformanceGuarantee      Boolean          @default(false)
   performanceGuaranteeAmount   Float?
   performanceGuaranteeDocumentUrl String?
+  // Additional fields from bulk import
+  tenderNo                     String?          // Tender number reference
+  orderPOC                     String?          // Point of contact for the order
+  fdBgDetails                  String?          @db.Text // FD/BG details
   createdAt                    DateTime         @default(now())
   updatedAt                    DateTime         @updatedAt
 
@@ -299,25 +308,21 @@ model Tender {
   description     String        @db.Text
   hasEMD          Boolean       @default(false)
   emdAmount       Float?
-  status          TenderStatus  @default(NOT_STARTED)
+  status          TenderStatus  @default(ACTIVE)
   documentUrl     String?       // S3 URL of tender document
   nitDocumentUrl  String?       // S3 URL of NIT document
-  emds            EMD[]         // EMDs associated with this tender
+  fdrs            FDR[]         // FDRs associated with this tender
   tags            String[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
 
 enum TenderStatus {
-  NOT_STARTED               // 1. Not Started
-  IN_PROGRESS               // 2. In Progress
-  SUPPLY_WORK_DELAYED       // 3. Supply/Work Delayed
-  SUPPLY_WORK_COMPLETED     // 4. Supply/Work Completed
-  APPLICATION_PENDING       // 5. Application Pending
-  UPLOAD_BILL               // 6. Upload Bill
-  CHASE_PAYMENT             // 7. Chase Payment
-  RETRIEVE_EMD_SECURITY     // 8. Retrieve EMD/Security
-  CLOSED                    // 9. Closed
+  ACTIVE
+  RETENDERED
+  CANCELLED
+  AWARDED
+  NOT_AWARDED
 }
 
 // Shipping Address Management
@@ -351,39 +356,69 @@ model Invoice {
   @@index([loaId])
 }
 
-// EMD (Earnest Money Deposit) Management
-model EMD {
-  id              String      @id @default(uuid())
-  amount          Float
-  paymentMode     String      @default("FDR") // FDR, Bank Guarantee, Cheque, etc.
-  submissionDate  DateTime
-  maturityDate    DateTime
-  bankName        String      @default("IDBI")
-  documentUrl     String?     // S3 URL of FDR/BG document
-  extractedData   Json?       // Store OCR extracted text and AI parsed data
-  status          EMDStatus   @default(ACTIVE)
+// FDR (Fixed Deposit Receipt) & BG (Bank Guarantee) Management
+model FDR {
+  id                String      @id @default(uuid())
 
-  // Relations - EMD can be linked to Offer, LOA, or Tender
-  offer           BudgetaryOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
-  offerId         String?
-  loa             LOA?            @relation(fields: [loaId], references: [id], onDelete: SetNull)
-  loaId           String?
-  tender          Tender?         @relation(fields: [tenderId], references: [id], onDelete: SetNull)
-  tenderId        String?
+  // Basic FDR/BG Information
+  category          FDRCategory @default(FD)          // FD or BG
+  bankName          String      @default("IDBI")      // Bank name
+  accountNo         String?                           // Bank account number
+  fdrNumber         String?                           // FD/BG number
+  accountName       String?                           // Account holder name
 
-  tags            String[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  // Financial Details
+  depositAmount     Float                             // Principal deposit amount
+  dateOfDeposit     DateTime                          // Date of deposit/submission
+  maturityValue     Float?                            // Maturity value (for FD)
+  maturityDate      DateTime?                         // Maturity date
+
+  // Contract/Project Information
+  contractNo        String?                           // Contract/PO number
+  contractDetails   String?       @db.Text            // Description of work/contract
+  poc               String?                           // Point of contact
+  location          String?                           // Site/location
+
+  // Deposit Usage
+  emdAmount         Float?                            // If used as EMD
+  sdAmount          Float?                            // If used as Security Deposit
+
+  // Document Management
+  documentUrl       String?                           // S3 URL of FDR/BG document
+  extractedData     Json?                             // Store OCR extracted text and AI parsed data
+
+  // Status
+  status            FDRStatus   @default(RUNNING)
+
+  // Relations - FDR can be linked to Offer, LOA, or Tender
+  offer             BudgetaryOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  offerId           String?
+  loa               LOA?            @relation(fields: [loaId], references: [id], onDelete: SetNull)
+  loaId             String?
+  tender            Tender?         @relation(fields: [tenderId], references: [id], onDelete: SetNull)
+  tenderId          String?
+
+  tags              String[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([offerId])
   @@index([loaId])
   @@index([tenderId])
   @@index([status])
   @@index([maturityDate])
+  @@index([category])
+  @@map("fdrs")
 }
 
-enum EMDStatus {
-  ACTIVE
-  EXPIRED
-  RELEASED
+enum FDRCategory {
+  FD    // Fixed Deposit
+  BG    // Bank Guarantee
+}
+
+enum FDRStatus {
+  RUNNING      // Active/Running
+  COMPLETED    // Completed
+  CANCELLED    // FD Cancelled
+  RETURNED     // Returned/Released
 }

@@ -66,7 +66,10 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       orderReceivedDate: initialData?.orderReceivedDate ? new Date(initialData.orderReceivedDate) : null,
       workDescription: initialData?.workDescription || '',
       tags: initialData?.tags || [],
-      remarks2: initialData?.remarks2 || '',
+      remarks: initialData?.remarks || '',
+      tenderNo: initialData?.tenderNo || '',
+      orderPOC: initialData?.orderPOC || '',
+      fdBgDetails: initialData?.fdBgDetails || '',
       hasEmd: initialData?.hasEmd || false,
       emdAmount: initialData?.emdAmount || null,
       hasSecurityDeposit: initialData?.hasSecurityDeposit || false,
@@ -87,7 +90,6 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
       amountPending: initialData?.amountPending || null,
       deductionReason: initialData?.deductionReason || '',
       billLinks: initialData?.billLinks || '',
-      remarks: initialData?.remarks || '',
     },
   });
   // Fetch available sites on component mount
@@ -1025,46 +1027,97 @@ export function LOAForm({ initialData, onSubmit, onClose }: LOAFormProps) {
             )}
           />
 
-          {/* Remarks */}
-          <FormField
-            control={form.control}
-            name="remarks"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Remarks</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Additional notes or comments"
-                    className="min-h-[80px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Additional Order Information Section */}
+          <div className="space-y-4 border p-4 rounded-md">
+            <h3 className="text-lg font-semibold">Additional Order Information</h3>
+            <p className="text-sm text-muted-foreground">Optional tender and point of contact details</p>
 
-          {/* Remarks2 */}
-          <FormField
-            control={form.control}
-            name="remarks2"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Additional Remarks (Remarks2)</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Additional remarks or notes"
-                    className="min-h-[80px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Secondary remarks field for additional information
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            {/* Tender Number */}
+            <FormField
+              control={form.control}
+              name="tenderNo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tender Number</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter tender number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Reference number for the tender associated with this LOA
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Order Point of Contact */}
+            <FormField
+              control={form.control}
+              name="orderPOC"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Order Point of Contact</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Enter contact person name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Primary contact person for this order
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* FD/BG Details */}
+            <FormField
+              control={form.control}
+              name="fdBgDetails"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>FD/BG Details</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter fixed deposit or bank guarantee details"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Details about fixed deposits or bank guarantees
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Remarks */}
+            <FormField
+              control={form.control}
+              name="remarks"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Remarks</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="General remarks about this LOA"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    General notes and remarks for this LOA
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         {/* Form Actions */}
